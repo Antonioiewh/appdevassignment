@@ -58,7 +58,11 @@
                         {% if current_sessionID != 0 %}
                         <li><a class="dropdown-item" href="/profile">View profile</a></li>
                         {% endif %}
+                        {% if current_sessionID == 0 %}
+                        <li><a class="dropdown-item" href="/signup">Login</a></li>
+                        {% elif current_sessionID != 0 %}
                         <li><a class="dropdown-item" href="/signup">Logout</a></li>
+                        {% endif %}
                         {% if current_sessionID != 0 %}
                         <li><a class="dropdown-item" href="/createlisting">Create listing</a></li>
                         {% endif %}

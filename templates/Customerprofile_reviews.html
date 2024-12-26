@@ -1,0 +1,59 @@
+{% extends "Customerbase.html"%}
+{% block title %}Homepage{% endblock %}
+
+{% block content %}
+<style>
+.categories{
+    font-size:1.5rem;
+}
+
+.categories:active{
+    color:green;
+}
+
+
+#reviewbar{
+    margin:20px;
+    background:lightgray;
+    height:14vh;
+    width:40vw;
+    float:left;
+}
+
+
+</style>
+<h1 class="display-4">Profile</h1>
+
+
+<div id="profilebar " style="background: gray; height: 17vh; left:20%;" class=" w-50 p-3 d-flex " > <!--vh means 15% of viewport aka dynamic lmao-->
+    <img src="{{customer_imgid}}" style="width:100px; height:100px; border-radius:50%" class="align-self-center"> <!--load profile pic-->
+    <p class="m-auto align-self-baseline" style="font-size:1.5rem">{{customer_username}}</p>
+    <p class="m-auto" style="font-size:1.5rem;">{{customer_rating}}
+        <i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i>
+    </p>
+    <p class="m-auto" style="font-size:1.5rem">{{customer_date_joined}}</p>
+</div>
+
+<div class=" w-25 p-3 d-flex align-items-center"> <!--still a wip-->
+    <a href="/profile" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Listings</a>
+    <a href="/profilereviews" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Reviews {{number_of_reviews}}</a>
+</div>
+
+{% if number_of_reviews == 0 %}
+<p>There are no reviews.</p>
+{% else %}
+<div id="reviews_container" class="w-50 p-3 h-auto d-inline-block justify-content-center"> <!--container for the reviews, same concept as listings-->
+{% for review in list_reviews%}
+    <div id="reviewbar" class="p-3 d-flex">
+
+        <div class="d-flex flex-column"> <!--display profile pic with name underneath-->
+            <img src="{{reviewer_imgid}}" style="width:70px; height:70px; border-radius:50%">
+            <p>{{reviewer_username}}</p>
+        </div>
+    
+        <p style="margin-left:4%">{{review}}</p>
+    </div>
+{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

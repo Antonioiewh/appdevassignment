@@ -297,33 +297,20 @@ def createlisting():
         db2['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
 
 
-    #update it into corresponding user
-
-
-    #find current session ID customer obj
-    for key in customers_dict:
-        if key == session_ID:
-            customer = customers_dict[key]
-            #add it to the user's listings
-            customer.add_listings(Listing.Listing.count_ID)
-            print(customer.get_listings())
-            db1['Customers'] = customers_dict #syncs with db1
-            break #stop the for loop if this fulfills
-
-    
-    
-
-
-
-
-
-
-        
+        for key in customers_dict:
+            if key == session_ID:
+                customer = customers_dict[key]
+                #add it to the user's listings
+                customer.add_listings(Listing.Listing.count_ID)
+                print(customer.get_listings())
+                db1['Customers'] = customers_dict #syncs with db1
+                break #stop the for loop if this fulfills
 
     return render_template('CustomerCreateListing.html', form = create_listing_form, form2 = create_listing_img_form)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
+    global session_ID
     update_listing_form = ListingForm(request.form)
     update_listing_img_form = uploadListingimg(request.form)
     db2 = shelve.open('listing.db','c') #RMBR THIS
@@ -344,8 +331,72 @@ def updateListing(id):
         listing.set_deal_method(update_listing_form.payment_method.data)
         db2['Listings'] = listings_dict #sync local to db2
         db2.close() 
-        return redirect(url_for('Customerprofile'))
-  
-    return render_template('CustomerUpdateListing.html', form = update_listing_form, form2 = update_listing_img_form)
+        return redirect(url_for('Customerprofile')) #go back to profile page after submit
+
+    return render_template('CustomerUpdateListing.html', form = update_listing_form, form2 = update_listing_img_form,current_sessionID = session_ID) #to render the form 
+
+@app.route('/viewListing/<int:id>/')
+def viewListing(id):
+    global session_ID
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    listings_dict = {}
+    customers_dict = {}
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+
+    listing = listings_dict.get(id)
+    for key in customers_dict:
+        if key == listing.get_creatorID():
+            seller = customers_dict.get(key)
+            break
+    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID)
+
+@app.route('/deleteListing/<int:id>/')
+def deleteListing(id):
+    global session_ID
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    listings_dict = {}
+    customers_dict = {}
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    
+    listings_dict.pop(id)
+    customer = customers_dict.get(session_ID)
+    customer.remove_listings(id)
+    print("listing has been removed")
+    print(customer.get_listings())
+    db1['Customers'] = customers_dict
+    db2['Listings'] = listings_dict
+    return redirect(url_for('Customerprofile'))
 if __name__ == "__main__":
     app.run()

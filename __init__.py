@@ -93,23 +93,19 @@ def Customerprofile():
     
     customer_listings = customer.get_listings() #get ID list of current user listings
     print(f"\n*start of message *\nCurrent user has the following listings:{customer_listings}\n*end of message*")
-    number_of_listings = [] #sent to html
-    listing_title_list = [] #sent to html
+    listing_list = []
     for key in listings_dict:
         print(key)
         if key in customer_listings:
-            listing = listings_dict[key] # get the listing obj
-            #get its title
-            listing_title = listing.get_title() 
-            listing_title_list.append(listing_title)
-            #increment the count
-            number_of_listings.append(key) 
+            listing = listings_dict.get(key)
+            listing_list.append(listing)
+    
 
     #test code for listing img
     listingimg = os.path.join('static','listingpic')
     listing_id = os.path.join(listingimg, 'pie.jpg')
-    return render_template('Customerprofile.html',customer_imgid = user_id, customer_username = user_name, customer_rating = user_rating, customer_date_joined = user_date_joined,listing_list = number_of_listings
-                            ,listing_title_list = listing_title_list,listing_imgid = listing_id,current_sessionID = session_ID)
+    return render_template('Customerprofile.html',customer_imgid = user_id, customer_username = user_name, customer_rating = user_rating, customer_date_joined = user_date_joined,
+                            current_sessionID = session_ID,listings_list = listing_list)
 
 @app.route('/profilereviews')
 def Customerprofile_reviews():
@@ -326,5 +322,30 @@ def createlisting():
 
     return render_template('CustomerCreateListing.html', form = create_listing_form, form2 = create_listing_img_form)
 
+@app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
+def updateListing(id):
+    update_listing_form = ListingForm(request.form)
+    update_listing_img_form = uploadListingimg(request.form)
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    listings_dict = {}
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    if request.method == 'POST' and update_listing_form.validate and update_listing_img_form.validate():
+        listing = listings_dict.get(id)
+        listing.set_title(update_listing_form.title.data)
+        listing.set_category(update_listing_form.category.data)
+        listing.set_description(update_listing_form.description.data)
+        listing.set_condition(update_listing_form.condition.data)
+        listing.set_deal_method(update_listing_form.payment_method.data)
+        db2['Listings'] = listings_dict #sync local to db2
+        db2.close() 
+        return redirect(url_for('Customerprofile'))
+  
+    return render_template('CustomerUpdateListing.html', form = update_listing_form, form2 = update_listing_img_form)
 if __name__ == "__main__":
     app.run()

@@ -62,6 +62,9 @@ class Customer:
     
     def add_listings(self,listingid):
         self.__listings.append(listingid)
+
+    def remove_listings(self,listingid):
+        self.__listings.remove(listingid)
     
     #VERY IMPT DO NOT USE SET_REVIEWS!!!!
     def set_reviews(self,reviews):
@@ -69,6 +72,7 @@ class Customer:
     
     def add_reviews(self,review):
         self.__reviews.append(review)
+    
     
 
     

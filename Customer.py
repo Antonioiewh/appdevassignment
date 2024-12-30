@@ -10,7 +10,8 @@ class Customer:
         self.__reviews = [] #store reviews they received
         self.__address = None 
         self.__credit_card = None
-        self.__rating = 0
+        self.__rating = 0  #displayed amt
+        self.__ratings = 0 #store total
         self.__date_joined = "1/1/1"
 
     def get_id(self):
@@ -81,6 +82,12 @@ class Customer:
     
     def set_credit_card(self,credit_card):
         self.__credit_card = credit_card
+
+    def set_rating(self,rating):
+        number_reviews = len(self.__reviews)
+        self.__ratings += rating
+        self.__rating = round((self.__ratings/number_reviews),2)
+        
     
 
 

@@ -19,4 +19,9 @@ class ListingForm(Form):
 
 class uploadListingimg(Form):
     listingimg = FileField('image')
-    
+
+
+class ReviewForm(Form):
+    rating = RadioField('Rating', choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])
+    review_text = StringField('Add a comment', [validators.Length(min=4,max=1234)])
+

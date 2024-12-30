@@ -1,7 +1,7 @@
 from flask import Flask, render_template, url_for,request,redirect
 import os
-import Customer , Listing, ListingImage #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm, uploadListingimg #our forms
+import Customer , Listing, ListingImage,Reviews #classes
+from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm, uploadListingimg,ReviewForm #our forms
 import shelve, Customer
 app = Flask(__name__)
 #current_sessionID IS FOR THE PROFILE!!
@@ -79,6 +79,8 @@ def Customerprofile_reviews(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
     customers_dict = {}
+    reviews_dict ={}
+    db3 = shelve.open('reviews.db', 'c')
 
 
     #make sure local and db1 are the same state
@@ -98,17 +100,42 @@ def Customerprofile_reviews(id):
     except:
         print("Error in retrieving data from DB1 Customer count or count is at 0")
 
+     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reviews" in db3:
+            reviews_dict = db3["Reviews"] #sync local with db1
+        else:
+            db3['Reviews'] = reviews_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening reviews.db")
+        
+    #sync IDs
+    try:
+        db3 = shelve.open('reviews.db','c')    
+        Reviews.Reviews.count_ID = db3["ReviewsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB3 Review count or count is at 0")
+
+
     pfpimg = os.path.join('..\static', 'profilepics')
     user_id = os.path.join(pfpimg,'hermos.jpg') 
     
     customer = customers_dict.get(id)
-    #testcode for reviews
-    reviewername = "hermos2" 
-    reviews=["BRo sold me a gun","Sold me a cat"] #get reviews obj from current user (stored as list)
-    number_of_reviews = len(reviews) #get NUMBER of reviews
+    customer_reviews = customer.get_reviews()#return list of review IDs
+    print(customer_reviews)
+    customer_reviews_list = [] #THIS is the one sent to the html 
+    
+    for key in reviews_dict:
+        print(key)
+        if key in customer_reviews:
+            print(key)
+            review = reviews_dict.get(key)
+            customer_reviews_list.append(review)
+    
     #reviewer pfp
     reviewer_id = os.path.join(pfpimg,'hermos.jpg') 
-    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = number_of_reviews, list_reviews = reviews, reviewer_username = reviewername, reviewer_imgid = reviewer_id, current_sessionID = session_ID)
+    print(f"Reviews are {customer_reviews_list}")
+    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, reviewer_imgid = reviewer_id, current_sessionID = session_ID)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -283,7 +310,7 @@ def createlisting():
                 print(customer.get_listings())
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
-
+        return redirect(url_for('Customerprofile'))
     return render_template('CustomerCreateListing.html', form = create_listing_form, form2 = create_listing_img_form, current_sessionID = session_ID)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
@@ -376,5 +403,70 @@ def deleteListing(id):
     db1['Customers'] = customers_dict
     db2['Listings'] = listings_dict
     return redirect(url_for('Customerprofile'))
+
+@app.route('/createReview/<int:id>', methods = ['GET', 'POST'])
+def createReview(id):
+    global session_ID
+    review_form = ReviewForm(request.form)
+    customers_dict = {}
+    reviews_dict ={}
+    db3 = shelve.open('reviews.db', 'c')
+    db1 = shelve.open('customer.db','c')
+     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+        
+    #sync IDs
+    try:
+        db1 = shelve.open('customer.db','c')    
+        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB1 Customer count or count is at 0")
+
+     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reviews" in db3:
+            reviews_dict = db3["Reviews"] #sync local with db1
+        else:
+            db3['Reviews'] = reviews_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening reviews.db")
+        
+    #sync IDs
+    try:
+        db3 = shelve.open('reviews.db','c')    
+        Reviews.Reviews.count_ID = db3["ReviewsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB3 Review count or count is at 0")
+
+    if request.method == 'POST' and review_form.validate():
+        #get current user username
+        current_customer = customers_dict.get(session_ID)
+        current_customer_username = current_customer.get_username()
+        
+
+        #update reviews
+        review = Reviews.Reviews(session_ID,current_customer_username,(float(review_form.rating.data)), review_form.review_text.data)
+        reviews_dict[review.get_ID()] = review
+        db3['Reviews'] = reviews_dict
+        db3['ReviewsCount'] = Reviews.Reviews.count_ID
+        print(f"Review has been added to db3\nReview ID:{review.get_ID()}\nReview creator_ID:{review.get_creator_ID()}\nReview rating:{review.get_rating()}\nReview comment:{review.get_comment()}")
+
+        #update customer's reviews
+        customer = customers_dict.get(id)#get opbject
+        customer.add_reviews(review.get_ID())
+        customer.set_rating(float(review.get_rating()))
+        print(f"Customer reviews are {customer.get_reviews()}\n Customer current rating is {customer.get_rating()}")
+        db1['Customers'] = customers_dict
+        db1.close()
+        return redirect(url_for('Customerprofile', id = id))
+    
+    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID)
+    
 if __name__ == "__main__":
     app.run()

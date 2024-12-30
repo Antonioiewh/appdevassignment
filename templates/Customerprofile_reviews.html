@@ -37,9 +37,7 @@
             <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
         </button>
         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
-            {%if current_sessionID != customer.get_id()%}
-            <li><a class="dropdown-item" href="#" class="align-items-center">Leave review<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
-            {% endif %}
+            <li><a class="dropdown-item" href="/createReview/{{current_sessionID}}" class="align-items-center">Leave review<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
             {%if current_sessionID == customer.get_id()%}
             <li><a class="dropdown-item" href="#" class="align-items-center">Edit profile<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
             {% endif %}
@@ -61,10 +59,10 @@
 
         <div class="d-flex flex-column"> <!--display profile pic with name underneath-->
             <img src="{{reviewer_imgid}}" style="width:70px; height:70px; border-radius:50%">
-            <p>{{reviewer_username}}</p>
+            <p>{{review.get_creator_username()}}</p>
         </div>
     
-        <p style="margin-left:4%">{{review}}</p>
+        <p style="margin-left:4%">{{review.get_comment()}}</p>
     </div>
 {% endfor %}
 </div>

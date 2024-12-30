@@ -310,7 +310,7 @@ def createlisting():
                 print(customer.get_listings())
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
-        return redirect(url_for('Customerprofile'))
+        return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
     return render_template('CustomerCreateListing.html', form = create_listing_form, form2 = create_listing_img_form, current_sessionID = session_ID)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
@@ -402,7 +402,7 @@ def deleteListing(id):
     print(customer.get_listings())
     db1['Customers'] = customers_dict
     db2['Listings'] = listings_dict
-    return redirect(url_for('Customerprofile'))
+    return redirect(url_for('Customerprofile', id=session_ID))
 
 @app.route('/createReview/<int:id>', methods = ['GET', 'POST'])
 def createReview(id):
@@ -464,7 +464,7 @@ def createReview(id):
         print(f"Customer reviews are {customer.get_reviews()}\n Customer current rating is {customer.get_rating()}")
         db1['Customers'] = customers_dict
         db1.close()
-        return redirect(url_for('Customerprofile', id = id))
+        return redirect(url_for('Customerprofile', id = id)) #goes back to profile u left a review on.
     
     return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID)
     

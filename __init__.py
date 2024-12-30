@@ -13,8 +13,8 @@ def Customerhome():
     global session_ID
 
     return render_template('Customerhome.html', current_sessionID = session_ID)
-@app.route('/profile')
-def Customerprofile():
+@app.route('/profile/<int:id>')
+def Customerprofile(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
     db2 = shelve.open('listing.db','c') #RMBR THIS
@@ -55,42 +55,11 @@ def Customerprofile():
         print("Error in retrieving data from DB2 Listing count or count is at 0")
 
 
-    #retrive data
-    for key in customers_dict:
-        if key == session_ID: 
-            customer = customers_dict[key]
-            current_username = customer.get_username()
-            current_rating = customer.get_rating()
-            current_date_joined = customer.get_date_joined()
-
     #code for profile pic img 
-    pfpimg = os.path.join('static','profilepics')
+    pfpimg = os.path.join('..\static','profilepics')
     user_id = os.path.join(pfpimg,'hermos.jpg') 
     
-
-    #test code for profile
-    try:
-        user_name = current_username
-    except:
-        user_name = "default"
-    
-    try:
-        user_rating = current_rating
-    except:
-        user_rating = "N/A"
-    
-    try:
-        user_date_joined = current_date_joined
-    except:
-        user_date_joined = "N/A"
-    
-
-    #find current session ID customer obj
-    for key in customers_dict:
-        if key == session_ID:
-            customer = customers_dict[key]
-            break #stop the for loop if this fulfills
-    
+    customer = customers_dict.get(id)
     customer_listings = customer.get_listings() #get ID list of current user listings
     print(f"\n*start of message *\nCurrent user has the following listings:{customer_listings}\n*end of message*")
     listing_list = []
@@ -99,38 +68,47 @@ def Customerprofile():
         if key in customer_listings:
             listing = listings_dict.get(key)
             listing_list.append(listing)
-    
-
+            break
     #test code for listing img
     listingimg = os.path.join('static','listingpic')
-    listing_id = os.path.join(listingimg, 'pie.jpg')
-    return render_template('Customerprofile.html',customer_imgid = user_id, customer_username = user_name, customer_rating = user_rating, customer_date_joined = user_date_joined,
+    return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list)
 
-@app.route('/profilereviews')
-def Customerprofile_reviews():
+@app.route('/profilereviews/<int:id>')
+def Customerprofile_reviews(id):
     global session_ID
-     #code for profile pic img + listing pic img
-    pfpimg = os.path.join('static', 'profilepics')
+    db1 = shelve.open('customer.db','c')
+    customers_dict = {}
 
-    #text here shld be name of img file + extension aka filetype (jpg,jpeg,png,etc.)
-    #for the actual code just look repalce it with targeted user ID and etc.
+
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+        
+    #sync IDs
+    try:
+        db1 = shelve.open('customer.db','c')    
+        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB1 Customer count or count is at 0")
+
+    pfpimg = os.path.join('..\static', 'profilepics')
     user_id = os.path.join(pfpimg,'hermos.jpg') 
     
-    #test code for profile
-    user_name = "hermos"
-    user_rating = "4.5"
-    user_date_joined = "567"
-
+    customer = customers_dict.get(id)
     #testcode for reviews
     reviewername = "hermos2" 
     reviews=["BRo sold me a gun","Sold me a cat"] #get reviews obj from current user (stored as list)
     number_of_reviews = len(reviews) #get NUMBER of reviews
     #reviewer pfp
     reviewer_id = os.path.join(pfpimg,'hermos.jpg') 
-
-    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer_username = user_name, customer_rating = user_rating, customer_date_joined = user_date_joined,
-                           number_of_reviews = number_of_reviews, list_reviews = reviews, reviewer_username = reviewername, reviewer_imgid = reviewer_id,current_sessionID = session_ID)
+    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = number_of_reviews, list_reviews = reviews, reviewer_username = reviewername, reviewer_imgid = reviewer_id, current_sessionID = session_ID)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -306,7 +284,7 @@ def createlisting():
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
 
-    return render_template('CustomerCreateListing.html', form = create_listing_form, form2 = create_listing_img_form)
+    return render_template('CustomerCreateListing.html', form = create_listing_form, form2 = create_listing_img_form, current_sessionID = session_ID)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):

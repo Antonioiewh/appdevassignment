@@ -13,6 +13,7 @@ class Customer:
         self.__rating = 0  #displayed amt
         self.__ratings = 0 #store total
         self.__date_joined = "1/1/1"
+        self.__liked_listings = [] #store id of liked listings
 
     def get_id(self):
         return self.__id
@@ -43,6 +44,9 @@ class Customer:
 
     def get_rating(self):
         return self.__rating
+
+    def get_liked_listings(self):
+        return self.__liked_listings
 
     def set_id(self,id): #just here but god forbid u actually run this as why would u
         self.__id = id 
@@ -87,7 +91,13 @@ class Customer:
         number_reviews = len(self.__reviews)
         self.__ratings += rating
         self.__rating = round((self.__ratings/number_reviews),2)
-        
+    
+
+    def add_liked_listings(self,listingid):
+        self.__liked_listings.append(listingid)
+    
+    def remove_liked_listings(self,listingid):
+        self.__liked_listings.remove(listingid)
     
 
 

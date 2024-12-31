@@ -9,6 +9,7 @@ class Listing:
         self.__condition = condition
         self.__category = category
         self.__deal_method = deal_method
+        self.__likes = 0
         #self.__deal_meetup = deal_meetup
         #self.__deal_delivery = deal_delivery
 
@@ -33,6 +34,9 @@ class Listing:
 
     def get_deal_method(self):
         return self.__deal_method
+    
+    def get_likes(self):
+        return self.__likes
     #def get_deal_meetup(self):
         #return self.__deal_meetup
     
@@ -61,6 +65,9 @@ class Listing:
 
     def set_deal_method(self,deal_method):
         self.__deal_method = deal_method
+    
+    def add_likes(self):
+        self.__likes +=1
     #def set_deal_meetup(self,deal_meetup):
         #self.__deal_meetup = deal_meetup
 

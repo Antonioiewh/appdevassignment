@@ -369,7 +369,16 @@ def viewListing(id):
         if key == listing.get_creatorID():
             seller = customers_dict.get(key)
             break
-    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID)
+
+    #determine if user already liked this post
+    customer = customers_dict.get(session_ID) #current user
+    customer_liked_posts = customer.get_liked_listings()
+    user_liked_post = False
+    if listing.get_ID() in customer_liked_posts:
+        print("User has already liked this post")
+        user_liked_post = True
+
+    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post)
 
 @app.route('/deleteListing/<int:id>/')
 def deleteListing(id):
@@ -467,6 +476,153 @@ def createReview(id):
         return redirect(url_for('Customerprofile', id = id)) #goes back to profile u left a review on.
     
     return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID)
+
+@app.route('/createLikedListing/<int:id>')
+def createLikedListing(id): #ID of listing
+    global session_ID
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    customers_dict = {} #local one
+    listings_dict = {}
+
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+        
+    #sync IDs
+    try:
+        db1 = shelve.open('customer.db','c')    
+        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB1 Customer count or count is at 0")
+
+    #sync listing dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    #sync listing IDs
+    try:
+        db2 = shelve.open('listing.db','c')    
+        Listing.Listing.count_ID = db2["ListingsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB2 Listing count or count is at 0")
     
+    customer = customers_dict.get(session_ID) #get current user obj
+    listing = listings_dict.get(id) #id that was entered
+
+    #increment liked count of listing
+    listing.add_likes() #add 
+    db2['Listings'] = listings_dict
+    print(f'Listing ID:{listing.get_ID()}, likes count is {listing.get_likes()}')
+
+    #add liked post ID 
+    customer.add_liked_listings(listing.get_ID())
+    db1['Customers'] =  customers_dict
+    print(f"Customer ID:{customer.get_id()} liked posts are {customer.get_liked_listings()}")
+
+
+    return redirect(url_for('viewListing', id = id))
+
+@app.route('/createUnlikedListing/<int:id>')
+def createUnlikedListing(id):
+    global session_ID
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    customers_dict = {} #local one
+    listings_dict = {}
+
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+        
+    #sync IDs
+    try:
+        db1 = shelve.open('customer.db','c')    
+        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB1 Customer count or count is at 0")
+
+    #sync listing dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    #sync listing IDs
+    try:
+        db2 = shelve.open('listing.db','c')    
+        Listing.Listing.count_ID = db2["ListingsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB2 Listing count or count is at 0")
+    
+    customer = customers_dict.get(session_ID) #get current user obj
+    listing = listings_dict.get(id) #id that was entered
+
+    #increment liked count of listing
+    listing.minus_likes() #minus
+    db2['Listings'] = listings_dict
+    print(f'Listing ID:{listing.get_ID()}, likes count is {listing.get_likes()}')
+
+
+    customer.remove_liked_listings(id)
+    db1['Customers'] = customers_dict
+    print(f"Customer ID:{customer.get_id()} liked posts are {customer.get_liked_listings()}")
+
+    return redirect(url_for('viewListing', id = id))
+
+
+@app.route('/viewLikedListings/<int:id>')
+def viewLikedListings(id): #retrieve current session_ID
+    global session_ID
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    listings_dict = {}
+    customers_dict = {}
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+
+    customer = customers_dict.get(id) #current user
+    customer_liked_listings = customer.get_liked_listings()
+    listings_to_display = []
+    for key in listings_dict:
+        if key in customer_liked_listings:
+            listing = listings_dict.get(key)
+            listings_to_display.append(listing)
+            
+    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID)
 if __name__ == "__main__":
     app.run()

@@ -68,6 +68,9 @@ class Listing:
     
     def add_likes(self):
         self.__likes +=1
+    
+    def minus_likes(self):
+        self.__likes -= 1
     #def set_deal_meetup(self,deal_meetup):
         #self.__deal_meetup = deal_meetup
 

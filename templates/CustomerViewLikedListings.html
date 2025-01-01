@@ -12,26 +12,44 @@
 </style>
 <h1>View liked listings</h1>
 <div id="listingcontainer" class="align-items-center w-75 p-3 h-auto d-inline-block" style="border:blue solid 5px">
-
+    {%for listing in listings_to_display%}
     <div id="listing" style="float:left;"class="bg-secondary d-flex flex-row">
         <div style="height:100%; width:50%"> <!--display img -->
             <img src="../static/pie.jpg" style="height:80%; width:80%; padding:7%">
         </div>
         <div style="height:100%; width:50%" class="d-flex flex-column"><!--info of post-->
-            <div>
-                <p>title</p>
+
+            <div style="height:50%; width:80%; margin:10%; margin-bottom:10%;font-weight:bold; font-size:2.5em;">
+                <p>{{listing.get_title()}}</p>
             </div>
-            <div class="align-items-center">
-                <div>
-                    <div style="width:30%" class="align-items-center">
-                        <a href="#" class="btn btn-info align-items-center" role="button" style="background:white; height:6vh; border:none; padding:5%; width:100%"><p style="justify-self:center; color:black; font-weight:bold">Chat with dealer<i class="bi bi-chat" style="font-size:1.3rem"></i></p></a>
+            
+            <div class="align-items-center d-flex flex-row" style="height:50%;">
+                <div class="w-75 d-flex flex-row justify-content-evenly" style="margin:4%;"> <!--insert buttons-->
+                    <div style="width:40%" class="align-items-center">
+                        <a href="#" class="btn btn-info align-items-center" role="button" style="background:white; height:6vh; border:none; padding:5%; width:100%"><p style="justify-self:center; color:black; font-weight:bold">Message dealer<i class="bi bi-chat" style="font-size:1.3rem"></i></p></a>
                     </div>
-                    <div style="width:30%" class="align-items-center">
+                    <div style="width:40%" class="align-items-center">
                         <a href="#" class="btn btn-info" role="button" style="background:red; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Add to cart<i class="bi bi-cart2" style="font-size:1.3rem"></i></p></a>
                     </div>
+                    
                 </div>
+
+                <div><!--insert last bit-->
+                    <div style="justify-self:end"> <!--added an div as justify-self:end works if it is one-->
+                        <div class="btn-group dropup">
+                            <button type="button" class="btn btn-primary bg-secondary border-0" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                                <li><a class="dropdown-item" href="/viewListing/{{listing.get_ID()}}" class="align-items-center" style="color:black">View listing<i class="bi bi-eye" style="color: black; margin-left:13%;"></i></a></li><!--everyone should be able to view-->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
+    {%endfor%}
 </div>
 {% endblock %}

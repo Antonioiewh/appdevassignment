@@ -373,10 +373,10 @@ def viewListing(id):
     #determine if user already liked this post
     customer = customers_dict.get(session_ID) #current user
     customer_liked_posts = customer.get_liked_listings()
-    user_liked_post = False
+    user_liked_post = 'False'
     if listing.get_ID() in customer_liked_posts:
         print("User has already liked this post")
-        user_liked_post = True
+        user_liked_post = 'True'
 
     return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post)
 

@@ -49,13 +49,14 @@
                     </div>
                     
 
-                    {%if user_liked_listing == false%} <!--prevent user liking same post multiple times-->
+                    {%if user_liked_post == 'False'%} <!--prevent user liking same post multiple times-->
                     <div>
                         <a href="/createLikedListing/{{listing.get_ID()}}">
                             <i class="bi bi-heart" style="color:black; font-size: 2rem;"></i>
                         </a>
                     </div>
-                    {% else %}
+                    {% endif %}
+                    {%  if user_liked_post == 'True'%}
                     <div>
                         <a href="/createUnlikedListing/{{listing.get_ID()}}">
                             <i class="bi bi-heart-fill" style="color:red; font-size: 2rem;"></i>

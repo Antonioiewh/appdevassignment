@@ -1,13 +1,35 @@
 from flask import Flask, render_template, url_for,request,redirect
-import os
+import os,sys,stat
+from werkzeug.utils import secure_filename
 import Customer , Listing, ListingImage,Reviews #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm, uploadListingimg,ReviewForm #our forms
 import shelve, Customer
 app = Flask(__name__)
+    
+(open("static/listingpics/eg.txt").close())
+
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def upload_file(file,app_config_folder): #file obj here
+    
+    if allowed_file(file.filename):
+        try:
+
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app_config_folder, filename))
+            #for some reason it keeps returning ERRNO13 aka no permission but err it works so idk
+            file.save(app.config['UPLOAD_FOLDER'], filename) 
+        except:
+            pass #stops page from crashing due to perm errno13
+
 #current_sessionID IS FOR THE PROFILE!!
 #Current session ID
 #MAKE SURE AN USER WITH ID "X" EXISTS!
 session_ID = 0
+
 @app.route('/') #shld be the same as href for buttons,links,navbar, etc...
 def Customerhome():
     global session_ID
@@ -68,7 +90,6 @@ def Customerprofile(id):
         if key in customer_listings:
             listing = listings_dict.get(key)
             listing_list.append(listing)
-            break
     #test code for listing img
     listingimg = os.path.join('static','listingpic')
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
@@ -250,8 +271,10 @@ def createlisting():
     listings_dict = {}
     customers_dict = {}
     create_listing_form = ListingForm(request.form)
-    create_listing_img_form = uploadListingimg(request.form)
 
+    #UPLOAD FOLDER, should be local
+    UPLOAD_FOLDER = 'static/listingpics/'
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
     #sync listing dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -285,12 +308,18 @@ def createlisting():
     except:
         print("Error in retrieving data from DB1 Customer count or count is at 0")
 
+    
 
     #retrieve data from form
-    if request.method == 'POST' and create_listing_form.validate and create_listing_img_form.validate():
+    if request.method == 'POST' and create_listing_form.validate():
         #print(create_listing_form.data)
         #print(create_listing_img_form.data)
         
+        #upload img
+        print(app.config["UPLOAD_FOLDER"])
+        file = request.files['file']
+        upload_file(file,app.config["UPLOAD_FOLDER"])
+
         #create listing obj
         listing = Listing.Listing(session_ID,create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,
                                   create_listing_form.category.data,create_listing_form.payment_method.data)
@@ -301,7 +330,6 @@ def createlisting():
         db2['Listings'] = listings_dict
         db2['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
 
-
         for key in customers_dict:
             if key == session_ID:
                 customer = customers_dict[key]
@@ -311,7 +339,7 @@ def createlisting():
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
         return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
-    return render_template('CustomerCreateListing.html', form = create_listing_form, form2 = create_listing_img_form, current_sessionID = session_ID)
+    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):

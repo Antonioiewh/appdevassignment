@@ -22,7 +22,7 @@
 </style>
 <div style="width:100vw; height:100vh;"> <!--div for screen only-->
     <div class="d-flex flex-column w-50 d-flex justify-content-center" style="justify-self:end; border:red solid 3px" >
-        <form method="POST" action="">
+        <form method="POST" action="" enctype="multipart/form-data">
 
 
             <div style="background:gray; width:40vw; justify-self:center; padding:2%; margin:2%;">
@@ -46,7 +46,7 @@
                         {{ render_field(form.description, class="form-control") }}
                     </div>
                     <div class="form-group" >
-                        {{ render_field(form2.listingimg, class="form-control") }}
+                        <input type="file" name="file" />   
                     </div>
             </div>
 

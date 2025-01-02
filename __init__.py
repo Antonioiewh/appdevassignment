@@ -1,29 +1,51 @@
 from flask import Flask, render_template, url_for,request,redirect
 import os,sys,stat
 from werkzeug.utils import secure_filename
-import Customer , Listing, ListingImage,Reviews #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm, uploadListingimg,ReviewForm #our forms
+import Customer , Listing,Reviews #classes
+from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm #our forms
 import shelve, Customer
+from pathlib import Path
 app = Flask(__name__)
-    
+
+#code for upload image
 (open("static/listingpics/eg.txt").close())
 
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'}
-def allowed_file(filename):
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+def check_allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def upload_file(file,app_config_folder): #file obj here
-    
-    if allowed_file(file.filename):
-        try:
+def check_upload_file_type(file,type,id): #file obj here, listing/userid here too, type too
+    file_to_upload = file
+    if type == "listing" and check_allowed_file(file.filename):
+        file.filename = f"listing{id}.jpg"
+        check_dupe_file(file_to_upload,"listingpics")
 
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app_config_folder, filename))
-            #for some reason it keeps returning ERRNO13 aka no permission but err it works so idk
-            file.save(app.config['UPLOAD_FOLDER'], filename) 
-        except:
-            pass #stops page from crashing due to perm errno13
+    elif type == "customer" and check_allowed_file(file.filename):
+        file.filename = f"customer{id},jpg"
+        check_dupe_file(file_to_upload,"profilepics")
+    else:
+        print("invalid type or ID")
+
+def check_dupe_file(file,type):
+    myfile = Path(f"static/{type}/{file.filename}")
+    if myfile.is_file():
+        os.remove(f"static/listingpics/{file.filename}")
+        file_uploaded = file
+        folder = type
+        upload_file(folder,file_uploaded)
+        print("file uploaded")
+
+    else:
+        file_uploaded = file
+        folder = type
+        upload_file(folder,file_uploaded)
+        print("file uploaded")
+
+def upload_file(folder,file):
+    filename = secure_filename(file.filename)
+    file.save(os.path.join(f"static/{folder}", filename))
+    #for some reason it keeps returning ERRNO13 aka no permission but err it works so idk
 
 #current_sessionID IS FOR THE PROFILE!!
 #Current session ID
@@ -39,7 +61,7 @@ def Customerhome():
 def Customerprofile(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    db2 = shelve.open('listing.db','c')
     customers_dict = {} #local one
     listings_dict = {}
 
@@ -76,13 +98,13 @@ def Customerprofile(id):
     except:
         print("Error in retrieving data from DB2 Listing count or count is at 0")
 
-
     #code for profile pic img 
     pfpimg = os.path.join('..\static','profilepics')
     user_id = os.path.join(pfpimg,'hermos.jpg') 
     
+    #get ID list of current user listings
     customer = customers_dict.get(id)
-    customer_listings = customer.get_listings() #get ID list of current user listings
+    customer_listings = customer.get_listings()
     print(f"\n*start of message *\nCurrent user has the following listings:{customer_listings}\n*end of message*")
     listing_list = []
     for key in listings_dict:
@@ -90,8 +112,8 @@ def Customerprofile(id):
         if key in customer_listings:
             listing = listings_dict.get(key)
             listing_list.append(listing)
-    #test code for listing img
-    listingimg = os.path.join('static','listingpic')
+    
+    #get img
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list)
 
@@ -266,8 +288,9 @@ def login():
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
     global session_ID
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    db2 = shelve.open('listing.db','c')
     db1 = shelve.open('customer.db','c')
+    listings_images_dict = {}
     listings_dict = {}
     customers_dict = {}
     create_listing_form = ListingForm(request.form)
@@ -308,6 +331,16 @@ def createlisting():
     except:
         print("Error in retrieving data from DB1 Customer count or count is at 0")
 
+    #try:
+        #if "ListingImages" in db2_1:
+            #listings_images_dict = db2_1["ListingImages"] #sync local with db1
+        #else:
+            #db2_1['ListingImages'] = listings_images_dict #sync db1 with local (basically null)
+    #except:
+        #print("Error in opening listingimages.db")
+        
+
+
     
 
     #retrieve data from form
@@ -315,11 +348,7 @@ def createlisting():
         #print(create_listing_form.data)
         #print(create_listing_img_form.data)
         
-        #upload img
-        print(app.config["UPLOAD_FOLDER"])
-        file = request.files['file']
-        upload_file(file,app.config["UPLOAD_FOLDER"])
-
+        #create img object
         #create listing obj
         listing = Listing.Listing(session_ID,create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,
                                   create_listing_form.category.data,create_listing_form.payment_method.data)
@@ -329,6 +358,16 @@ def createlisting():
         listings_dict[listing.get_ID()] = listing
         db2['Listings'] = listings_dict
         db2['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
+
+        
+        #upload img
+        file = request.files['file']
+        check_upload_file_type(file,"listing",listing.get_ID())
+
+        #create listingimg obj
+        #listing = ListingImage.ListingImage(listing.get_ID(),file.filename)
+        #stores into db2_1
+        #db2_1['ListingImages'] =listings_images_dict #syncs with db2_1
 
         for key in customers_dict:
             if key == session_ID:
@@ -345,7 +384,6 @@ def createlisting():
 def updateListing(id):
     global session_ID
     update_listing_form = ListingForm(request.form)
-    update_listing_img_form = uploadListingimg(request.form)
     db2 = shelve.open('listing.db','c') #RMBR THIS
     listings_dict = {}
     try:
@@ -355,8 +393,13 @@ def updateListing(id):
             db2['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
             print("Error in opening listings.db")
-    if request.method == 'POST' and update_listing_form.validate and update_listing_img_form.validate():
+    if request.method == 'POST' and update_listing_form.validate():
+        
+
         listing = listings_dict.get(id)
+        #upload img
+        file = request.files['file']
+        check_upload_file_type(file,"listing",listing.get_ID())
         listing.set_title(update_listing_form.title.data)
         listing.set_category(update_listing_form.category.data)
         listing.set_description(update_listing_form.description.data)
@@ -364,9 +407,9 @@ def updateListing(id):
         listing.set_deal_method(update_listing_form.payment_method.data)
         db2['Listings'] = listings_dict #sync local to db2
         db2.close() 
-        return redirect(url_for('Customerprofile')) #go back to profile page after submit
+        return redirect(url_for('Customerprofile', id = id)) #go back to profile page after submit
 
-    return render_template('CustomerUpdateListing.html', form = update_listing_form, form2 = update_listing_img_form,current_sessionID = session_ID) #to render the form 
+    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID) #to render the form 
 
 @app.route('/viewListing/<int:id>/')
 def viewListing(id):

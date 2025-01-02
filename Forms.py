@@ -1,5 +1,5 @@
-from wtforms import Form, BooleanField, StringField, validators, PasswordField, SelectField, RadioField, SelectMultipleField, FileField #import the fields u need
 
+from wtforms import Form, BooleanField, StringField, validators, PasswordField, SelectField, RadioField, SelectMultipleField, FileField #import the fields u need
 class CustomerSignupForm(Form): #Form for CustomerSignup.html
     username = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
     email        = StringField('Email Address', [validators.Length(min=6, max=35),validators.DataRequired()]) #we will add validator to this later
@@ -17,8 +17,8 @@ class ListingForm(Form):
     description = StringField('Description',[validators.Length(min=4, max=300),validators.DataRequired()])
     payment_method = RadioField('Payment method',[validators.DataRequired()],choices=[('meetup','Meet-up'),('delivery','Delivery')]) #idk how to do this but gl to anyone trying to either
 
-class uploadListingimg(Form):
-    listingimg = FileField('image')
+#class uploadListingimg(Form): 
+    #listingimg = FileField('image')
 
 
 class ReviewForm(Form):

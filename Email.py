@@ -31,7 +31,28 @@ def send_signup_notification_gmail(recipient_email,recipient_username):
     except:
         print("Error in sending email")
 
-def send_review_notifcation_gmail():
-    pass
+def send_review_notifcation_gmail(recipient_email,recipient_username,reviewer_username,review_content):
+    try:
+        msg = MIMEText(f"{reviewer_username} left a review, {review_content}")
+        msg['Subject'] = 'Notification from freesell'
+        msg['From'] = sender
+        msg['To'] = recipient_email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
+            smtp_server.login(sender, password)
+            smtp_server.sendmail(sender, recipient_email, msg.as_string())
+        print(f"Notification sent to {recipient_email}!")
+    except:
+        print("Error in sending email")
+
+def send_message_notifcation_gmail(recipient_email, recipient_username,sender_username,message_content):
+    msg = MIMEText(f"{recipient_username}, you have 1 new message from {sender_username}:\n{message_content}")
+    msg['From'] = sender
+    msg['To'] = recipient_email
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
+            smtp_server.login(sender, password)
+            smtp_server.sendmail(sender, recipient_email, msg.as_string())
+    print(f"Notification sent to {recipient_email}!")
+
+
 
 send_liked_notification_gmail("240582Q@mymail.nyp.edu.sg","hermos")

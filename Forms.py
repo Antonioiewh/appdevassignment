@@ -10,10 +10,10 @@ class CustomerLoginForm(Form): #Form for CustomerLogin.html
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
 
 class CustomerUpdateForm(Form): #can change profile pic,email,username and password, prompt enter CURRENT password to confirm changes, leave blank for no change
-    username = StringField('New username',[validators.Length(min=4, max=25)])
-    email        = StringField('New email Address', [validators.Length(min=6, max=35)])
-    password        = StringField('New Password', [validators.Length(min=6, max=35)])
-    confirmpassword = StringField('Confirm Password', [validators.Length(min=6, max=35)])
+    username = StringField('New username')
+    email        = StringField('New email Address')
+    password        = StringField('New Password')
+    confirmpassword = StringField('Confirm Password', [validators.Length(min=6, max=35),validators.DataRequired()])
 
 class ListingForm(Form):
     category = SelectField('Category',[validators.DataRequired()], choices=[('cat1','Category 1'),('cat2','Category 2'),('cat3','Category 3'),('cat4','Category 4'),('cat5','Category 5')])
@@ -30,3 +30,6 @@ class ReviewForm(Form):
     rating = RadioField('Rating', [validators.DataRequired()],choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])
     review_text = StringField('Add a comment', [validators.Length(min=4,max=1234),validators.DataRequired()])
 
+class ReportForm(Form):
+    category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
+    report_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])

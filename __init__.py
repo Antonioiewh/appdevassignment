@@ -787,5 +787,9 @@ def viewLikedListings(id): #retrieve current session_ID
             listings_to_display.append(listing)
             
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID)
+@app.route('/messages')
+def messages():
+    global session_ID
+    return render_template('CustomerMessages.html', current_sessionID = session_ID)
 if __name__ == "__main__":
     app.run()

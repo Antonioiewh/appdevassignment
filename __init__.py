@@ -2,13 +2,12 @@ from flask import Flask, render_template, url_for,request,redirect
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm #our forms
+from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm #our forms
 import shelve, Customer
 from pathlib import Path
 app = Flask(__name__)
 
-#code for upload image
-(open("static/listingpics/eg.txt").close())
+
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 def check_allowed_file(filename):
@@ -18,11 +17,13 @@ def check_allowed_file(filename):
 def check_upload_file_type(file,type,id): #file obj here, listing/userid here too, type too
     file_to_upload = file
     if type == "listing" and check_allowed_file(file.filename):
+        print("check listing pic")
         file.filename = f"listing{id}.jpg"
         check_dupe_file(file_to_upload,"listingpics")
-
+   
     elif type == "customer" and check_allowed_file(file.filename):
-        file.filename = f"customer{id},jpg"
+        print("check profile pic")
+        file.filename = f"customer{id}.jpg"
         check_dupe_file(file_to_upload,"profilepics")
     else:
         print("invalid type or ID")
@@ -30,7 +31,7 @@ def check_upload_file_type(file,type,id): #file obj here, listing/userid here to
 def check_dupe_file(file,type):
     myfile = Path(f"static/{type}/{file.filename}")
     if myfile.is_file():
-        os.remove(f"static/listingpics/{file.filename}")
+        os.remove(f"static/{type}/{file.filename}")
         file_uploaded = file
         folder = type
         upload_file(folder,file_uploaded)
@@ -57,6 +58,7 @@ def Customerhome():
     global session_ID
 
     return render_template('Customerhome.html', current_sessionID = session_ID)
+
 @app.route('/profile/<int:id>')
 def Customerprofile(id):
     global session_ID
@@ -117,6 +119,51 @@ def Customerprofile(id):
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list)
 
+@app.route('/updateprofile/<int:id>', methods = ['GET', 'POST'])
+def updateCustomerprofile(id):
+    global session_ID
+    db1 = shelve.open('customer.db','c')
+    customers_dict = {} #local one
+    customer_update_form = CustomerUpdateForm(request.form)
+
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+        
+    #sync IDs
+    try:
+        db1 = shelve.open('customer.db','c')    
+        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB1 Customer count or count is at 0")
+
+    
+    if request.method == 'POST' and customer_update_form.validate():
+        print(customer_update_form.username.data, customer_update_form.email.data,customer_update_form.password.data)
+        customer = customers_dict.get(id) #get current customer
+        if customer_update_form.confirmpassword.data == customer.get_password():
+            customer.set_email(customer_update_form.email.data)
+            customer.set_username(customer_update_form.username.data)
+            customer.set_password(customer_update_form.password.data)
+            db1['Customers'] = customers_dict
+            db1.close()
+            #upload img
+            file = request.files['file']
+            check_upload_file_type(file,"customer",customer.get_id())
+            print("Profile info chnaged!")
+            return redirect(url_for('Customerprofile', id = id))
+        else:
+            print("Error in changing profile info")
+            return redirect(url_for('Customerprofile', id = id))
+        
+
+    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form)
 
 @app.route('/profilereviews/<int:id>')
 def Customerprofile_reviews(id):
@@ -220,21 +267,21 @@ def signup():
         db1['Customers'] = customers_dict
         db1['CustomerCount'] = Customer.Customer.count_id
 
+        #upload img
+        file = request.files['file']
+        check_upload_file_type(file,"customer",customer.get_id())
 
         #verifies new user is stored
         customers_dict = db1['Customers'] #sync local dict with db1
         customer = customers_dict[customer.get_id()]
+
         print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
         session_ID = Customer.Customer.count_id
         db1.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
 
-        #misc code
-        #This goes through the WHOLE DB AND PRINTS ALL NAMES
-        #PS: COPY PASTE THIS CODE if using customer related functions
         return redirect(url_for('Customerhome'))
         
     return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID)
-
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
@@ -285,7 +332,6 @@ def login():
 
     return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID)
 
-
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
     global session_ID
@@ -332,13 +378,6 @@ def createlisting():
     except:
         print("Error in retrieving data from DB1 Customer count or count is at 0")
 
-    #try:
-        #if "ListingImages" in db2_1:
-            #listings_images_dict = db2_1["ListingImages"] #sync local with db1
-        #else:
-            #db2_1['ListingImages'] = listings_images_dict #sync db1 with local (basically null)
-    #except:
-        #print("Error in opening listingimages.db")
         
 
 

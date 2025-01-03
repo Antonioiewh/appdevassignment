@@ -14,7 +14,7 @@ class Customer:
         self.__ratings = 0 #store total
         self.__date_joined = "1/1/1"
         self.__liked_listings = [] #store id of liked listings
-
+        self.__reports = []#store reports similar to reviews
     def get_id(self):
         return self.__id
     

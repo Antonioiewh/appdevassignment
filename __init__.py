@@ -117,6 +117,7 @@ def Customerprofile(id):
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list)
 
+
 @app.route('/profilereviews/<int:id>')
 def Customerprofile_reviews(id):
     global session_ID

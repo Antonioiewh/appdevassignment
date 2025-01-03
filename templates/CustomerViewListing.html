@@ -8,8 +8,8 @@
             
             <div class="d-flex flex-column"> <!--container for the info, Username on top, below is pfp left--> 
                 
-                <div class="align-self-center "> <!--listing img-->
-                    <img src="../static/listingpics/{{listing.get_ID()}}.jpg" style="width:400px; height:400px; margin:7%;" >
+                <div class="align-self-center" style="justify-self:center;"> <!--listing img-->
+                    <img src="../../../static/listingpics/listing{{listing.get_ID()}}.jpg" style="width:400px; height:400px; margin:7%;" >
                 </div>
                 <div style="justify-self:center;" class="d-flex justify-content-center"><p style="font-weight:bold; font-size:2.5em;">{{listing.get_title()}}</p></div>
                 <div class="d-flex flex-row justify-content-center" style="justify-self:center">
@@ -17,11 +17,12 @@
                         <img src="/static/profilepics/hermos.jpg" style="width:100px; height:100px; border-radius:50%" class="align-self-center">
                     </div>
                     <div class="d-flex flex-column" style="margin-left:7%;">
-                        <div><p>{{seller.get_username()}}</p></div>
+                        <div><a href="/profile/{{seller.get_id()}}">{{seller.get_username()}}</a></div>
                         <div><p>{{seller.get_rating()}}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i></p></div>
                     </div>
                 </div>
             </div>
+            
         </div>
     </div>
     

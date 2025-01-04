@@ -217,14 +217,16 @@ def updateCustomerprofile(id):
 
     return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form)
 
-@app.route('/profilereviews/<int:id>')
+@app.route('/profilereviews/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile_reviews(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
     customers_dict = {}
     reviews_dict ={}
     db3 = shelve.open('reviews.db', 'c')
-
+    db4 =shelve.open('reports.db','c')
+    reports_dict = {}
+    report_form = ReportForm(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -259,6 +261,22 @@ def Customerprofile_reviews(id):
     except:
         print("Error in retrieving data from DB3 Review count or count is at 0")
 
+    #sync report dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reports" in db4:
+            reports_dict = db4["Reports"] #sync local with db2
+        else:
+            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening reports.db")
+    #sync listing IDs
+    try:
+        db4 = shelve.open('reports.db','c')    
+        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB2 Listing count or count is at 0")
+
 
     pfpimg = os.path.join('..\static', 'profilepics')
     user_id = os.path.join(pfpimg,'hermos.jpg') 
@@ -274,11 +292,27 @@ def Customerprofile_reviews(id):
             print(key)
             review = reviews_dict.get(key)
             customer_reviews_list.append(review)
-    
+    #report function
+    if request.method == 'POST' and report_form.validate():
+
+        #create report obj and store it
+        print(report_form.category.data,report_form.report_text.data)
+        report = Report.Report(session_ID,id,report_form.category.data,report_form.report_text.data)
+        reports_dict[report.get_ID()] = report #store obj in dict
+        db4['Reports'] = reports_dict
+        db4['ReportsCount'] = Report.Report.count_ID
+        db4.close()
+
+        #store report in offender's report_listings
+        customer = customers_dict.get(id)
+        customer.add_reports(report.get_ID())
+        db1['Customers'] = customers_dict
+        db1.close()
+        redirect(url_for('Customerprofile', id=id))
     #reviewer pfp
     reviewer_id = os.path.join(pfpimg,'hermos.jpg') 
     print(f"Reviews are {customer_reviews_list}")
-    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, reviewer_imgid = reviewer_id, current_sessionID = session_ID)
+    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, reviewer_imgid = reviewer_id, current_sessionID = session_ID,form=report_form)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():

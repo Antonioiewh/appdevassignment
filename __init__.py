@@ -2,7 +2,7 @@ from flask import Flask, render_template, url_for,request,redirect
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm #our forms
+from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar #our forms
 import shelve, Customer
 from pathlib import Path
 app = Flask(__name__)
@@ -50,14 +50,14 @@ def upload_file(folder,file):
 
 #current_sessionID IS FOR THE PROFILE!!
 #Current session ID
-#MAKE SURE AN USER WITH ID "X" EXISTS!
+#MAKE SURE AN USER WITH ID "X" EXISTS!      
 session_ID = 0
 
-@app.route('/') #shld be the same as href for buttons,links,navbar, etc...
+@app.route('/', methods = ['GET', 'POST']) #shld be the same as href for buttons,links,navbar, etc...
 def Customerhome():
     global session_ID
-
-    return render_template('Customerhome.html', current_sessionID = session_ID)
+    search_field = SearchBar(request.form)
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
@@ -69,6 +69,7 @@ def Customerprofile(id):
     listings_dict = {}
     reports_dict = {}
     report_form = ReportForm(request.form)
+    search_field = SearchBar(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -153,7 +154,7 @@ def Customerprofile(id):
         redirect(url_for('Customerprofile', id=id))
     #get img
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
-                            current_sessionID = session_ID,listings_list = listing_list,form=report_form)
+                            current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field)
 
 @app.route('/updateprofile/<int:id>', methods = ['GET', 'POST'])
 def updateCustomerprofile(id):
@@ -161,6 +162,7 @@ def updateCustomerprofile(id):
     db1 = shelve.open('customer.db','c')
     customers_dict = {} #local one
     customer_update_form = CustomerUpdateForm(request.form)
+    search_field = SearchBar(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -215,7 +217,7 @@ def updateCustomerprofile(id):
             return redirect(url_for('Customerprofile', id = id))
         
 
-    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form)
+    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field)
 
 @app.route('/profilereviews/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile_reviews(id):
@@ -227,6 +229,7 @@ def Customerprofile_reviews(id):
     db4 =shelve.open('reports.db','c')
     reports_dict = {}
     report_form = ReportForm(request.form)
+    search_field = SearchBar(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -312,12 +315,13 @@ def Customerprofile_reviews(id):
     #reviewer pfp
     reviewer_id = os.path.join(pfpimg,'hermos.jpg') 
     print(f"Reviews are {customer_reviews_list}")
-    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, reviewer_imgid = reviewer_id, current_sessionID = session_ID,form=report_form)
+    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, reviewer_imgid = reviewer_id, current_sessionID = session_ID,form=report_form,searchform =search_field)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     global session_ID
     create_customer_form = CustomerSignupForm(request.form)
+    search_field = SearchBar(request.form)
     if request.method == 'POST' and create_customer_form.validate():
         db1 = shelve.open('customer.db','c')  
         customers_dict = {} #local one
@@ -367,12 +371,13 @@ def signup():
 
         return redirect(url_for('Customerhome'))
         
-    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID)
+    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
     global session_ID
     login_customer_form = CustomerLoginForm(request.form)
+    search_field = SearchBar(request.form)
     if request.method == 'POST' and login_customer_form.validate():
         db1 = shelve.open('customer.db','c')
         customers_dict = {} #local one
@@ -416,7 +421,7 @@ def login():
         return redirect(url_for('Customerhome'))
     
 
-    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID)
+    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
@@ -427,6 +432,7 @@ def createlisting():
     listings_dict = {}
     customers_dict = {}
     create_listing_form = ListingForm(request.form)
+    search_field = SearchBar(request.form)
 
     #UPLOAD FOLDER, should be local
     UPLOAD_FOLDER = 'static/listingpics/'
@@ -504,13 +510,14 @@ def createlisting():
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
         return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
-    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID)
+    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
     global session_ID
     update_listing_form = ListingForm(request.form)
     db2 = shelve.open('listing.db','c') #RMBR THIS
+    search_field = SearchBar(request.form)
     listings_dict = {}
     try:
         if "Listings" in db2:
@@ -535,15 +542,16 @@ def updateListing(id):
         db2.close() 
         return redirect(url_for('Customerprofile', id = id)) #go back to profile page after submit
 
-    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID) #to render the form 
+    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field) #to render the form 
 
-@app.route('/viewListing/<int:id>/')
+@app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
 def viewListing(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
     db2 = shelve.open('listing.db','c') #RMBR THIS
     listings_dict = {}
     customers_dict = {}
+    search_field = SearchBar(request.form)
     try:
         if "Listings" in db2:
             listings_dict = db2["Listings"] #sync local with db2
@@ -575,9 +583,9 @@ def viewListing(id):
         print("User has already liked this post")
         user_liked_post = 'True'
 
-    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post)
+    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field)
 
-@app.route('/deleteListing/<int:id>/')
+@app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
 def deleteListing(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
@@ -618,6 +626,7 @@ def createReview(id):
     reviews_dict ={}
     db3 = shelve.open('reviews.db', 'c')
     db1 = shelve.open('customer.db','c')
+    search_field = SearchBar(request.form)
      #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in db1:
@@ -672,16 +681,15 @@ def createReview(id):
         db1.close()
         return redirect(url_for('Customerprofile', id = id)) #goes back to profile u left a review on.
     
-    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID)
+    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field)
 
-@app.route('/createLikedListing/<int:id>')
+@app.route('/createLikedListing/<int:id>', methods = ['GET', 'POST'])
 def createLikedListing(id): #ID of listing
     global session_ID
     db1 = shelve.open('customer.db','c')
     db2 = shelve.open('listing.db','c') #RMBR THIS
     customers_dict = {} #local one
     listings_dict = {}
-
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -731,7 +739,7 @@ def createLikedListing(id): #ID of listing
 
     return redirect(url_for('viewListing', id = id))
 
-@app.route('/createUnlikedListing/<int:id>')
+@app.route('/createUnlikedListing/<int:id>', methods = ['GET', 'POST'])
 def createUnlikedListing(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
@@ -787,14 +795,14 @@ def createUnlikedListing(id):
 
     return redirect(url_for('viewListing', id = id))
 
-
-@app.route('/viewLikedListings/<int:id>')
+@app.route('/viewLikedListings/<int:id>', methods = ['GET', 'POST'])
 def viewLikedListings(id): #retrieve current session_ID
     global session_ID
     db1 = shelve.open('customer.db','c')
     db2 = shelve.open('listing.db','c') #RMBR THIS
     listings_dict = {}
     customers_dict = {}
+    search_field = SearchBar(request.form)
     try:
         if "Listings" in db2:
             listings_dict = db2["Listings"] #sync local with db2
@@ -820,10 +828,12 @@ def viewLikedListings(id): #retrieve current session_ID
             listing = listings_dict.get(key)
             listings_to_display.append(listing)
             
-    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID)
+    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field)
+
 @app.route('/messages')
 def messages():
     global session_ID
-    return render_template('CustomerMessages.html', current_sessionID = session_ID)
+    search_field = SearchBar(request.form)
+    return render_template('CustomerMessages.html', current_sessionID = session_ID,searchform =search_field)
 if __name__ == "__main__":
     app.run()

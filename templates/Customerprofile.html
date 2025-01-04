@@ -1,6 +1,6 @@
 {% extends "Customerbase.html"%}
 {% block title %}Your Profile{% endblock %}
-
+{% from "includes/_formHelper.html" import render_field %}
 {% block content %}
 <style>
 .categories{
@@ -38,6 +38,7 @@
         </button>
         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
             <li><a class="dropdown-item" href="/createReview/{{current_sessionID}}" class="align-items-center">Leave review<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
+            <li><a class="dropdown-item" href="" class="align-items-center" data-bs-toggle="modal" data-bs-target="#myModal1" style="color:red;">Report user<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
             {%if current_sessionID == customer.get_id()%}
             <li><a class="dropdown-item" href="/updateprofile/{{current_sessionID}}" class="align-items-center">Edit profile<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
             {% endif %}
@@ -68,7 +69,7 @@
                 <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton1">
                     {%if current_sessionID == customer.get_id()%} <!--only owner can view these options-->
                     <li><a class="dropdown-item" href="/updateListing/{{listing.get_ID()}}" class="align-items-center">Update listing<i class="bi bi-wrench-adjustable" style="color: black; margin-left:7%;"></i></a></li>
-                    <li><a class="dropdown-item" href="/deleteListing/{{listing.get_ID()}}" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal">Delete listing<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+                    <li><a class="dropdown-item" href="" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal">Delete listing<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
                     {% endif %}
                     
                     <li><a class="dropdown-item" href="/viewListing/{{listing.get_ID()}}" class="align-items-center" style="color:black">View listing<i class="bi bi-eye" style="color: black; margin-left:13%;"></i></a></li><!--everyone should be able to view-->
@@ -77,35 +78,75 @@
                 </ul>
             </div>
         </div>
+
         <!--Popup to confirm delete listing!-->
         <div class="modal" id="myModal">
             <div class="modal-dialog">
               <div class="modal-content">
-          
                 <!-- Modal Header -->
                 <div class="modal-header">
                   <h4 class="modal-title">Warning!</h4>
                   <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-          
                 <!-- Modal body -->
                 <div class="modal-body">
                   Are you sure you want to delete this post
                 </div>
-          
                 <!-- Modal footer -->
                 <div class="modal-footer">
                   <a href="/deleteListing/{{listing.get_ID()}}" class="btn btn-danger">Yes</a>
                 </div>
-          
               </div>
             </div>
           </div>
+
+    
+          
+       
+
+
     </div> <!--float:left is very fucking impt, i added a border so i can SEE THE DIVS -->
     {% endfor %}
+    
+  <!--Popup to confirm delete listing!-->
+  <div class="modal" id="myModal1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h4 class="modal-title">Why are you reporting this user</h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <!-- Modal body -->
+        <div class="modal-body">
+            <form method="POST" action="">
+                <div>
+                    <div class="form-group ">
+                        {{ render_field(form.category, class="form-control") }}
+                    </div>
+        
+                    <div class="form-group ">
+                        {{ render_field(form.report_text, class="form-control") }}
+                    </div>
+                    <!-- Modal footer -->
+                    <div class="modal-footer">
+                        <div style="justify-self:center"> <!--div for button only-->
+                            <input type="submit" value="Submit" class="btn btn-primary"/>
+                        </div>
+                    </div>
+                   
+            
+                </div>
+        
+            </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 {% endblock %}
-
+{% from "includes/_formHelper.html" import render_field %}
 <!--
 "{{ url_for('static', filename='{{imgid}}') }}""
 -->

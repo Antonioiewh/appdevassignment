@@ -47,6 +47,9 @@ class Customer:
 
     def get_liked_listings(self):
         return self.__liked_listings
+    
+    def get_reports(self):
+        return self.__reports
 
     def set_id(self,id): #just here but god forbid u actually run this as why would u
         self.__id = id 
@@ -98,7 +101,14 @@ class Customer:
     
     def remove_liked_listings(self,listingid):
         self.__liked_listings.remove(listingid)
-    
+
+    #reports
+
+    def add_reports(self,reportid):
+        self.__reports.append(reportid)
+
+    def remove_reports(self,reportid):
+        self.__reports.append(reportid)    
 
 
     

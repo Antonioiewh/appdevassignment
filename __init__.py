@@ -1,8 +1,8 @@
 from flask import Flask, render_template, url_for,request,redirect
 import os,sys,stat
 from werkzeug.utils import secure_filename
-import Customer , Listing,Reviews #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm #our forms
+import Customer , Listing,Reviews,Report #classes
+from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm #our forms
 import shelve, Customer
 from pathlib import Path
 app = Flask(__name__)
@@ -59,13 +59,16 @@ def Customerhome():
 
     return render_template('Customerhome.html', current_sessionID = session_ID)
 
-@app.route('/profile/<int:id>')
+@app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
     db2 = shelve.open('listing.db','c')
+    db4 =shelve.open('reports.db','c')
     customers_dict = {} #local one
     listings_dict = {}
+    reports_dict = {}
+    report_form = ReportForm(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -92,13 +95,30 @@ def Customerprofile(id):
         else:
             db2['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening listing.db")
     #sync listing IDs
     try:
         db2 = shelve.open('listing.db','c')    
         Listing.Listing.count_ID = db2["ListingsCount"] #sync count between local and db1
     except:
         print("Error in retrieving data from DB2 Listing count or count is at 0")
+
+    #sync report dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reports" in db4:
+            reports_dict = db4["Reports"] #sync local with db2
+        else:
+            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening reports.db")
+    #sync listing IDs
+    try:
+        db4 = shelve.open('reports.db','c')    
+        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB2 Listing count or count is at 0")
+
 
     #code for profile pic img 
     pfpimg = os.path.join('..\static','profilepics')
@@ -114,10 +134,26 @@ def Customerprofile(id):
         if key in customer_listings:
             listing = listings_dict.get(key)
             listing_list.append(listing)
-    
+    #report function
+    if request.method == 'POST' and report_form.validate():
+
+        #create report obj and store it
+        print(report_form.category.data,report_form.report_text.data)
+        report = Report.Report(session_ID,id,report_form.category.data,report_form.report_text.data)
+        reports_dict[report.get_ID()] = report #store obj in dict
+        db4['Reports'] = reports_dict
+        db4['ReportsCount'] = Report.Report.count_ID
+        db4.close()
+
+        #store report in offender's report_listings
+        customer = customers_dict.get(id)
+        customer.add_reports(report.get_ID())
+        db1['Customers'] = customers_dict
+        db1.close()
+        redirect(url_for('Customerprofile', id=id))
     #get img
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
-                            current_sessionID = session_ID,listings_list = listing_list)
+                            current_sessionID = session_ID,listings_list = listing_list,form=report_form)
 
 @app.route('/updateprofile/<int:id>', methods = ['GET', 'POST'])
 def updateCustomerprofile(id):
@@ -148,9 +184,25 @@ def updateCustomerprofile(id):
         print(customer_update_form.username.data, customer_update_form.email.data,customer_update_form.password.data)
         customer = customers_dict.get(id) #get current customer
         if customer_update_form.confirmpassword.data == customer.get_password():
-            customer.set_email(customer_update_form.email.data)
-            customer.set_username(customer_update_form.username.data)
-            customer.set_password(customer_update_form.password.data)
+
+            if customer_update_form.email.data != "":
+                customer.set_email(customer_update_form.email.data)
+                print("Email changed!")
+            else:
+                print(customer_update_form.email.data)
+
+            if customer_update_form.username.data !="":
+                customer.set_username(customer_update_form.username.data)
+                print("Username changed!")
+            else:
+                print(customer_update_form.username.data)
+
+            if customer_update_form.password.data !="":
+                customer.set_password(customer_update_form.password.data)
+                print("Password changed!")
+            else:
+                print(customer_update_form.password.data)
+
             db1['Customers'] = customers_dict
             db1.close()
             #upload img
@@ -165,14 +217,16 @@ def updateCustomerprofile(id):
 
     return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form)
 
-@app.route('/profilereviews/<int:id>')
+@app.route('/profilereviews/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile_reviews(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
     customers_dict = {}
     reviews_dict ={}
     db3 = shelve.open('reviews.db', 'c')
-
+    db4 =shelve.open('reports.db','c')
+    reports_dict = {}
+    report_form = ReportForm(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -207,6 +261,22 @@ def Customerprofile_reviews(id):
     except:
         print("Error in retrieving data from DB3 Review count or count is at 0")
 
+    #sync report dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reports" in db4:
+            reports_dict = db4["Reports"] #sync local with db2
+        else:
+            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening reports.db")
+    #sync listing IDs
+    try:
+        db4 = shelve.open('reports.db','c')    
+        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB2 Listing count or count is at 0")
+
 
     pfpimg = os.path.join('..\static', 'profilepics')
     user_id = os.path.join(pfpimg,'hermos.jpg') 
@@ -222,11 +292,27 @@ def Customerprofile_reviews(id):
             print(key)
             review = reviews_dict.get(key)
             customer_reviews_list.append(review)
-    
+    #report function
+    if request.method == 'POST' and report_form.validate():
+
+        #create report obj and store it
+        print(report_form.category.data,report_form.report_text.data)
+        report = Report.Report(session_ID,id,report_form.category.data,report_form.report_text.data)
+        reports_dict[report.get_ID()] = report #store obj in dict
+        db4['Reports'] = reports_dict
+        db4['ReportsCount'] = Report.Report.count_ID
+        db4.close()
+
+        #store report in offender's report_listings
+        customer = customers_dict.get(id)
+        customer.add_reports(report.get_ID())
+        db1['Customers'] = customers_dict
+        db1.close()
+        redirect(url_for('Customerprofile', id=id))
     #reviewer pfp
     reviewer_id = os.path.join(pfpimg,'hermos.jpg') 
     print(f"Reviews are {customer_reviews_list}")
-    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, reviewer_imgid = reviewer_id, current_sessionID = session_ID)
+    return render_template('Customerprofile_reviews.html',customer_imgid = user_id, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, reviewer_imgid = reviewer_id, current_sessionID = session_ID,form=report_form)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():

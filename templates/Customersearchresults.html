@@ -2,7 +2,39 @@
 {%block title %}search results{% endblock %}
 {% from "includes/_formHelper.html" import render_field %}
 {% block content%}
+<style>
+    #listing{
+        margin:20px;
+        float:left; 
+        /*border:3px solid red;*/
+        height:340px;
+        width:300px;
+        border-radius: 5%;
+    }
+</style>
 <h1 class="display-4">Search results</h1>
-<p>Hello world!</p>
+<div id="listing_container" class="align-items-center w-75 p-3 h-auto d-inline-block">
+    {% for listing in listings_list %} 
+    <div id="listing" style="float:left;"class="bg-secondary">
+        <div class="d-flex justify-content-center align-items-center" style="height:70%; width:100%"> <!--THIS div for img ONLY-->
+            <img src=../static/listingpics/listing{{listing.get_ID()}}.jpg style="width:200px; height:150px; border-radius: 5%;">
+        </div>
+
+        <p class="" style="justify-self:center">{{listing.get_title()}}</p> <!--name of listing-->
+
+        <!--drop down options and stuff-->
+        <div style="justify-self:end"> <!--added an div as justify-self:end works if it is one-->
+            <div class="btn-group dropup">
+                <button type="button" class="btn btn-primary bg-secondary border-0" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
+                </button>
+                <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton1">
+                    <li><a class="dropdown-item" href="/viewListing/{{listing.get_ID()}}" class="align-items-center" style="color:black">View listing<i class="bi bi-eye" style="color: black; margin-left:13%;"></i></a></li><!--everyone should be able to view-->
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div> 
 {% endblock %}
 {% from "includes/_formHelper.html" import render_field %}

@@ -1,5 +1,6 @@
 {% extends "Customerbase.html"%}
 {% block title %}Liked Listings{% endblock %}
+{% from "includes/_formHelper.html" import render_field %}
 {% block content %}
 <style>
     #listing{
@@ -53,3 +54,4 @@
     {%endfor%}
 </div>
 {% endblock %}
+{% from "includes/_formHelper.html" import render_field %}

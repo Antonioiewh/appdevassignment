@@ -1,5 +1,6 @@
 {% extends "Customerbase.html"%}
 {% block title %}View listing{% endblock %}
+{% from "includes/_formHelper.html" import render_field %}
 {% block content %}
 
 <div style="width:100vw; height:100vh;margin:0%"  class="d-flex flex-row"> <!--for screen only-->
@@ -73,4 +74,4 @@
     </div>
 </div>
 {% endblock %}
-
+{% from "includes/_formHelper.html" import render_field %}

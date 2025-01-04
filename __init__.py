@@ -3,6 +3,7 @@ import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar #our forms
+import Email,Search
 import shelve, Customer
 from pathlib import Path
 app = Flask(__name__)
@@ -57,8 +58,14 @@ session_ID = 0
 def Customerhome():
     global session_ID
     search_field = SearchBar(request.form)
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field)
 
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    
+
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field)
+    
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
     global session_ID
@@ -137,7 +144,7 @@ def Customerprofile(id):
             listing_list.append(listing)
     #report function
     if request.method == 'POST' and report_form.validate():
-
+        
         #create report obj and store it
         print(report_form.category.data,report_form.report_text.data)
         report = Report.Report(session_ID,id,report_form.category.data,report_form.report_text.data)
@@ -152,6 +159,10 @@ def Customerprofile(id):
         db1['Customers'] = customers_dict
         db1.close()
         redirect(url_for('Customerprofile', id=id))
+
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     #get img
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field)
@@ -215,6 +226,10 @@ def updateCustomerprofile(id):
         else:
             print("Error in changing profile info")
             return redirect(url_for('Customerprofile', id = id))
+        
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
         
 
     return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field)
@@ -312,6 +327,9 @@ def Customerprofile_reviews(id):
         db1['Customers'] = customers_dict
         db1.close()
         redirect(url_for('Customerprofile', id=id))
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     #reviewer pfp
     reviewer_id = os.path.join(pfpimg,'hermos.jpg') 
     print(f"Reviews are {customer_reviews_list}")
@@ -370,6 +388,9 @@ def signup():
         db1.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
 
         return redirect(url_for('Customerhome'))
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
         
     return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field)
 
@@ -419,6 +440,9 @@ def login():
         
         print(f"\n*start of message*Login success, current session ID is {session_ID}\n*end of message*")
         return redirect(url_for('Customerhome'))
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     
 
     return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field)
@@ -510,6 +534,9 @@ def createlisting():
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
         return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
@@ -541,6 +568,9 @@ def updateListing(id):
         db2['Listings'] = listings_dict #sync local to db2
         db2.close() 
         return redirect(url_for('Customerprofile', id = id)) #go back to profile page after submit
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
 
     return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field) #to render the form 
 
@@ -582,7 +612,9 @@ def viewListing(id):
     if listing.get_ID() in customer_liked_posts:
         print("User has already liked this post")
         user_liked_post = 'True'
-
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field)
 
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
@@ -616,6 +648,7 @@ def deleteListing(id):
     print(customer.get_listings())
     db1['Customers'] = customers_dict
     db2['Listings'] = listings_dict
+    
     return redirect(url_for('Customerprofile', id=session_ID))
 
 @app.route('/createReview/<int:id>', methods = ['GET', 'POST'])
@@ -680,6 +713,9 @@ def createReview(id):
         db1['Customers'] = customers_dict
         db1.close()
         return redirect(url_for('Customerprofile', id = id)) #goes back to profile u left a review on.
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     
     return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field)
 
@@ -827,13 +863,43 @@ def viewLikedListings(id): #retrieve current session_ID
         if key in customer_liked_listings:
             listing = listings_dict.get(key)
             listings_to_display.append(listing)
-            
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/messages')
 def messages():
     global session_ID
     search_field = SearchBar(request.form)
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     return render_template('CustomerMessages.html', current_sessionID = session_ID,searchform =search_field)
+
+@app.route('/searchresults/<keyword>')
+def searchresults(keyword):
+    global session_ID
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    listings_dict = {}
+    search_field = SearchBar(request.form)
+
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    show_listings = []
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        Search.search_keyword(listing,keyword,show_listings)#check if it fulfills the condition
+    
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    
+    return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings)
 if __name__ == "__main__":
     app.run()

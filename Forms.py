@@ -33,3 +33,6 @@ class ReviewForm(Form):
 class ReportForm(Form):
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     report_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
+
+class SearchBar(Form):
+    searchfield = StringField('Search')

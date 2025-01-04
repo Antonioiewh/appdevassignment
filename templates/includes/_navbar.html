@@ -83,10 +83,17 @@
             </ul>
             </div> <!--end of first row-->  
 
-            <div class="w-100"> <!--to increase the search field length. also make sure its the same width as the first row-->
-                <form class="d-flex">
-                    <input class="form-control me-2" type="text" placeholder="Search">
-                    <button class="btn btn-primary" type="button">Search</button>
+            <div class="w-100 "> <!--to increase the search field length. also make sure its the same width as the first row-->
+                <form class="d-flex align-items-end">
+                    <form method="POST" action="" >
+                        <div class="form-group" style="width:90%">
+                            {{ render_field(searchform.searchfield, class="form-control") }}
+                        </div>
+                        <div style="margin-left:2%"> <!--div for button only-->
+                            <input type="submit" value="Submit" class="btn btn-primary"/>
+                        </div>
+                    </form>
+                    
                 </form>
             </div>
 

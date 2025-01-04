@@ -1,10 +1,12 @@
-from flask import Flask, render_template, url_for,request,redirect
+from flask import Flask, render_template, url_for, request, redirect
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm #our forms
 import shelve, Customer
 from pathlib import Path
+from Messages import User
+
 app = Flask(__name__)
 
 
@@ -735,9 +737,55 @@ def viewLikedListings(id): #retrieve current session_ID
             listings_to_display.append(listing)
             
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID)
-@app.route('/messages')
+
+
+@app.route('/messages', methods=['GET', 'POST'])
 def messages():
-    global session_ID
-    return render_template('CustomerMessages.html', current_sessionID = session_ID)
+    db = shelve.open('messages.db', 'c')  # Open shelve database
+    user = User(session_ID)
+    try:
+        if request.method == 'POST':
+            receiver_id = request.form.get('receiver_id', type=int)
+            content = request.form.get('content', '')
+
+            if not receiver_id:
+                return "Receiver ID is required.", 400
+
+            if content:  # Sending a message
+                user.send_message(receiver_id, content, db)
+            user.add_to_recent_chats(receiver_id)  # Ensure this is updating
+
+            return redirect(url_for('messages', receiver_id=receiver_id))
+
+        # GET request: Display messages and recent chats
+        received_messages = user.get_received_messages(db)
+        sent_messages = user.get_sent_messages(db)
+        recent_chats = user.get_recent_chats()
+
+        selected_chat = None
+        if 'receiver_id' in request.args:
+            receiver_id = request.args.get('receiver_id', type=int)
+            selected_chat = {
+                'receiver_id': receiver_id,
+                'messages': [
+                    message.to_dict() for message in db.get("Messages", [])
+                    if (message.sender_id == session_ID and message.receiver_id == receiver_id) or
+                       (message.receiver_id == session_ID and message.sender_id == receiver_id)
+                ]
+            }
+
+        return render_template(
+            'CustomerMessages.html',
+            received_messages=received_messages,
+            sent_messages=sent_messages,
+            current_sessionID=session_ID,
+            recent_chats=recent_chats,
+            selected_chat=selected_chat
+        )
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     app.run()
+

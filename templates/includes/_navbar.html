@@ -6,7 +6,7 @@
 
       <div class="collapse navbar-collapse" id="mynavbar">
         
-        <div class="d-flex flex-column w-100"> <!--This makes sure that per <div>, theres a seperate line -->
+        <div class="d-flex flex-column w-100"> <!--This makes sure that per <div>, theres a separate line -->
 
             <div> <!--start of first row-->    
             <ul class="navbar-nav w-100 " > <!--first row first half, idk why w-100 makes its width not the full lenghth of the navbar, edit: fixed it by adding w-100 to the line above-->
@@ -65,7 +65,7 @@
                         </li>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
-                        <li class="dropdown-item">Current sessionID:{{current_sessionID}}</li>
+                        <li class="dropdown-item">Current sessionID: {{current_sessionID}}</li>
                         {% if current_sessionID != 0 %}
                         <li><a class="dropdown-item" href="/profile/{{current_sessionID}}">View profile</a></li> <!--will only direct you to your profile-->
                         {% endif %}
@@ -98,5 +98,6 @@
             </div>
 
         </div>
+    </div>
     </div>
   </nav>

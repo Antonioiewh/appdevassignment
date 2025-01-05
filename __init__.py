@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for,request,redirect,session
+from flask import Flask, render_template, url_for,request,redirect,session,jsonify
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report #classes
@@ -883,37 +883,56 @@ def viewLikedListings(id): #retrieve current session_ID
 def messages():
     global session_ID
     db = shelve.open('messages.db', 'c')  # Open shelve database
+    users_db = shelve.open('customer.db')
     user = User(session_ID)
+    recent_chats = user.get_recent_chats() 
     search_field = SearchBar(request.form)
     try:
         if request.method == 'POST':
-            receiver_id = request.form.get('receiver_id', type=int)
-            content = request.form.get('content', '')
+            receiver_id = request.form.get('receiver_id', type=str)
+            content = request.form.get('content', '').strip()  # Strip leading/trailing spaces
+            customers_dict = users_db.get('Customers', {})
+            if not receiver_id.isdigit() or int(receiver_id) == 0 or int(receiver_id) not in customers_dict:
+                return render_template(
+                    'CustomerMessages.html',
+                    error_message=f'User ID {receiver_id} is invalid or does not exist.',
+                    show_error_modal=True,
+                    current_sessionID=int(session_ID),
+                    recent_chats=recent_chats,
+                    selected_chat=None
+                )
+            receiver_id = int(receiver_id)  # Convert to integer after validation
+            # Handle Start New Chat (without content) logic
+            if receiver_id and content == '':  # Only receiver_id is provided, no content
+                return redirect(url_for('messages', receiver_id=receiver_id))  # Open the chat in the right column without changing recent chats order
+            # Handle sending a message only if content is provided
+            if content:
+                user.send_message(receiver_id, content, db)  # This will update recent chats order
+            return redirect(url_for('messages', receiver_id=receiver_id))  # Reload to show the new message
+        # Display messages and recent chats
 
-            if not receiver_id:
-                return "Receiver ID is required.", 400
-
-            if content:  # Sending a message
-                user.send_message(receiver_id, content, db)
-            user.add_to_recent_chats(receiver_id)  # Ensure this is updating
-
-            return redirect(url_for('messages', receiver_id=receiver_id))
-
-        # GET request: Display messages and recent chats
         received_messages = user.get_received_messages(db)
         sent_messages = user.get_sent_messages(db)
-        recent_chats = user.get_recent_chats()
 
         selected_chat = None
         if 'receiver_id' in request.args:
             receiver_id = request.args.get('receiver_id', type=int)
+            message = [
+                {
+                    "type": "sent" if message.sender_id == session_ID else "received",
+                    "content": message.content,
+                    "timestamp": message.timestamp.strftime("%Y-%m-%d %H:%M"),
+                    "receiver_id": message.receiver_id,
+                    "sender_id": message.sender_id,
+                }
+                for message in db.get("Messages", [])
+                if (message.sender_id == session_ID and message.receiver_id == receiver_id) or
+                   (message.receiver_id == session_ID and message.sender_id == receiver_id)
+            ]
+
             selected_chat = {
                 'receiver_id': receiver_id,
-                'messages': [
-                    message.to_dict() for message in db.get("Messages", [])
-                    if (message.sender_id == session_ID and message.receiver_id == receiver_id) or
-                       (message.receiver_id == session_ID and message.sender_id == receiver_id)
-                ]
+                'messages': message
             }
 
         #search func
@@ -931,6 +950,12 @@ def messages():
         )
     finally:
         db.close()
+    # to do: convert recent chat into button not just hyperlink, option to delete/edit/reply to messages
+    # dropdown menu: option to delete chat/hyperlink to user's profile/block profile,
+    # option to send pictures in chat, make enter key send message, message delivered/read/notifications(red number icon),
+    # message previews, make date appear like whatsapp
+    #
+
     
 @app.route('/searchresults/<keyword>')
 def searchresults(keyword):

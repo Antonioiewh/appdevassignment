@@ -1,8 +1,8 @@
-from flask import Flask, render_template, url_for,request,redirect
+from flask import Flask, render_template, url_for,request,redirect,session
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm #our forms
+from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField #our forms
 import Email,Search
 import shelve, Customer
 from pathlib import Path
@@ -10,8 +10,6 @@ from Messages import User
 import string
 import random
 app = Flask(__name__)
-
-
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 def check_allowed_file(filename):
@@ -969,6 +967,10 @@ def loginoperator():
         if operator_login_form.operator_username.data == "sysadmin1":
             if operator_login_form.password.data == "sysadmin1":
                 if OTP == True:
+                    OTP = ' '.join([str(random.randint(0, 999)).zfill(3) for _ in range(2)])
+                    session['OTP'] = OTP
+                    print(f"Session OTP is {session['OTP']}")
+                    Email.send_message_operator_OTP(operator_login_form.email.data,OTP)
                     return redirect(url_for('verifyoperator', email = operator_login_form.email.data))
                 elif OTP == False:
                     return(redirect(url_for('dashboardusers')))
@@ -979,22 +981,29 @@ def loginoperator():
 def verifyoperator(email):
     search_field = SearchBar(request.form)
     operator_OTP = OperatorLoginVerifyForm(request.form)
-    OTP = ''.join(random.choices(string.ascii_letters,
-                             k=7))
-    Email.send_message_operator_OTP(email,OTP)
 
-    if request.method == 'POST' and operator_OTP.validate():
-        if OTP == operator_OTP.OTP.data:
+    if request.method == 'POST' and operator_OTP.validate():#submit action
+
+        print(operator_OTP.OTP.data)
+        if session['OTP'] == operator_OTP.OTP.data:
             return(redirect(url_for('dashboardusers')))
-        else:
+        else:#IF first time fail then
+            OTP = ' '.join([str(random.randint(0, 999)).zfill(3) for _ in range(2)])
+            session['OTP'] = OTP
+            print(f"Session OTP is {session['OTP']}")
+            Email.send_message_operator_OTP(email,OTP)
             return redirect(url_for('verifyoperator', email = email))
-        
+    
     
     return render_template('OperatorLoginVerify.html', searchform =search_field,form = operator_OTP)
 
 @app.route('/dashboard/users')
 def dashboardusers():
     search_field = SearchBar(request.form)
-    return render_template('Operatordashboard_users.html',searchform =search_field)
+    user_search_field = SearchUserField(request.form)
+    return render_template('Operatordashboard_users.html',searchform =search_field,form = user_search_field)
 if __name__ == "__main__":
+    app.secret_key = 'super secret key'
+    app.config['SESSION_TYPE'] = 'filesystem'
+
     app.run()

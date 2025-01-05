@@ -5,7 +5,15 @@
 
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
+    <!-- Error Modal for Invalid Receiver ID -->
+    {% if show_error_modal %}
+    <script>
+        window.onload = function() {
+            new bootstrap.Modal(document.getElementById('invalidReceiverModal')).show();
+        }
+    </script>
+    {% endif %}
+<style>
         body {
             background-color: #f4f4f4;
             margin: 0;
@@ -32,26 +40,40 @@
         .right-column {
             width: 75%;
             padding: 10px;
-
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            margin-bottom: -6.5%;
         }
         .message-box {
-            height: 95%;
+            flex-grow: 1; /* allow message box to grow vertically or else it will shrink to fit the screen*/
             overflow-y: auto;
+            margin-right: -7%;
+            display: flex;
+            flex-direction: column; /* messages stacked vertically */
+            gap: 7px;
+
         }
+
         .message {
             background-color: #ddd;
             padding: 10px;
-            margin-bottom: 5px;
             border-radius: 5px;
+            min-height: 6%; /* Ensure each message has a minimum height */
+            width: 45%;
+            flex-shrink: 0; /* Prevent messages from shrinking */
         }
         .message.sent {
             background-color: #4CAF50;
             color: white;
-            text-align: right;
+            text-align: left;
+            align-self: flex-end;
+            margin-right: 1%;
         }
         .message.received {
             background-color: #f1f1f1;
             text-align: left;
+            align-self: flex-start;
         }
         .new-chat-btn {
             margin-bottom: 10px;
@@ -72,9 +94,9 @@
         .recent {
             margin-top: -3%;
         }
-        .placeholder_text{
-            background-colour: #9e9e9e;
-            colour: 28242c;
+        .placeholder_text {
+            background-color: #d3d3d3;
+            color: #28242c;
             border: 2px solid #28242c;
             border-radius: 8px;
             padding: 10px;
@@ -84,8 +106,7 @@
             margin-top: 25%;
         }
         .messagebox {
-            margin-top: 1.5%;
-
+        margin-top: 1%;
         }
         #sendbutton {
             margin-left: 98%;
@@ -94,47 +115,72 @@
             margin-top: -14%;
         }
         #content {
-            padding-right: 70%;
-
+            width: 89%;
         }
-    </style>
+        #sendButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        pre{
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 15px;
+            font-family: sans-serif;
+            padding: 3px;
+        }
+        #hr2{
+            margin-top: 0.5%;
+            margin-left: -2%;
+        }
+        .time{
+            font-size: 65%;
+            margin-top: -3.8%;
+            margin-bottom: -1.1%;
+        }
+        #shiftup{
+            margin-top: -1%;
+            margin-bottom: -0.5%;
+        }
+</style>
 <body>
     <div class="container">
         <div class="chat-container">
             <!-- Left column for recent chats -->
             <div class="left-column">
-                <button class="btn btn-primary new-chat-btn" data-bs-toggle="modal" data-bs-target="#newChatModal">New Chat</button>
-                <h1 class="message_class">Messages</h1>
-                <hr>
-                <h3 class="recent">Recent Chats</h3>
-                <ul class="list-group">
-                    {% if recent_chats %}
-                        {% for chat in recent_chats %}
-                            <li class="list-group-item">
-                                <a href="{{ url_for('messages', receiver_id=chat['receiver_id']) }}">User {{ chat['receiver_id'] }}</a>
-                            </li>
-                        {% endfor %}
-                    {% else %}
-                        <li class="list-group-item">No recent chats</li>
-                    {% endif %}
-                </ul>
-
-            </div>
+            <button class="btn btn-primary new-chat-btn" data-bs-toggle="modal" data-bs-target="#newChatModal">New Chat</button>
+            <h1 class="message_class">Messages</h1>
+            <hr>
+            <h3 class="recent">Recent Chats</h3>
+            <ul class="list-group">
+                {% if recent_chats %}
+                    {% for chat in recent_chats %}
+                        <li class="list-group-item">
+                            <a href="{{ url_for('messages', receiver_id=chat['receiver_id']) }}">User {{ chat['receiver_id'] }}</a>
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="list-group-item">No recent chats</li>
+                {% endif %}
+            </ul>
+        </div>
 
             <!-- Right column for chat window -->
             <div class="right-column">
                 {% if selected_chat %}
-                    <div class="message-box">
-                        <h3>Chat with <strong>{{ selected_chat['receiver_id'] }}</strong></h3>
-                        {% for message in selected_chat['messages'] %}
-                        <div class="message {{ 'sent' if message['sender_id'] == session_ID else 'received' }}">
-                            <strong>{{ 'To' if message['sender_id'] == session_ID else 'From' }}:</strong>
-                            {{ message['receiver_id'] if message['sender_id'] == session_ID else message['sender_id'] }}<br>
-                            {{ message['content'] }}<br>
-                            <small>{{ message['timestamp'] }}</small>
+                <h3>Chat with <strong>{{ selected_chat['receiver_id'] }}</strong></h3>
+                <hr id="hr2">
+                <div class="message-box">
+
+                    {% for message in selected_chat['messages'] %}
+                        <div class="message {{ message.type }}">
+                            <div id="shiftup" ><strong>{{ 'To' if message.type == 'sent' else 'From' }}:</strong>
+                            {{ message.receiver_id if message.type == 'sent' else message.sender_id }}</div>
+                            <pre>{{ message.content }}</pre>
+                            <div class="time"><small>{{ message.timestamp }}</small></div>
                         </div>
-                        {% endfor %}
-                    </div>
+                    {% endfor %}
+                </div>
                 {% else %}
                     <div class="placeholder_text">
                         Select a chat to get started!
@@ -144,11 +190,11 @@
                 {% if selected_chat %}
                 <div class="messagebox">
                     <form method="POST">
-                    <input type="hidden" name="receiver_id" id="textinput" value="{{ selected_chat['receiver_id'] }}">
-                    <label for="content"></label>
-                    <textarea id="content" name="content" required></textarea><br><br>
-                    <button type="submit" class="btn btn-primary" id="sendbutton">Send</button>
-                </form>
+                        <input type="hidden" name="receiver_id" id="textinput" value="{{ selected_chat['receiver_id'] }}">
+                        <label for="content"></label>
+                        <textarea id="content" name="content" required placeholder="Type a message..." autofocus></textarea><br><br>
+                        <button type="submit" class="btn btn-primary" id="sendbutton" disabled>Send</button>
+                    </form>
                 </div>
                 {% endif %}
             </div>
@@ -167,9 +213,8 @@
                 <form action="/messages" method="POST">
                     <div class="mb-3">
                         <label for="receiver_id" class="form-label">Enter User ID:</label>
-                        <input type="text" class="form-control" id="receiver_id" name="receiver_id" required>
+                        <input type="text" class="form-control" id="receiver_id" name="receiver_id" required maxlength="20">
                     </div>
-                    <input type="hidden" name="content" value=""> <!-- Hidden empty content -->
                     <button type="submit" class="btn btn-primary">Start Chat</button>
                 </form>
 
@@ -177,8 +222,63 @@
         </div>
     </div>
     </div>
+    <!-- Modal for displaying error (Invalid Receiver ID) -->
+<div class="modal fade" id="invalidReceiverModal" tabindex="-1" aria-labelledby="invalidReceiverModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="invalidReceiverModalLabel">Invalid User ID</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p id="error-message">{{ error_message }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const contentInput = document.getElementById('content');
+    const sendButton = document.getElementById('sendbutton');
+    contentInput.addEventListener('input', () => {
+        const trimmedValue = contentInput.value.trimStart(); // Remove leading spaces
+        // Enable button only if there is a non-whitespace character
+        if (trimmedValue.length > 0) {
+            sendButton.disabled = false; // Enable the button
+        } else {
+            sendButton.disabled = true;  // Disable the button
+        }
+    });
+    const form = contentInput.closest('form');  // Get the form element containing the message input
 
+    // Event listener for Enter key in the input field
+    contentInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {  // If Enter key is pressed (without Shift)
+            event.preventDefault();  // Prevent default newline behavior (Shift + Enter for new line)
+            sendMessage();
+        }
+    });
+
+    // Function to simulate clicking the send button (form submit)
+    function sendMessage() {
+        // Check if the input is not empty
+        const trimmedValue = contentInput.value.trim();
+        if (trimmedValue.length > 0) {
+            form.submit();  // Submit the form programmatically
+        }
+    }
+
+    window.onload = function() {
+    scrollToBottom();
+};
+
+function scrollToBottom() {
+    const messageBox = document.querySelector('.message-box');
+    messageBox.scrollTop = messageBox.scrollHeight;
+}
+</script>
 </body>
 {% endblock %}
 {% from "includes/_formHelper.html" import render_field %}
-

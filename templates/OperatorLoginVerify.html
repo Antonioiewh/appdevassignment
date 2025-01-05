@@ -4,7 +4,7 @@
 {% block content %}
 <h2 style="justify-self:center">Enter OTP</h2>
 <div class="d-flex flex-column w-50 d-flex justify-content-center" style="border:red solid 3px; margin:auto; height:50vh; background-color:lightgray; margin-top:10vh;">
-    <form method="POST" action="">
+    <form method="POST" action="" id="todo-form">
         
         <div class="form-group" style="margin-left:3vh; margin-right:3vh;">
             {{ render_field(form.OTP, class="form-control") }}
@@ -16,5 +16,6 @@
 
     </form>
 </div>
+
 {% endblock %}
 {% from "includes/_formHelper.html" import render_field %}

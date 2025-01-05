@@ -36,3 +36,12 @@ class ReportForm(Form):
 
 class SearchBar(Form):
     searchfield = StringField('Search')
+
+class OperatorLoginForm(Form):
+    operator_username = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
+    password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+    email        = StringField('Email Address', [validators.Length(min=6, max=35),validators.DataRequired()])
+
+class OperatorLoginVerifyForm(Form):
+    OTP = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
+    

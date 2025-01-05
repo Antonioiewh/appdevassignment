@@ -2,11 +2,13 @@ from flask import Flask, render_template, url_for,request,redirect
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar #our forms
+from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm #our forms
 import Email,Search
 import shelve, Customer
 from pathlib import Path
 from Messages import User
+import string
+import random
 app = Flask(__name__)
 
 
@@ -447,6 +449,16 @@ def login():
     
 
     return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field)
+
+@app.route('/loginoptions',methods = ['GET', 'POST'])
+def loginoptions():
+    global session_ID
+    session_ID = 0
+    search_field = SearchBar(request.form)
+    #search func
+    if request.method == 'POST' and search_field.validate():
+        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
@@ -947,6 +959,42 @@ def searchresults(keyword):
     
     return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings)
 
+@app.route('/loginoperator', methods=['GET', 'POST'])
+def loginoperator():
+    global session_ID
+    search_field = SearchBar(request.form)
+    operator_login_form = OperatorLoginForm(request.form)
+    OTP = True #set it to false if you dont want to use the OTP feature
+    if request.method == 'POST' and operator_login_form.validate():
+        if operator_login_form.operator_username.data == "sysadmin1":
+            if operator_login_form.password.data == "sysadmin1":
+                if OTP == True:
+                    return redirect(url_for('verifyoperator', email = operator_login_form.email.data))
+                elif OTP == False:
+                    return(redirect(url_for('dashboardusers')))
+                
+    return render_template('Operatorlogin.html',searchform =search_field, form=operator_login_form)
 
+@app.route('/verifyoperator/<email>',methods=['GET', 'POST'])
+def verifyoperator(email):
+    search_field = SearchBar(request.form)
+    operator_OTP = OperatorLoginVerifyForm(request.form)
+    OTP = ''.join(random.choices(string.ascii_letters,
+                             k=7))
+    Email.send_message_operator_OTP(email,OTP)
+
+    if request.method == 'POST' and operator_OTP.validate():
+        if OTP == operator_OTP.OTP.data:
+            return(redirect(url_for('dashboardusers')))
+        else:
+            return redirect(url_for('verifyoperator', email = email))
+        
+    
+    return render_template('OperatorLoginVerify.html', searchform =search_field,form = operator_OTP)
+
+@app.route('/dashboard/users')
+def dashboardusers():
+    search_field = SearchBar(request.form)
+    return render_template('Operatordashboard_users.html',searchform =search_field)
 if __name__ == "__main__":
     app.run()

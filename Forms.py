@@ -44,4 +44,6 @@ class OperatorLoginForm(Form):
 
 class OperatorLoginVerifyForm(Form):
     OTP = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
-    
+
+class SearchUserField(Form):
+    searchfield = StringField("Enter Username")

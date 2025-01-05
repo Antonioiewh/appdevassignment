@@ -1,3 +1,5 @@
+from datetime import datetime
+
 class Customer:
     count_id=0
     def __init__(self,username,email,password): #what to ask when they sign up!
@@ -12,7 +14,7 @@ class Customer:
         self.__credit_card = None
         self.__rating = 0  #displayed amt
         self.__ratings = 0 #store total
-        self.__date_joined = "1/1/1"
+        self.__date_joined = str((datetime.now().strftime("%x")))
         self.__liked_listings = [] #store id of liked listings
         self.__reports = []#store reports similar to reviews
     def get_id(self):

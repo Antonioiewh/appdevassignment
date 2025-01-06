@@ -47,3 +47,14 @@ class OperatorLoginVerifyForm(Form):
 
 class SearchUserField(Form):
     searchfield = StringField("Enter Username")
+
+class OperatorSuspendUser(Form):
+    category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
+    suspend_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
+    password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+class OperatorTerminateUser(Form):
+    category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
+    terminate_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
+    password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+class OperatorRestoreUser(Form):
+    password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])

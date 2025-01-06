@@ -955,7 +955,6 @@ def messages():
     # message previews, make date appear like whatsapp
     #
 
-    
 @app.route('/searchresults/<keyword>')
 def searchresults(keyword):
     global session_ID
@@ -1025,9 +1024,8 @@ def verifyoperator(email):
     
     return render_template('OperatorLoginVerify.html', searchform =search_field,form = operator_OTP)
 
-@app.route('/dashboard/users')
+@app.route('/dashboard/users',methods=['GET', 'POST'])
 def dashboardusers():
-    search_field = SearchBar(request.form)
     user_search_field = SearchUserField(request.form)
     db1 = shelve.open('customer.db','c')
     customers_dict = {}
@@ -1052,8 +1050,44 @@ def dashboardusers():
         customer = customers_dict.get(key)
         customers_list.append(customer)
     
-    return render_template('Operatordashboard_users.html',searchform =search_field,form = user_search_field,customers_list = customers_list)
+    if request.method == 'POST' and user_search_field.validate():
+        return redirect(url_for('dashboarduserssearch',keyword = user_search_field.searchfield.data))
+    
+    return render_template('Operatordashboard_users.html',form = user_search_field,customers_list = customers_list)
 
+
+@app.route('/dashboard/users/search=<keyword>',methods=['GET', 'POST'])
+def dashboarduserssearch(keyword):
+    user_search_field = SearchUserField(request.form)
+    db1 = shelve.open('customer.db','c')
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+        
+    #sync IDs
+    try:
+        db1 = shelve.open('customer.db','c')    
+        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB1 Customer count or count is at 0")
+
+    customers_list = []
+    for key in customers_dict:
+        customer = customers_dict.get(key)
+        if keyword in customer.get_username():
+            customers_list.append(customer)
+        else:
+            pass
+    
+    if request.method == 'POST' and user_search_field.validate():
+        return redirect(url_for('dashboarduserssearch',keyword = user_search_field.searchfield.data))
+    
+    
+    return render_template('Operatordashboard_users_search.html',form = user_search_field,customers_list = customers_list)
 @app.route('/operatorviewprofile/<int:id>',methods=['GET', 'POST'])
 def operatorviewprofile(id): #id of profile they are viewing
     db1 = shelve.open('customer.db','c')

@@ -17,6 +17,7 @@ class Customer:
         self.__date_joined = str((datetime.now().strftime("%x")))
         self.__liked_listings = [] #store id of liked listings
         self.__reports = []#store reports similar to reviews
+        self.__status = "active" #3 states : active,suspended,terminated
     def get_id(self):
         return self.__id
     
@@ -52,6 +53,9 @@ class Customer:
     
     def get_reports(self):
         return self.__reports
+    
+    def get_status(self):
+        return self.__status
 
     def set_id(self,id): #just here but god forbid u actually run this as why would u
         self.__id = id 
@@ -84,8 +88,6 @@ class Customer:
         self.__reviews.append(review)
     
     
-
-    
     def set_address(self,address):
         self.__address = address
     
@@ -112,6 +114,10 @@ class Customer:
     def remove_reports(self,reportid):
         self.__reports.append(reportid)    
 
+    #status
+
+    def set_status(self,status):
+        self.__status = status
 
     
     

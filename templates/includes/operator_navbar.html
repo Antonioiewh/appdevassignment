@@ -77,7 +77,7 @@
 
                         {% if current_sessionID != 0 %}
                         <li><a class="dropdown-item" href="/loginoptions">Logout</a></li>
-                        <li><a class="dropdown-item" href="#" style="color: red;">View dashboard</a></li>
+                        <li><a class="dropdown-item" href="/dashboard/users" style="color: red;">View dashboard</a></li>
                         {% endif %}
                         <!--
                         {% if current_sessionID != 0 %}
@@ -89,20 +89,6 @@
                 </div>
             </ul>
             </div> <!--end of first row-->  
-            <!--
-            <div class="w-100 "> 
-                <form class="d-flex align-items-end" method="POST">
-                    <form method="POST" action="" >
-                        <div class="form-group" style="width:90%">
-                            {{ render_field(searchform.searchfield, class="form-control") }}
-                        </div>
-                        <div style="margin-left:2%">
-                            <input type="submit" value="Submit" class="btn btn-primary"/>
-                        </div>
-                    </form>
-                    
-                </form>
-            </div>-->
 
         </div>
     </div>

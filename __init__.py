@@ -913,6 +913,9 @@ def viewLikedListings(id): #retrieve current session_ID
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
     global session_ID
+    # add in for official project
+    if session_ID == 0:
+        return redirect(url_for('Customerhome'))
     db = shelve.open('messages.db', 'c')  # Open shelve database
     users_db = shelve.open('customer.db')
     user = User(session_ID)
@@ -931,8 +934,17 @@ def messages():
                     current_sessionID=int(session_ID),
                     recent_chats=recent_chats,
                     selected_chat=None,
-                    searchform = search_field
-
+                    searchform=search_field
+                )
+            elif int(receiver_id) == session_ID:
+                return render_template(
+                    'CustomerMessages.html',
+                    error_message=f"You can't message yourself",
+                    show_error_modal=True,
+                    current_sessionID=int(session_ID),
+                    recent_chats=recent_chats,
+                    selected_chat=None,
+                    searchform=search_field  #<- always put
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
             # Handle Start New Chat (without content) logic
@@ -1013,14 +1025,14 @@ def delete_message():
     # Delete the message from the database
     # messages2.remove(message_to_delete)
     message_to_delete.status = "deleted"
-    message_to_delete.content = None
+    message_to_delete.content = None #privacy concerns
     db['Messages'] = messages2
 
     db.close()
 
 
-    # to do: ask teacher if it counts as "deletion" of database to do the above
-    # convert recent chat into button not just hyperlink, option to edit/reply to messages
+    # to do: ask teacher if it counts as "deletion" of database to do the above, must there be real time messages(current code only shows message upon refresh),
+    # cannot enter own ID for new chat, option to edit/reply to messages
     # dropdown menu: option to delete chat/hyperlink to user's profile/block profile,
     # option to send pictures in chat, message delivered/read/notifications(red number icon),
     # message previews, make date appear like whatsapp

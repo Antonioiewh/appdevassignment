@@ -16,8 +16,8 @@ class CustomerUpdateForm(Form): #can change profile pic,email,username and passw
     confirmpassword = StringField('Confirm Password', [validators.Length(min=6, max=35),validators.DataRequired()])
 
 class ListingForm(Form):
-    category = SelectField('Category',[validators.DataRequired()], choices=[('cat1','Category 1'),('cat2','Category 2'),('cat3','Category 3'),('cat4','Category 4'),('cat5','Category 5')])
-    condition = RadioField('Condition', [validators.DataRequired()], choices=[('barely_used', "Barely used"), ('frequently_used', 'Frequently used'), ('daily_used', 'Used daily')])
+    category = SelectField('Category',[validators.DataRequired()], choices=[('Category 1','Category 1'),('Category 2','Category 2'),('Category 3','Category 3'),('Category 4','Category 4'),('Category 5','Category 5')])
+    condition = RadioField('Condition', [validators.DataRequired()], choices=[('Barely used', "Barely used"), ('Frequently used', 'Frequently used'), ('Used daily', 'Used daily')])
     title = StringField('Title',[validators.Length(min=4, max=25),validators.DataRequired()])
     description = StringField('Description',[validators.Length(min=4, max=300),validators.DataRequired()])
     payment_method = RadioField('Payment method',[validators.DataRequired()],choices=[('meetup','Meet-up'),('delivery','Delivery')]) #idk how to do this but gl to anyone trying to either
@@ -58,3 +58,19 @@ class OperatorTerminateUser(Form):
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
 class OperatorRestoreUser(Form):
     password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+
+class OperatorDisableListing(Form):
+    id = StringField('ID of post', [validators.Length(min=1, max=35),validators.DataRequired()])
+    category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
+    disable_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
+    password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+
+class OperatorRestoreListing(Form):
+    id = StringField('ID of post', [validators.Length(min=1, max=35),validators.DataRequired()])
+    password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+
+class SearchListingField(Form):
+    searchfield = StringField("Enter listing name")
+
+class SearchReportField(Form):
+    searchfield = StringField("Enter offender username")

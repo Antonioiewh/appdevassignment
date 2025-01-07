@@ -1,12 +1,13 @@
 class Report:
     count_ID = 0
-    def __init__(self,creator_ID,offender_ID,category,comment):
+    def __init__(self,creator_ID,offender_ID,offender_username,category,comment):
         Report.count_ID +=1
         self.__ID = Report.count_ID
         self.__creator_ID = creator_ID
         self.__offender_ID = offender_ID
         self.__category = category
         self.__comment = comment
+        self.__offender_username = offender_username
 
     def get_ID(self):
         return self.__ID
@@ -22,6 +23,10 @@ class Report:
     def get_comment(self):
         return self.__comment
     
+    def get_offender_username(self):
+        return self.__offender_username
+
+
     def set_ID(self,id):
         self.__ID = id
 
@@ -37,3 +42,5 @@ class Report:
     def set_comment(self,comment):
         self.__comment = comment
 
+    def set_offender_username(self,offender):
+        self.__offender_username = offender

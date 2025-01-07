@@ -67,9 +67,12 @@
             <div class="d-flex justify-content-center align-items-center" style="height:70%; width:100%"> <!--THIS div for img ONLY-->
                 <img src=../static/listingpics/listing{{listing.get_ID()}}.jpg style="width:200px; height:150px; border-radius: 5%;">
             </div>
-    
+            {% if listing.get_status() == "disabled"%}
+            <p class="" style="justify-self:center; color:red;">This listing is under review</p> 
+            {%endif%}
+            {% if listing.get_status() == "available"%}
             <p class="" style="justify-self:center">{{listing.get_title()}}</p> <!--name of listing-->
-    
+            {%endif%}
             <!--drop down options and stuff-->
             <div style="justify-self:end"> <!--added an div as justify-self:end works if it is one-->
                 <div class="btn-group dropup">
@@ -78,13 +81,98 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton1">
                         <li><a class="dropdown-item" href="#" class="align-items-center" style="color:black">View listing<i class="bi bi-eye" style="color: black; margin-left:13%;"></i></a></li><!--everyone should be able to view-->
+                        <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red"data-bs-toggle="modal" data-bs-target="#myModal4">Disable listing<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+                        {% if listing.get_status() == "disabled"%}
+                        <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red"data-bs-toggle="modal" data-bs-target="#myModal5">Restore listing<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+                        {%endif%}
                         {%if current_sessionID != customer.get_id()%} <!--ONLY OTHER USERS CAN SEE THIS-->
                         {%endif%}
                     </ul>
                 </div>
             </div>    
         </div> <!--float:left is very fucking impt, i added a border so i can SEE THE DIVS -->
-        {% endfor %}
+
+
+
+
+
+<!--Popup to restore listing-->
+<div class="modal" id="myModal5">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h4 class="modal-title">Restore listing {{listing.get_ID()}}</h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <!-- Modal body -->
+        <div class="modal-body">
+            <form method="POST" action="">
+                <div>
+
+                    <div class="form-group ">
+                        {{ render_field(restore_listing_form.id, class="form-control") }}
+                    </div>
+                    <div class="form-group ">
+                        {{ render_field(restore_listing_form.password, class="form-control") }}
+                    </div>
+                    
+                    <!-- Modal footer -->
+                    <div class="modal-footer">
+                        <div style="justify-self:center"> <!--div for button only-->
+                            <input type="submit" value="Submit" class="btn btn-primary"/>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+    </div>
+    </div>
+
+<!--Popup to suspend user!-->
+<div class="modal" id="myModal4">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h4 class="modal-title">Why are you disabling listing {{listing.get_ID()}}?</h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <!-- Modal body -->
+        <div class="modal-body">
+            <form method="POST" action="">
+                <div>
+                    <div class="form-group ">
+                        {{ render_field(disable_listing_form.id, class="form-control") }}
+                    </div>
+        
+                    <div class="form-group ">
+                        {{ render_field(disable_listing_form.category, class="form-control") }}
+                    </div>
+                    <div class="form-group ">
+                        {{ render_field(disable_listing_form.disable_text, class="form-control") }}
+                    </div>
+                    <div class="form-group ">
+                        {{ render_field(disable_listing_form.password, class="form-control") }}
+                    </div>
+                    <!-- Modal footer -->
+                    <div class="modal-footer">
+                        <div style="justify-self:center"> <!--div for button only-->
+                            <input type="submit" value="Submit" class="btn btn-primary"/>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+    </div>
+    </div>
+    </div>
+{% endfor %}
 
     
 <!--Popup to suspend user!-->

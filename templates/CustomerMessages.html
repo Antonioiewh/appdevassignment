@@ -1,9 +1,9 @@
 {% extends "Customerbase.html"%}
 {% block title %}Messages{% endblock %}
-{% from "includes/_formHelper.html" import render_field %}
 {% block content %}
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+      xmlns="http://www.w3.org/1999/html">
 <!-- Error Modal for Invalid Receiver ID -->
 {% if show_error_modal %}
 <script>
@@ -52,13 +52,13 @@
     }
 
     .message {
-        position: relative; /* Needed for positioning the ellipsis inside each message */
+        position: relative; /* positioning the ellipsis inside each message */
         background-color: #ddd;
         padding: 10px;
         border-radius: 5px;
-        min-height: 6%; /* Ensure each message has a minimum height */
+        min-height: 6%;
         width: 45%;
-        flex-shrink: 0; /* Prevent messages from shrinking */
+        flex-shrink: 0; /* prevent messages from shrinking */
     }
 
     /* Ellipsis Icon (Three vertical dots) */
@@ -218,6 +218,28 @@
         text-align: left;
         align-self: flex-start;
     }
+    .profile-picture img {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%; /* circle */
+        object-fit: cover; /* crop properly */
+        border: 2px solid #ccc;
+    }
+    .chat-container11 {
+        padding-left: 7px;
+        margin-top: -3px;
+        padding-top: 3px;
+        padding-right: 7px;
+        transition: background-color 0.3s ease; /* Smooth transition for background color change */
+        border-radius: 10px;
+        width: fit-content;
+    }
+
+    .chat-container11:hover {
+        background-color: #d3d3d3;
+        cursor: pointer;
+    }
+
 </style>
 
 <body>
@@ -232,9 +254,15 @@
                 <ul class="list-group">
                     {% if recent_chats %}
                         {% for chat in recent_chats %}
-                            <li class="list-group-item">
-                                <a href="{{ url_for('messages', receiver_id=chat['receiver_id']) }}">User {{ chat['receiver_id'] }}</a>
-                            </li>
+                            <a href="{{ url_for('messages', receiver_id=chat['receiver_id']) }}" style="text-decoration: none; color: inherit;">
+                                <li class="list-group-item" style="height: 60px; display: flex;
+                                    {% if selected_chat and selected_chat['receiver_id'] == chat['receiver_id'] %}
+                                        background-color: lightgray;  /* Dark Gray */
+                                    {% endif %}">
+                                    <div class="profile-picture" style="display: flex; align-items: center;"><img src="static/profilepics/hermos.jpg" alt="Profile Picture"></div>
+                                    <div style="margin-left: 15px; margin-top: -4px;" class="user_name111">User {{ chat['receiver_id'] }}</div>
+                                </li>
+                            </a>
                         {% endfor %}
                     {% else %}
                         <li class="list-group-item">No recent chats</li>
@@ -245,12 +273,12 @@
             <!-- Right column for chat window -->
             <div class="right-column">
                 {% if selected_chat %}
-                    <h3>Chat with <strong>{{ selected_chat['receiver_id'] }}</strong></h3>
+                <div class="chat-container11"><h3>Chat with <span class="forjavascript222"><b>{{ selected_chat['receiver_id'] }}</b></span></h3></div>
                     <hr id="hr2">
                     <div class="message-box">
                         {% for message in selected_chat['messages'] %}
                             <div class="message {{ message.type }}" id="{{ message.message_id }}">
-                                <div id="shiftup" ><strong>{{ 'To' if message.type == 'sent' else 'From' }}:</strong>
+                                <div id="shiftup" ><b>{{ 'To' if message.type == 'sent' else 'From' }}:</b>
                                 {{ message.receiver_id if message.type == 'sent' else message.sender_id }}</div>
                                 {% if message.status == "deleted" %}
                                     <pre><i style="color: lightgray;">This message has been deleted</i></pre>
@@ -354,7 +382,28 @@
         </div>
     </div>
 </div>
-
+<!-- User Profile Modal -->
+<div class="modal fade" id="userProfileModal" tabindex="-1" aria-labelledby="userProfileModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userProfileModalLabel">User {{ selected_chat['receiver_id'] }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center">
+                <!-- Profile Picture -->
+                <div class="profile-picture">
+                    <img id="profilePicture" src="static/profilepics/hermos.jpg" alt="Profile Picture" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #ccc;">
+                </div>
+                <!-- Buttons below Profile Picture -->
+                <div class="mt-3" style="text-align: center;">
+                    <button class="btn btn-primary" id="goToProfileButton">Profile</button>
+                    <button class="btn btn-danger" id="blockUserButton" style="margin-left: 10px;">Block User</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
     <script>
         // Function to toggle the visibility of the dropdown menu
         document.querySelectorAll('.ellipsis-container').forEach((ellipsisContainer) => {
@@ -474,6 +523,42 @@
         window.onload = function() {
             scrollToBottom();
         };
+        //function to shorten text to ...
+        function truncateName(name, maxLength) {
+            if (name.length > maxLength) {
+                return name.slice(0, maxLength) + "...";
+            }
+            return name;
+        }
+        //shortening usernames if they exceed 20 characters
+        const userNames = document.querySelectorAll(".user_name111");
+        for (let i = 0; i < userNames.length; i++) {
+            const element = userNames[i];  // Get the current element in the loop
+            const fullName = element.textContent;  // Get the current text of the element
+            const truncatedName = truncateName(fullName, 20);  // Limit name to 20 characters (or any other number)
+            element.textContent = truncatedName;  // Update the element's text with the truncated name
+        }
+        const chatContainer = document.querySelector(".forjavascript222");
+        const userNames2 = chatContainer.textContent;
+        const truncatedName2 = truncateName(userNames2, 60);
+        chatContainer.textContent = truncatedName2;
+
+        //user profile preview
+        document.querySelector('.chat-container11').addEventListener('click', function() {
+            // Open the modal
+            const userProfileModal = new bootstrap.Modal(document.getElementById('userProfileModal'));
+            userProfileModal.show();
+        });
+
+        // Example handling for the buttons in the modal (Go to Profile, Block User)
+        document.getElementById('goToProfileButton').addEventListener('click', function() {
+            // You can replace the URL with the actual user profile URL
+            window.location.href = `/profile/{{ selected_chat['receiver_id'] }}`;
+        });
+
+        document.getElementById('blockUserButton').addEventListener('click', function() {
+
+        });
     </script>
 </body>
 

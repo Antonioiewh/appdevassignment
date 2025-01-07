@@ -3,184 +3,281 @@
 {% from "includes/_formHelper.html" import render_field %}
 {% block content %}
 
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Error Modal for Invalid Receiver ID -->
-    {% if show_error_modal %}
-    <script>
-        window.onload = function() {
-            new bootstrap.Modal(document.getElementById('invalidReceiverModal')).show();
-        }
-    </script>
-    {% endif %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Error Modal for Invalid Receiver ID -->
+{% if show_error_modal %}
+<script>
+    window.onload = function() {
+        new bootstrap.Modal(document.getElementById('invalidReceiverModal')).show();
+    }
+</script>
+{% endif %}
 <style>
-        body {
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-        .chat-container {
-            display: flex;
-            height: 80vh;
-            padding: 0;
-            margin-left: -5.5%;
+    body {
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+    }
+    .chat-container {
+        display: flex;
+        height: 80vh;
+        padding: 0;
+        margin-left: -5.5%;
+    }
+    .left-column {
+        width: 25%;
+        background-color: #f1f1f1;
+        padding: 10px;
+        border-right: 1px solid #ddd;
+        overflow-y: auto;
+        overflow-x: hidden;
+        height: 106.3%;
+    }
+    .right-column {
+        width: 75%;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        margin-bottom: -6.5%;
+    }
+    .message-box {
+        flex-grow: 1;
+        overflow-y: auto;
+        margin-right: -7%;
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+    }
 
-        }
-        .left-column {
-            width: 25%;
-            background-color: #f1f1f1;
-            padding: 10px;
-            border-right: 1px solid #ddd;
-            overflow-y: auto;
-            margin-left: 0;
-            overflow-x: hidden;
-            height: 106.3%;
-        }
-        .right-column {
-            width: 75%;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-            margin-bottom: -6.5%;
-        }
-        .message-box {
-            flex-grow: 1; /* allow message box to grow vertically or else it will shrink to fit the screen*/
-            overflow-y: auto;
-            margin-right: -7%;
-            display: flex;
-            flex-direction: column; /* messages stacked vertically */
-            gap: 7px;
+    .message {
+        position: relative; /* Needed for positioning the ellipsis inside each message */
+        background-color: #ddd;
+        padding: 10px;
+        border-radius: 5px;
+        min-height: 6%; /* Ensure each message has a minimum height */
+        width: 45%;
+        flex-shrink: 0; /* Prevent messages from shrinking */
+    }
 
-        }
+    /* Ellipsis Icon (Three vertical dots) */
+    .ellipsis-container {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: center;
+        visibility: visible; /* Ensure it's always visible */
+    }
 
-        .message {
-            background-color: #ddd;
-            padding: 10px;
-            border-radius: 5px;
-            min-height: 6%; /* Ensure each message has a minimum height */
-            width: 45%;
-            flex-shrink: 0; /* Prevent messages from shrinking */
-        }
-        .message.sent {
-            background-color: #4CAF50;
-            color: white;
-            text-align: left;
-            align-self: flex-end;
-            margin-right: 1%;
-        }
-        .message.received {
-            background-color: #f1f1f1;
-            text-align: left;
-            align-self: flex-start;
-        }
-        .new-chat-btn {
-            margin-bottom: 10px;
-            margin-left: 68%;
-        }
-        .message_class {
-            margin-left: -2%;
-            margin-top: -18%;
-            padding-bottom: 3%;
-        }
-        hr {
-            border-top: 2px solid #28242c;
-            width: 110%;
-            opacity: 1;
-            margin-left: -7%;
-            margin-top: -3%;
-        }
-        .recent {
-            margin-top: -3%;
-        }
-        .placeholder_text {
-            background-color: #d3d3d3;
-            color: #28242c;
-            border: 2px solid #28242c;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 1.5em;
-            width: 31.5%;
-            margin: auto;
-            margin-top: 25%;
-        }
-        .messagebox {
+    .ellipsis {
+        width: 6px;
+        height: 6px;
+        background-color: #d3d3d3;
+        border-radius: 50%;
+        margin-bottom: 3px;
+    }
+
+    .ellipsis-container.active .ellipsis {
+        background-color: #a9a9a9;
+    }
+
+    /* Dropdown Menu */
+    .dropdown-menu2 {
+        display: none; /* Hidden by default */
+        position: absolute;
+        top: 0;
+        right: 30px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        min-width: 120px;
+        z-index: 1000;
+    }
+
+    .dropdown-menu2 ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .dropdown-menu2 ul li {
+        padding: 5px 5px;
+    }
+
+    .dropdown-menu2 ul li a {
+        text-decoration: none;
+        color: #333;
+        display: block;
+        padding: 6px;
+    }
+
+    .dropdown-menu2 ul li a:hover {
+        background-color: #f1f1f1;
+
+    }
+
+    /* Show dropdown when ellipsis is clicked */
+    .message.show-dropdown .dropdown-menu2 {
+        display: block;
+    }
+
+    .new-chat-btn {
+        margin-bottom: 10px;
+        margin-left: 68%;
+    }
+
+    .message_class {
+        margin-left: -2%;
+        margin-top: -18%;
+        padding-bottom: 3%;
+    }
+
+    hr {
+        border-top: 2px solid #28242c;
+        width: 110%;
+        opacity: 1;
+        margin-left: -5%;
+        margin-top: -3%;
+    }
+
+    .recent {
+        margin-top: -3%;
+    }
+
+    .placeholder_text {
+        background-color: #d3d3d3;
+        color: #28242c;
+        border: 2px solid #28242c;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 1.5em;
+        width: 31.5%;
+        margin: auto;
+        margin-top: 25%;
+    }
+
+    .messagebox {
         margin-top: 1%;
-        }
-        #sendbutton {
-            margin-left: 98%;
-            padding: 1.2%;
-            font-size: 1.3em;
-            margin-top: -14%;
-        }
-        #content {
-            width: 89%;
-        }
-        #sendButton:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        pre{
-            overflow-x: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-size: 15px;
-            font-family: sans-serif;
-            padding: 3px;
-        }
-        #hr2{
-            margin-top: 0.5%;
-            margin-left: -2%;
-        }
-        .time{
-            font-size: 65%;
-            margin-top: -3.8%;
-            margin-bottom: -1.1%;
-        }
-        #shiftup{
-            margin-top: -1%;
-            margin-bottom: -0.5%;
-        }
+        margin-bottom: 1.5%
+    }
+
+    #sendbutton {
+        margin-left: 98%;
+        padding: 1.2%;
+        font-size: 1.3em;
+        margin-top: -14%;
+    }
+
+    #content {
+        width: 89%;
+    }
+
+    #sendButton:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    pre{
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 15px;
+        font-family: sans-serif;
+        padding: 3px;
+    }
+
+    #hr2{
+        margin-top: 0.47%;
+        margin-left: -1.1%;
+    }
+
+    .time{
+        font-size: 65%;
+        margin-top: -3.8%;
+        margin-bottom: -1.1%;
+    }
+
+    #shiftup{
+        margin-top: -1%;
+        margin-bottom: -0.5%;
+    }
+    .message.sent {
+        background-color: #4CAF50;
+        color: white;
+        text-align: left;
+        align-self: flex-end;
+        margin-right: 1%;
+    }
+    .message.received {
+        background-color: #f1f1f1;
+        text-align: left;
+        align-self: flex-start;
+    }
 </style>
+
 <body>
     <div class="container">
         <div class="chat-container">
             <!-- Left column for recent chats -->
             <div class="left-column">
-            <button class="btn btn-primary new-chat-btn" data-bs-toggle="modal" data-bs-target="#newChatModal">New Chat</button>
-            <h1 class="message_class">Messages</h1>
-            <hr>
-            <h3 class="recent">Recent Chats</h3>
-            <ul class="list-group">
-                {% if recent_chats %}
-                    {% for chat in recent_chats %}
-                        <li class="list-group-item">
-                            <a href="{{ url_for('messages', receiver_id=chat['receiver_id']) }}">User {{ chat['receiver_id'] }}</a>
-                        </li>
-                    {% endfor %}
-                {% else %}
-                    <li class="list-group-item">No recent chats</li>
-                {% endif %}
-            </ul>
-        </div>
+                <button class="btn btn-primary new-chat-btn" data-bs-toggle="modal" data-bs-target="#newChatModal">New Chat</button>
+                <h1 class="message_class">Messages</h1>
+                <hr>
+                <h3 class="recent">Recent Chats</h3>
+                <ul class="list-group">
+                    {% if recent_chats %}
+                        {% for chat in recent_chats %}
+                            <li class="list-group-item">
+                                <a href="{{ url_for('messages', receiver_id=chat['receiver_id']) }}">User {{ chat['receiver_id'] }}</a>
+                            </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="list-group-item">No recent chats</li>
+                    {% endif %}
+                </ul>
+            </div>
 
             <!-- Right column for chat window -->
             <div class="right-column">
                 {% if selected_chat %}
-                <h3>Chat with <strong>{{ selected_chat['receiver_id'] }}</strong></h3>
-                <hr id="hr2">
-                <div class="message-box">
+                    <h3>Chat with <strong>{{ selected_chat['receiver_id'] }}</strong></h3>
+                    <hr id="hr2">
+                    <div class="message-box">
+                        {% for message in selected_chat['messages'] %}
+                            <div class="message {{ message.type }}" id="{{ message.message_id }}">
+                                <div id="shiftup" ><strong>{{ 'To' if message.type == 'sent' else 'From' }}:</strong>
+                                {{ message.receiver_id if message.type == 'sent' else message.sender_id }}</div>
+                                {% if message.status == "deleted" %}
+                                    <pre><i style="color: lightgray;">This message has been deleted</i></pre>
+                                    <div class="time"><small>{{ message.timestamp }}</small></div>
+                                {% else %}
+                                <pre>{{ message.content }}</pre>
+                                <div class="time"><small>{{ message.timestamp }}</small></div>
 
-                    {% for message in selected_chat['messages'] %}
-                        <div class="message {{ message.type }}">
-                            <div id="shiftup" ><strong>{{ 'To' if message.type == 'sent' else 'From' }}:</strong>
-                            {{ message.receiver_id if message.type == 'sent' else message.sender_id }}</div>
-                            <pre>{{ message.content }}</pre>
-                            <div class="time"><small>{{ message.timestamp }}</small></div>
-                        </div>
-                    {% endfor %}
-                </div>
+                                <!-- Ellipsis Icon (Three dots) and Dropdown -->
+                                <div class="ellipsis-container">
+                                    <div class="ellipsis"></div>
+                                    <div class="ellipsis"></div>
+                                    <div class="ellipsis"></div>
+                                </div>
+                                <div class="dropdown-menu2">
+                                    <ul>
+                                        {% if message.type == 'sent' %}
+                                            <li><a href="#" class="edit-option">Edit</a></li>
+                                            <li><a href="#" class="delete-option" data-message-id="{{ message.message_id }}">Delete</a></li>
+                                        {% endif %}
+                                        <li><a href="#" class="reply-option">Reply</a></li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
                 {% else %}
                     <div class="placeholder_text">
                         Select a chat to get started!
@@ -189,7 +286,7 @@
 
                 {% if selected_chat %}
                 <div class="messagebox">
-                    <form method="POST">
+                    <form method="POST" id="message-form">
                         <input type="hidden" name="receiver_id" id="textinput" value="{{ selected_chat['receiver_id'] }}">
                         <label for="content"></label>
                         <textarea id="content" name="content" required placeholder="Type a message..." autofocus></textarea><br><br>
@@ -217,68 +314,168 @@
                     </div>
                     <button type="submit" class="btn btn-primary">Start Chat</button>
                 </form>
-
             </div>
         </div>
     </div>
     </div>
+
     <!-- Modal for displaying error (Invalid Receiver ID) -->
-<div class="modal fade" id="invalidReceiverModal" tabindex="-1" aria-labelledby="invalidReceiverModalLabel" aria-hidden="true">
+    <div class="modal fade" id="invalidReceiverModal" tabindex="-1" aria-labelledby="invalidReceiverModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="invalidReceiverModalLabel">Invalid User ID</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="error-message">{{ error_message }}</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-labelledby="deleteConfirmationModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="invalidReceiverModalLabel">Invalid User ID</h5>
+                <h5 class="modal-title" id="deleteConfirmationModalLabel">Confirm Deletion</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p id="error-message">{{ error_message }}</p>
+                <p>Do you want to confirm deleting this message?</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteButton">Confirm</button>
             </div>
         </div>
     </div>
 </div>
-<script>
-    const contentInput = document.getElementById('content');
-    const sendButton = document.getElementById('sendbutton');
-    contentInput.addEventListener('input', () => {
-        const trimmedValue = contentInput.value.trimStart(); // Remove leading spaces
-        // Enable button only if there is a non-whitespace character
-        if (trimmedValue.length > 0) {
-            sendButton.disabled = false; // Enable the button
-        } else {
-            sendButton.disabled = true;  // Disable the button
+
+    <script>
+        // Function to toggle the visibility of the dropdown menu
+        document.querySelectorAll('.ellipsis-container').forEach((ellipsisContainer) => {
+            ellipsisContainer.addEventListener('click', function(event) {
+                event.stopPropagation(); // Prevent click from bubbling to parent message container
+                const message = this.closest('.message');
+                message.classList.toggle('show-dropdown');
+            });
+        });
+
+        // Close dropdown when clicking anywhere outside the message
+        document.addEventListener('click', function(event) {
+            document.querySelectorAll('.dropdown-menu2').forEach(dropdown => {
+                if (!dropdown.contains(event.target) && !dropdown.previousElementSibling.contains(event.target)) {
+                    dropdown.style.display = 'none'; // Hide the dropdown if clicked outside
+                    dropdown.previousElementSibling.classList.remove('active'); // Remove 'active' class
+                }
+            });
+        });
+
+        // Send the message when the Enter key is pressed (without Shift)
+        const messageInput = document.getElementById('content');
+        const sendButton = document.getElementById('sendbutton');
+        const messageForm = document.getElementById('message-form');
+
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Prevent new line from being added
+                if (messageInput.value.trim() !== "") {
+                    messageForm.submit(); // Submit the form to send the message
+                }
+            }
+        });
+
+        // Enable send button when there is text in the message input
+        messageInput.addEventListener('input', function() {
+            sendButton.disabled = messageInput.value.trim() === "";
+        });
+
+        // Open dark gray colour when dropdown box is open
+        document.querySelectorAll('.ellipsis-container').forEach(ellipsisContainer => {
+            ellipsisContainer.addEventListener('click', function(event) {
+                // Prevent the click event from propagating further
+                event.stopPropagation();
+
+                // First, close any open dropdowns and reset their ellipses to the default state
+                document.querySelectorAll('.ellipsis-container').forEach(container => {
+                    if (container !== this) {
+                        container.classList.remove('active'); // Remove 'active' class
+                        const dropdownMenu = container.nextElementSibling;
+                        dropdownMenu.style.display = 'none'; // Hide the dropdown menu
+                    }
+                });
+
+                // Toggle the 'active' class on the clicked ellipsis container
+                this.classList.toggle('active');
+
+                // Toggle the display of the dropdown menu for the clicked ellipsis
+                const dropdownMenu = this.nextElementSibling;
+                dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+            });
+        });
+
+        document.querySelectorAll('.delete-option').forEach(option => {
+            option.addEventListener('click', function(event) {
+                event.preventDefault();  // Prevent the default action of the delete link
+
+                // Get the message ID from the clicked delete option
+                const messageId = this.getAttribute('data-message-id');
+
+                // Show the confirmation modal
+                const modal = new bootstrap.Modal(document.getElementById('deleteConfirmationModal'));
+                modal.show();  // Show the modal
+
+                // Set the message ID on the 'Confirm Delete' button
+                document.getElementById('confirmDeleteButton').setAttribute('data-message-id', messageId);
+
+                // Confirm delete action when clicking on the 'Confirm Delete' button
+                document.getElementById('confirmDeleteButton').addEventListener('click', function() {
+                    modal.hide();  // Hide the modal after deletion is confirmed
+                    const messageId = this.getAttribute('data-message-id');
+                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`).closest('.message');
+                    const preElement = messageElement.querySelector('pre');
+                    preElement.innerHTML = "<i style='color: lightgray;'>This message has been deleted</i>";
+                    const ellipsisContainer = messageElement.querySelector('.ellipsis-container');
+                    ellipsisContainer.style.display = 'none';
+
+                    fetch('/delete_message', {
+                        method: 'POST',  // Use POST for modifying data
+                        headers: {
+                            'Content-Type': 'application/json',  // Tell the server we're sending JSON
+                        },
+                        body: JSON.stringify({
+                            message_id: messageId  // Send the message ID as part of the request body
+                        })
+                    })
+                    .then(response => response.json())  // Assuming the backend returns JSON
+                    .then(data => {
+                        if (data.success) {
+                            // Optionally, remove the message from the UI if deletion is successful
+                            document.querySelector(`[data-message-id='${messageId}']`).closest('.message').remove();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+
+
+                });
+            });
+        });
+        //Scroll to the bottom
+        function scrollToBottom() {
+            const messageBox = document.querySelector('.message-box'); // Replace '.message-box' with your container's class or ID
+            messageBox.scrollTop = messageBox.scrollHeight;
         }
-    });
-    const form = contentInput.closest('form');  // Get the form element containing the message input
-
-    // Event listener for Enter key in the input field
-    contentInput.addEventListener('keydown', function(event) {
-        if (event.key === 'Enter' && !event.shiftKey) {  // If Enter key is pressed (without Shift)
-            event.preventDefault();  // Prevent default newline behavior (Shift + Enter for new line)
-            sendMessage();
-        }
-    });
-
-    // Function to simulate clicking the send button (form submit)
-    function sendMessage() {
-        // Check if the input is not empty
-        const trimmedValue = contentInput.value.trim();
-        if (trimmedValue.length > 0) {
-            form.submit();  // Submit the form programmatically
-        }
-    }
-
-    window.onload = function() {
-    scrollToBottom();
-};
-
-function scrollToBottom() {
-    const messageBox = document.querySelector('.message-box');
-    messageBox.scrollTop = messageBox.scrollHeight;
-}
-</script>
+        window.onload = function() {
+            scrollToBottom();
+        };
+    </script>
 </body>
+
 {% endblock %}
 {% from "includes/_formHelper.html" import render_field %}

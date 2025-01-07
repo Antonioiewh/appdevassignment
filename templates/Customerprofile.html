@@ -66,8 +66,13 @@
         <div class="d-flex justify-content-center align-items-center" style="height:70%; width:100%"> <!--THIS div for img ONLY-->
             <img src=../static/listingpics/listing{{listing.get_ID()}}.jpg style="width:200px; height:150px; border-radius: 5%;">
         </div>
-
+        {% if listing.get_status() == "disabled"%}
+        <p class="" style="justify-self:center; color:red;">This listing is under review</p> 
+        {%endif%}
+        {% if listing.get_status() == "available"%}
         <p class="" style="justify-self:center">{{listing.get_title()}}</p> <!--name of listing-->
+        {%endif%}
+    
 
         <!--drop down options and stuff-->
         <div style="justify-self:end"> <!--added an div as justify-self:end works if it is one-->

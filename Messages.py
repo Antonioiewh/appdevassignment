@@ -1,5 +1,6 @@
 import shelve
 from datetime import datetime
+import uuid
 
 class Message:
     def __init__(self, sender_id, receiver_id, content):
@@ -7,6 +8,8 @@ class Message:
         self.receiver_id = int(receiver_id)
         self.content = content
         self.timestamp = datetime.now()
+        self.message_id = str(uuid.uuid4())
+        self.status = "active"  # status of message: "active" or "deleted"
 
     def to_dict(self):
         """Return a dictionary representation of the message."""
@@ -14,7 +17,8 @@ class Message:
             "sender_id": self.sender_id,
             "receiver_id": self.receiver_id,
             "content": self.content,
-            "timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M")
+            "timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M"),
+            "message_id": self.message_id
         }
 
 class User:
@@ -25,13 +29,12 @@ class User:
         content = content.strip()
         message = Message(self.user_id, receiver_id, content)
 
-        # Add message to the database
+        # add message to database
         messages_list = messages_db.get("Messages", [])
         messages_list.append(message)
         messages_db["Messages"] = messages_list
 
-        # Update recent chats for sender and receiver (move them to the top)
-        self.add_to_recent_chats(receiver_id)  # Updates recent chats list for the sender
+        self.add_to_recent_chats(receiver_id)  # Updates recent chats list for the sender, moves it to top
         recipient = User(receiver_id)
         recipient.add_to_recent_chats(self.user_id)  # Updates recent chats list for the receiver
 
@@ -43,16 +46,16 @@ class User:
             if user_chats_key not in db:
                 db[user_chats_key] = []
 
-            # Retrieve and update the list of recent chats
+            # retrieve and update the list of recent chats
             recent_chats = db[user_chats_key]
 
-            # Remove receiver_id if it exists to avoid duplication
+            # remove receiver_id if it exists to avoid dupes
             recent_chats = [chat for chat in recent_chats if chat['receiver_id'] != receiver_id]
 
-            # Add the receiver to the top of the list
+            # add receiver to the top of the list
             recent_chats.insert(0, {"receiver_id": receiver_id})
 
-            # Save updated recent chats back to the database
+            # save updated recent chats back to database
             db[user_chats_key] = recent_chats
 
     def get_received_messages(self, messages_db):

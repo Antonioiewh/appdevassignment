@@ -3,6 +3,7 @@ import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField
 import Email,Search
 import shelve, Customer
 from pathlib import Path
@@ -126,7 +127,7 @@ def Customerprofile(id):
         db4 = shelve.open('reports.db','c')    
         Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB2 Listing count or count is at 0")
+        print("Error in retrieving data from DB4 Report count or count is at 0")
 
 
     #code for profile pic img 
@@ -146,10 +147,11 @@ def Customerprofile(id):
                 listing_list.append(listing)
     #report function
     if request.method == 'POST' and report_form.validate():
-        
+        customer = customers_dict.get(id)
+
         #create report obj and store it
         print(report_form.category.data,report_form.report_text.data)
-        report = Report.Report(session_ID,id,report_form.category.data,report_form.report_text.data)
+        report = Report.Report(session_ID,id,customer.get_username(),report_form.category.data,report_form.report_text.data)
         reports_dict[report.get_ID()] = report #store obj in dict
         db4['Reports'] = reports_dict
         db4['ReportsCount'] = Report.Report.count_ID
@@ -163,8 +165,11 @@ def Customerprofile(id):
         redirect(url_for('Customerprofile', id=id))
 
     #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
     #get img
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field)
@@ -230,8 +235,11 @@ def updateCustomerprofile(id):
             return redirect(url_for('Customerprofile', id = id))
         
     #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
         
 
     return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field)
@@ -295,7 +303,7 @@ def Customerprofile_reviews(id):
         db4 = shelve.open('reports.db','c')    
         Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB2 Listing count or count is at 0")
+        print("Error in retrieving data from DB4 Report count or count is at 0")
 
 
     
@@ -312,10 +320,11 @@ def Customerprofile_reviews(id):
             customer_reviews_list.append(review)
     #report function
     if request.method == 'POST' and report_form.validate():
+        customer = customers_dict.get(id)
 
         #create report obj and store it
         print(report_form.category.data,report_form.report_text.data)
-        report = Report.Report(session_ID,id,report_form.category.data,report_form.report_text.data)
+        report = Report.Report(session_ID,id,customer.get_username(),report_form.category.data,report_form.report_text.data)
         reports_dict[report.get_ID()] = report #store obj in dict
         db4['Reports'] = reports_dict
         db4['ReportsCount'] = Report.Report.count_ID
@@ -327,9 +336,12 @@ def Customerprofile_reviews(id):
         db1['Customers'] = customers_dict
         db1.close()
         redirect(url_for('Customerprofile', id=id))
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+        #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
     #reviewer pfp
  
     print(f"Reviews are {customer_reviews_list}")
@@ -389,8 +401,11 @@ def signup():
 
         return redirect(url_for('Customerhome'))
     #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
         
     return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field)
 
@@ -440,10 +455,13 @@ def login():
         
         print(f"\n*start of message*Login success, current session ID is {session_ID}\n*end of message*")
         return redirect(url_for('Customerhome'))
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     
+    #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
 
     return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field)
 
@@ -452,9 +470,12 @@ def loginoptions():
     global session_ID
     session_ID = 0
     search_field = SearchBar(request.form)
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+        #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
     return render_template('Login.html',current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/createlisting', methods = ['GET', 'POST'])
@@ -544,9 +565,12 @@ def createlisting():
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
         return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+        #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
     return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
@@ -578,9 +602,11 @@ def updateListing(id):
         db2['Listings'] = listings_dict #sync local to db2
         db2.close() 
         return redirect(url_for('Customerprofile', id = id)) #go back to profile page after submit
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
 
     return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field) #to render the form 
 
@@ -622,9 +648,11 @@ def viewListing(id):
     if listing.get_ID() in customer_liked_posts:
         print("User has already liked this post")
         user_liked_post = 'True'
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
     return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field)
 
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
@@ -723,9 +751,11 @@ def createReview(id):
         db1['Customers'] = customers_dict
         db1.close()
         return redirect(url_for('Customerprofile', id = id)) #goes back to profile u left a review on.
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
     
     return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field)
 
@@ -873,9 +903,11 @@ def viewLikedListings(id): #retrieve current session_ID
         if key in customer_liked_listings:
             listing = listings_dict.get(key)
             listings_to_display.append(listing)
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field)
 
 @app.route('/messages', methods=['GET', 'POST'])
@@ -898,7 +930,9 @@ def messages():
                     show_error_modal=True,
                     current_sessionID=int(session_ID),
                     recent_chats=recent_chats,
-                    selected_chat=None
+                    selected_chat=None,
+                    searchform = search_field
+
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
             # Handle Start New Chat (without content) logic
@@ -923,6 +957,8 @@ def messages():
                     "timestamp": message.timestamp.strftime("%Y-%m-%d %H:%M"),
                     "receiver_id": message.receiver_id,
                     "sender_id": message.sender_id,
+                    "message_id": message.message_id,
+                    "status": message.status
                 }
                 for message in db.get("Messages", [])
                 if (message.sender_id == session_ID and message.receiver_id == receiver_id) or
@@ -933,10 +969,12 @@ def messages():
                 'receiver_id': receiver_id,
                 'messages': message
             }
-
         #search func
-        if request.method == 'POST' and search_field.validate():
-            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+        try:
+            if request.method == 'POST' and search_field.validate():
+                return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+        except:
+            pass
         
 
         return render_template(
@@ -949,11 +987,43 @@ def messages():
         )
     finally:
         db.close()
-    # to do: convert recent chat into button not just hyperlink, option to delete/edit/reply to messages
     # dropdown menu: option to delete chat/hyperlink to user's profile/block profile,
     # option to send pictures in chat, make enter key send message, message delivered/read/notifications(red number icon),
     # message previews, make date appear like whatsapp
     #
+
+@app.route('/delete_message', methods=['POST'])
+def delete_message():
+
+    data = request.get_json()  # Get the JSON data from the request
+    message_id = data.get('message_id')  # Get the message ID
+
+    db = shelve.open('messages.db', 'c')
+    messages2 = db.get('Messages', [])
+    message_to_delete = None
+
+    for message in messages2:
+        if message.message_id == message_id:
+            message_to_delete = message
+            break
+
+    if not message_to_delete:
+        return jsonify({'success': False, 'error': 'Message not found'}), 404
+
+    # Delete the message from the database
+    # messages2.remove(message_to_delete)
+    message_to_delete.status = "deleted"
+    message_to_delete.content = None
+    db['Messages'] = messages2
+
+    db.close()
+
+
+    # to do: ask teacher if it counts as "deletion" of database to do the above
+    # convert recent chat into button not just hyperlink, option to edit/reply to messages
+    # dropdown menu: option to delete chat/hyperlink to user's profile/block profile,
+    # option to send pictures in chat, message delivered/read/notifications(red number icon),
+    # message previews, make date appear like whatsapp
 
 @app.route('/searchresults/<keyword>')
 def searchresults(keyword):
@@ -977,9 +1047,11 @@ def searchresults(keyword):
         
         Search.search_keyword(listing,keyword,show_listings)#check if it fulfills the condition
     
-    #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
     
     return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings)
 
@@ -1060,6 +1132,7 @@ def dashboardusers():
 def dashboarduserssearch(keyword):
     user_search_field = SearchUserField(request.form)
     db1 = shelve.open('customer.db','c')
+    customers_dict = {}
     try:
         if "Customers" in db1:
             customers_dict = db1["Customers"] #sync local with db1
@@ -1088,6 +1161,7 @@ def dashboarduserssearch(keyword):
     
     
     return render_template('Operatordashboard_users_search.html',form = user_search_field,customers_list = customers_list)
+
 @app.route('/operatorviewprofile/<int:id>',methods=['GET', 'POST'])
 def operatorviewprofile(id): #id of profile they are viewing
     db1 = shelve.open('customer.db','c')
@@ -1099,7 +1173,8 @@ def operatorviewprofile(id): #id of profile they are viewing
     terminate_user = OperatorTerminateUser(request.form)
     suspend_user = OperatorSuspendUser(request.form)
     restore_user = OperatorRestoreUser(request.form)
-
+    disable_listing = OperatorDisableListing(request.form)
+    restore_listing = OperatorRestoreListing(request.form)
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -1161,6 +1236,46 @@ def operatorviewprofile(id): #id of profile they are viewing
             if key in customer_listings:
                 listing = listings_dict.get(key)
                 listing_list.append(listing)
+
+    #disable listing
+    if request.method == 'POST' and disable_listing.validate():
+        if disable_listing.password.data == "sysadmin1":
+            #create operator action object
+            operator_action = operatoractions.Operatoractions(id,disable_listing.category.data,disable_listing.disable_text.data)
+            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+            
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
+            db5['operatoractions'] = operatoractions_dict
+            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+            db5.close()
+
+            #make changes to affected listing
+            listing = listings_dict.get(int(disable_listing.id.data))
+            listing.set_status("disabled")
+            print(listing.get_status())
+            db2['Listings'] = listings_dict
+            return(redirect(url_for('operatorviewprofile', id=id)))
+
+    #restore listing
+    if request.method == 'POST' and restore_listing.validate():
+        if disable_listing.password.data == "sysadmin1":
+            #create operator action object
+            operator_action = operatoractions.Operatoractions(id,"restored listing","nil")
+            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+            
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
+            db5['operatoractions'] = operatoractions_dict
+            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+            db5.close()
+
+            #make changes to affected listing
+            listing = listings_dict.get(int(restore_listing.id.data))
+            listing.set_status("active")
+            print(listing.get_status())
+            db2['Listings'] = listings_dict
+            return(redirect(url_for('operatorviewprofile', id=id)))   
     #suspend func
     if request.method == 'POST' and suspend_user.validate():
         if suspend_user.password.data == "sysadmin1":
@@ -1168,8 +1283,8 @@ def operatorviewprofile(id): #id of profile they are viewing
             operator_action = operatoractions.Operatoractions(id,suspend_user.category.data,suspend_user.suspend_text.data)
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
-            #syncs db1 with local dict
-            #syncs db1 count with local count (aka customer class)
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
             db5['operatoractions'] = operatoractions_dict
             db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
             db5.close()
@@ -1180,7 +1295,6 @@ def operatorviewprofile(id): #id of profile they are viewing
             db1['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
     
-
     #terminate func
     if request.method == 'POST' and terminate_user.validate():
         if terminate_user.password.data == "sysadmin1":
@@ -1188,8 +1302,8 @@ def operatorviewprofile(id): #id of profile they are viewing
             operator_action = operatoractions.Operatoractions(id,terminate_user.category.data,terminate_user.terminate_text.data)
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
-            #syncs db1 with local dict
-            #syncs db1 count with local count (aka customer class)
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
             db5['operatoractions'] = operatoractions_dict
             db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
             db5.close()
@@ -1207,8 +1321,8 @@ def operatorviewprofile(id): #id of profile they are viewing
             operator_action = operatoractions.Operatoractions(id,"restored user","nil")
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
-            #syncs db1 with local dict
-            #syncs db1 count with local count (aka customer class)
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
             db5['operatoractions'] = operatoractions_dict
             db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
             db5.close()
@@ -1218,10 +1332,10 @@ def operatorviewprofile(id): #id of profile they are viewing
             customer.set_status("active")
             db1['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
-        
-
+    
     return render_template('OperatorViewProfile.html', customer=customer,
-                            listings_list = listing_list,terminate_user_form = terminate_user, suspend_user_form = suspend_user, restore_user_form = restore_user)
+                            listings_list = listing_list,terminate_user_form = terminate_user, suspend_user_form = suspend_user, restore_user_form = restore_user,disable_listing_form = disable_listing,restore_listing_form=restore_listing)
+
 
 @app.route('/operatorviewprofilereviews/<int:id>',methods=['GET', 'POST'])
 def operatorviewprofilereviews(id):
@@ -1356,6 +1470,152 @@ def operatorviewprofilereviews(id):
 
     return render_template("OperatorViewProfile_reviews.html",customer = customer ,number_of_reviews = len(customer_reviews_list),list_reviews = customer_reviews_list,terminate_user_form = terminate_user, suspend_user_form = suspend_user, restore_user_form = restore_user)
 
+@app.route('/dashboard/listings',methods=['GET', 'POST'])
+def dashboardlistings():
+    listing_search_field = SearchListingField(request.form)
+    db2 = shelve.open('listing.db','c')
+    listings_dict = {}
+
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    listings_list = []
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        listings_list.append(listing)
+
+    if request.method == 'POST' and listing_search_field.validate():
+        return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
+    
+    return render_template('Operatordashboard_listings.html',form = listing_search_field,listings_list = listings_list)
+
+@app.route('/dashboard/listings/search=<keyword>',methods=['GET', 'POST'])
+def dashboardlistingssearch(keyword):
+    listing_search_field = SearchListingField(request.form)
+    db2 = shelve.open('listing.db','c')
+    listings_dict = {}
+
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    listings_list = []        
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        if keyword in listing.get_title():
+            listings_list.append(listing)
+        else:
+            pass
+
+    if request.method == 'POST' and listing_search_field.validate():
+        return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
+    
+    return render_template('Operatordashboard_listings_search.html',form = listing_search_field,listings_list = listings_list)
+
+@app.route('/operatorviewlisting/<int:id>',)
+def operatorviewlisting(id):
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    listings_dict = {}
+    customers_dict = {}
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    
+    listing = listings_dict.get(id)
+    for key in customers_dict:
+        if key == listing.get_creatorID():
+            seller = customers_dict.get(key)
+            break
+    
+    return render_template('OperatorViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID)
+    
+@app.route('/dashboard/reports',methods=['GET', 'POST'])
+def dashboardreports():
+    db4 =shelve.open('reports.db','c')
+    reports_dict = {}
+    report_search_field = SearchReportField(request.form)
+    #sync report dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reports" in db4:
+            reports_dict = db4["Reports"] #sync local with db2
+        else:
+            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening reports.db")
+    #sync listing IDs
+    try:
+        db4 = shelve.open('reports.db','c')    
+        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB4 Report count or count is at 0")
+
+    reports_list = []
+    for key in reports_dict:
+        report = reports_dict.get(key)
+        reports_list.append(report)
+    try:
+        if request.method == 'POST' and report_search_field.validate():
+            return redirect(url_for('dashboardreportssearch',keyword = report_search_field.searchfield.data))
+    except:
+        pass
+    return render_template("Operatordashboard_reports.html",reports_list=reports_list,form =report_search_field)
+
+@app.route('/dashboard/reports/search=<keyword>',methods=['GET', 'POST'])
+def dashboardreportssearch(keyword):
+    db4 =shelve.open('reports.db','c')
+    reports_dict = {}
+    report_search_field = SearchReportField(request.form)
+    #sync report dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reports" in db4:
+            reports_dict = db4["Reports"] #sync local with db2
+        else:
+            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening reports.db")
+    #sync listing IDs
+    try:
+        db4 = shelve.open('reports.db','c')    
+        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB4 Report count or count is at 0")
+
+    reports_list = []
+    for key in reports_dict:
+        report = reports_dict.get(key)
+        if keyword in report.get_offender_username():
+            reports_list.append(report)
+    
+    try:
+        if request.method == 'POST' and report_search_field.validate():
+            return redirect(url_for('dashboardreportssearch',keyword = report_search_field.searchfield.data))
+    except:
+        pass
+    return render_template('Operatordashboard_reports_search.html',reports_list=reports_list,form=report_search_field)
+    
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'

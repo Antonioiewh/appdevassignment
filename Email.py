@@ -20,7 +20,7 @@ def send_liked_notification_gmail(recipient_email,customer_username):
 
 def send_signup_notification_gmail(recipient_email,recipient_username):
     try:
-        msg = MIMEText(f"Welcome{recipient_username} to freesell!")
+        msg = MIMEText(f"Welcome {recipient_username} to freesell!")
         msg['Subject'] = 'Notification from freesell'
         msg['From'] = sender
         msg['To'] = recipient_email

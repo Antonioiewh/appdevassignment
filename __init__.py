@@ -4,12 +4,13 @@ from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
 from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField
-import Email,Search
+import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
 from Messages import User
 import string
 import random
+from datetime import datetime
 app = Flask(__name__)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
@@ -20,12 +21,10 @@ def check_allowed_file(filename):
 def check_upload_file_type(file,type,id): #file obj here, listing/userid here too, type too
     file_to_upload = file
     if type == "listing" and check_allowed_file(file.filename):
-        print("check listing pic")
         file.filename = f"listing{id}.jpg"
         check_dupe_file(file_to_upload,"listingpics")
    
     elif type == "customer" and check_allowed_file(file.filename):
-        print("check profile pic")
         file.filename = f"customer{id}.jpg"
         check_dupe_file(file_to_upload,"profilepics")
     else:
@@ -38,18 +37,59 @@ def check_dupe_file(file,type):
         file_uploaded = file
         folder = type
         upload_file(folder,file_uploaded)
-        print("file uploaded")
 
     else:
         file_uploaded = file
         folder = type
         upload_file(folder,file_uploaded)
-        print("file uploaded")
 
 def upload_file(folder,file):
     filename = secure_filename(file.filename)
     file.save(os.path.join(f"static/{folder}", filename))
     #for some reason it keeps returning ERRNO13 aka no permission but err it works so idk
+
+    
+
+def send_welcomenotifcation(id): #id of person to add notifactions to
+    db1 = shelve.open('customer.db','c')
+    db6 = shelve.open('notifications.db','c')
+    customers_dict = {}
+    notifications_dict = {}
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Notifications" in db6:
+            notifications_dict = db6["Notifications"] #sync local with db1
+        else:
+            db6['Notifications'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening notifications.db")
+    
+    try:
+        db6 = shelve.open('notifications.db','c')    
+        Notifications.Notifications.count_ID = db6["NotificationsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB6 Notifications count or count is at 0")
+    
+    #create notifcation obj
+    notification = Notifications.Notifications(id,"Welcome to Freesell!")
+    notifications_dict[notification.get_ID()] = notification
+    db6["Notifications"] = notifications_dict
+    db6["NotificationsCount"] = Notifications.Notifications.count_ID
+    db6.close()
+    #add it to customer notifcations
+    customer = customers_dict.get(id)
+    customer.add_notifications(notification.get_ID()) #adds notifs
+    db1["Customers"] = customers_dict
+
+    #send the notifcation to their email
+
+    Email.send_signup_notification_gmail(customer.get_email(),customer.get_username())
 
 #current_sessionID IS FOR THE PROFILE!!
 #Current session ID
@@ -58,15 +98,30 @@ session_ID = 0
 
 @app.route('/', methods = ['GET', 'POST']) #shld be the same as href for buttons,links,navbar, etc...
 def Customerhome():
+    db1 = shelve.open('customer.db','c')
+    customers_dict = {} #local one
     global session_ID
     search_field = SearchBar(request.form)
-
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
     #search func
     if request.method == 'POST' and search_field.validate():
         return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
-    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
 
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field)
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications)
     
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
@@ -170,9 +225,16 @@ def Customerprofile(id):
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+
     #get img
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
-                            current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field)
+                            current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications)
 
 @app.route('/updateprofile/<int:id>', methods = ['GET', 'POST'])
 def updateCustomerprofile(id):
@@ -240,9 +302,17 @@ def updateCustomerprofile(id):
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-        
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
 
-    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field)
+
+
+    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field,customer_notifications = customer_notifications)
 
 @app.route('/profilereviews/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile_reviews(id):
@@ -342,19 +412,24 @@ def Customerprofile_reviews(id):
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-    #reviewer pfp
- 
-    print(f"Reviews are {customer_reviews_list}")
-    return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field)
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+
+    return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     global session_ID
     create_customer_form = CustomerSignupForm(request.form)
     search_field = SearchBar(request.form)
+    db1 = shelve.open('customer.db','c')  
+    customers_dict = {} #local one
     if request.method == 'POST' and create_customer_form.validate():
-        db1 = shelve.open('customer.db','c')  
-        customers_dict = {} #local one
+        
 
 
         #make sure local and db1 are the same state
@@ -398,7 +473,9 @@ def signup():
         print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
         session_ID = Customer.Customer.count_id
         db1.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
-
+        #notifs
+        send_welcomenotifcation(customer.get_id())
+        
         return redirect(url_for('Customerhome'))
     #search func
     try:
@@ -406,17 +483,25 @@ def signup():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-        
-    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field)
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifcations = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifcations = 0  
+
+    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifcations)
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
     global session_ID
     login_customer_form = CustomerLoginForm(request.form)
     search_field = SearchBar(request.form)
+    db1 = shelve.open('customer.db','c')
+    customers_dict = {} #local one
     if request.method == 'POST' and login_customer_form.validate():
-        db1 = shelve.open('customer.db','c')
-        customers_dict = {} #local one
+        
 
         #make sure local and db1 are the same state
         #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -462,21 +547,45 @@ def login():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifcations = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifcations = 0  
 
-    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field)
+    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations)
 
 @app.route('/loginoptions',methods = ['GET', 'POST'])
 def loginoptions():
     global session_ID
+    db1 = shelve.open('customer.db','c')
+    customers_dict = {} #local one
     session_ID = 0
     search_field = SearchBar(request.form)
-        #search func
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    #search func
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field)
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifcations = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifcations = 0  
+
+    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations)
 
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
@@ -525,10 +634,6 @@ def createlisting():
     except:
         print("Error in retrieving data from DB1 Customer count or count is at 0")
 
-        
-
-
-    
 
     #retrieve data from form
     if request.method == 'POST' and create_listing_form.validate():
@@ -565,13 +670,19 @@ def createlisting():
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
         return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
-        #search func
+    #search func
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field)
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifcations = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifcations = 0 
+    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
@@ -579,7 +690,19 @@ def updateListing(id):
     update_listing_form = ListingForm(request.form)
     db2 = shelve.open('listing.db','c') #RMBR THIS
     search_field = SearchBar(request.form)
+    db1 = shelve.open('customer.db','c')
+    customers_dict = {} #local one
     listings_dict = {}
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+        
     try:
         if "Listings" in db2:
             listings_dict = db2["Listings"] #sync local with db2
@@ -607,8 +730,13 @@ def updateListing(id):
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-
-    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field) #to render the form 
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifcations = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifcations = 0 
+    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations) #to render the form 
 
 @app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
 def viewListing(id):
@@ -646,14 +774,21 @@ def viewListing(id):
     customer_liked_posts = customer.get_liked_listings()
     user_liked_post = 'False'
     if listing.get_ID() in customer_liked_posts:
-        print("User has already liked this post")
         user_liked_post = 'True'
+    
+    #search func
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field)
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifcations = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifcations = 0 
+    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifcations)
 
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
 def deleteListing(id):
@@ -695,10 +830,25 @@ def createReview(id):
     review_form = ReviewForm(request.form)
     customers_dict = {}
     reviews_dict ={}
+    notifications_dict = {}
     db3 = shelve.open('reviews.db', 'c')
     db1 = shelve.open('customer.db','c')
+    db6 = shelve.open('notifications.db','c')
     search_field = SearchBar(request.form)
-     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+
+    try:
+        if "Notifications" in db6:
+            notifications_dict = db6["Notifications"] #sync local with db1
+        else:
+            db6['Notifications'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening notifications.db")
+    try:
+        db6 = shelve.open('notifications.db','c')    
+        Notifications.Notifications.count_ID = db6["NotificationsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB6 Notifications count or count is at 0")
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in db1:
             customers_dict = db1["Customers"] #sync local with db1
@@ -714,7 +864,7 @@ def createReview(id):
     except:
         print("Error in retrieving data from DB1 Customer count or count is at 0")
 
-     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Reviews" in db3:
             reviews_dict = db3["Reviews"] #sync local with db1
@@ -749,23 +899,44 @@ def createReview(id):
         customer.set_rating(float(review.get_rating()))
         print(f"Customer reviews are {customer.get_reviews()}\n Customer current rating is {customer.get_rating()}")
         db1['Customers'] = customers_dict
-        db1.close()
-        return redirect(url_for('Customerprofile', id = id)) #goes back to profile u left a review on.
+
+        #notif
+        #create notif obj
+        notification = Notifications.Notifications(customer.get_id(),f"{current_customer_username} has left you a review!")
+        notifications_dict[notification.get_ID()] = notification
+        db6['Notifications'] = notifications_dict
+        db6['NotificationsCount'] = Notifications.Notifications.count_ID
+
+        #add notif to customer
+        customer.add_notifications(notification.get_ID())
+        db1['Customers'] = customers_dict
+
+        #Email user
+        Email.send_review_notifcation_gmail(customer.get_email(),customer.get_username(),current_customer_username,review.get_comment())
+        return redirect(url_for('Customerprofile', id = id))
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-    
-    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field)
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
+
+    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications)
 
 @app.route('/createLikedListing/<int:id>', methods = ['GET', 'POST'])
 def createLikedListing(id): #ID of listing
     global session_ID
     db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    db2 = shelve.open('listing.db','c')
+    db6 = shelve.open('notifications.db','c') #RMBR THIS
     customers_dict = {} #local one
     listings_dict = {}
+    notifications_dict = {}
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -799,6 +970,19 @@ def createLikedListing(id): #ID of listing
     except:
         print("Error in retrieving data from DB2 Listing count or count is at 0")
     
+    try:
+        if "Notifications" in db6:
+            notifications_dict = db6["Notifications"] #sync local with db1
+        else:
+            db6['Notifications'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening notifications.db")
+    try:
+        db6 = shelve.open('notifications.db','c')    
+        Notifications.Notifications.count_ID = db6["NotificationsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB6 Notifications count or count is at 0")
+    
     customer = customers_dict.get(session_ID) #get current user obj
     listing = listings_dict.get(id) #id that was entered
 
@@ -811,7 +995,19 @@ def createLikedListing(id): #ID of listing
     customer.add_liked_listings(listing.get_ID())
     db1['Customers'] =  customers_dict
     print(f"Customer ID:{customer.get_id()} liked posts are {customer.get_liked_listings()}")
+    
+    #notif
+    notification = Notifications.Notifications(listing.get_creatorID(),f"{customer.get_username()} liked your post:{listing.get_title()}")
+    notifications_dict[notification.get_ID()] = notification
+    db6['Notifications'] = notifications_dict
+    db6['NotificationsCount'] = Notifications.Notifications.count_ID
+    for key in notifications_dict:
+        print(notifications_dict.get(key))
 
+    #add notif to customer
+    seller = customers_dict.get(listing.get_creatorID())
+    seller.add_notifications(notification.get_ID())
+    db1['Customers'] = customers_dict
 
     return redirect(url_for('viewListing', id = id))
 
@@ -903,16 +1099,34 @@ def viewLikedListings(id): #retrieve current session_ID
         if key in customer_liked_listings:
             listing = listings_dict.get(key)
             listings_to_display.append(listing)
+    #search function
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field)
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications == 0
+    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications)
 
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
     global session_ID
+    customers_dict = {}
+    db1 = shelve.open('customer.db','c')
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
     # add in for official project
     if session_ID == 0:
         return redirect(url_for('Customerhome'))
@@ -987,6 +1201,12 @@ def messages():
                 return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
         except:
             pass
+        #get notifs
+        if session_ID != 0:
+            customer = customers_dict.get(session_ID)
+            customer_notifications = customer.get_unread_notifications()
+        elif session_ID == 0:
+            customer_notifications = 0 
         
 
         return render_template(
@@ -995,7 +1215,7 @@ def messages():
             sent_messages=sent_messages,
             current_sessionID=session_ID,
             recent_chats=recent_chats,
-            selected_chat=selected_chat,searchform =search_field
+            selected_chat=selected_chat,searchform =search_field,customer_notifcations=customer_notifications
         )
     finally:
         db.close()
@@ -1040,11 +1260,21 @@ def delete_message():
 @app.route('/searchresults/<keyword>')
 def searchresults(keyword):
     global session_ID
-    
+    db1 = shelve.open('customer.db','c')
     db2 = shelve.open('listing.db','c') #RMBR THIS
+    customers_dict = {}
     listings_dict = {}
     search_field = SearchBar(request.form)
 
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
     try:
         if "Listings" in db2:
             listings_dict = db2["Listings"] #sync local with db2
@@ -1058,15 +1288,74 @@ def searchresults(keyword):
         listing = listings_dict.get(key)
         
         Search.search_keyword(listing,keyword,show_listings)#check if it fulfills the condition
-    
+    #search func
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
     except:
         pass
-    
-    return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings)
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = len(customer.get_notifications())
+    elif session_ID == 0:
+        customer_notifications = 0 
+    return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications)
 
+@app.route('/notifications/<int:id>')
+def viewnotifications(id): #id is current_sessionID
+    global session_ID
+    db1 = shelve.open('customer.db','c')
+    db6 = shelve.open('notifications.db','c')
+    notifications_dict = {}
+    customers_dict = {}
+    search_field = SearchBar(request.form)
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Notifications" in db6:
+            notifications_dict = db6["Notifications"] #sync local with db1
+        else:
+            db6['Notifications'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening notifications.db")
+    
+    try:
+        db6 = shelve.open('notifications.db','c')    
+        Notifications.Notifications.count_ID = db6["NotificationsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB6 Notifications count or count is at 0")
+
+    #get own notifs
+    customer = customers_dict.get(id)
+    notifs_list = customer.get_notifications()
+    notifs_to_display = []
+    for key in notifications_dict:
+        notification = notifications_dict.get(key)
+        notifs_to_display.append(notification)
+    #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = len(customer.get_notifications())
+    elif session_ID == 0:
+        customer_notifications = 0 
+    
+    
+    return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display)
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID

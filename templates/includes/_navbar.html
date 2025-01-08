@@ -45,7 +45,13 @@
                         <i class="bi bi-cart2" style="color:white; font-size: 2rem;"></i>
                     </li>
                     <li class="nav-item p-2">
-                        <i class="bi bi-bell" style="color:white; font-size: 2rem;"></i>
+                        <a href="/notifications/{{current_sessionID}}"type="button" class="btn btn-primary position-relative">
+                            <i class="bi bi-bell" style="color:white; font-size: 2rem;"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{customer_notifications}}
+                                <span class="visually-hidden">unread messages</span>
+                            </span>
+                        </a>
                     </li>
                     <li class="nav-item p-2">
                         <a href = "/messages">

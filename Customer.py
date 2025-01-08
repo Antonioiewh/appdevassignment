@@ -18,6 +18,8 @@ class Customer:
         self.__liked_listings = [] #store id of liked listings
         self.__reports = []#store reports similar to reviews
         self.__status = "active" #3 states : active,suspended,terminated
+        self.__notifications = [] #starts at 0 , stores ID of notifcations
+        self.__unread_notifications = 0 #starts at 0
     def get_id(self):
         return self.__id
     
@@ -56,6 +58,12 @@ class Customer:
     
     def get_status(self):
         return self.__status
+    
+    def get_notifications(self):
+        return self.__notifications
+    
+    def get_unread_notifications(self):
+        return self.__unread_notifications
 
     def set_id(self,id): #just here but god forbid u actually run this as why would u
         self.__id = id 
@@ -118,6 +126,12 @@ class Customer:
 
     def set_status(self,status):
         self.__status = status
+
+    def add_notifications(self,id):
+        self.__notifications.append(id)
+        self.__unread_notifications +=1
+    def clear_unread_notifications(self):
+        self.__unread_notifications = 0
 
     
     

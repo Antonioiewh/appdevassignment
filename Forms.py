@@ -1,5 +1,5 @@
-
-from wtforms import Form, BooleanField, StringField, validators, PasswordField, SelectField, RadioField, SelectMultipleField, FileField #import the fields u need
+from flask_wtf import FlaskForm
+from wtforms import Form, BooleanField, StringField, validators, PasswordField, SelectField,SubmitField, RadioField, SelectMultipleField, FileField,TextAreaField #import the fields u need
 class CustomerSignupForm(Form): #Form for CustomerSignup.html
     username = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
     email        = StringField('Email Address', [validators.Length(min=6, max=35),validators.DataRequired()]) #we will add validator to this later
@@ -74,3 +74,8 @@ class SearchListingField(Form):
 
 class SearchReportField(Form):
     searchfield = StringField("Enter offender username")
+
+class FeedbackForm(FlaskForm):
+    subject = StringField('Subject', [validators.InputRequired(), validators.Length(max=100)])
+    feedback = TextAreaField('Feedback', [validators.InputRequired(), validators.Length(max=500)])
+    submit = SubmitField('Submit Feedback')

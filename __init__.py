@@ -1,13 +1,14 @@
-from flask import Flask, render_template, url_for,request,redirect,session,jsonify
+from flask import Flask, render_template, url_for,request, redirect, session, jsonify,flash
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
+from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser,FeedbackForm #our forms
 from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField
 import Email,Search
 import shelve, Customer
 from pathlib import Path
 from Messages import User
+from FeedbackView import app  #
 import string
 import random
 app = Flask(__name__)
@@ -1627,7 +1628,25 @@ def dashboardreportssearch(keyword):
     except:
         pass
     return render_template('Operatordashboard_reports_search.html',reports_list=reports_list,form=report_search_field)
-    
+
+
+# Feedback submission route
+@app.route('/feedback', methods=['GET', 'POST'])
+def feedback():
+    form = FeedbackForm(request.form)
+    if request.method == 'POST' and form.validate():
+        # Retrieve form data
+        subject = form.subject.data
+        feedback = form.feedback.data
+
+        # Example: Save feedback to a file (you can replace this with database saving logic)
+        with open('feedbacks.txt', 'a') as f:
+            f.write(f"Subject: {subject}\nFeedback: {feedback}\n\n")
+
+        flash("Thank you for your feedback!", "success")
+        return redirect('/')
+
+    return render_template('feedback.html', form=form)
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'

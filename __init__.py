@@ -1,9 +1,9 @@
 from flask import Flask, render_template, url_for,request,redirect,session,jsonify
 import os,sys,stat
 from werkzeug.utils import secure_filename
-import Customer , Listing,Reviews,Report,operatoractions #classes
+import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
-from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm
 import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
@@ -1136,6 +1136,13 @@ def messages():
     user = User(session_ID)
     recent_chats = user.get_recent_chats() 
     search_field = SearchBar(request.form)
+
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1155,6 +1162,7 @@ def messages():
                     current_sessionID=int(session_ID),
                     recent_chats=recent_chats,
                     selected_chat=None,
+                    customer_notifications=customer_notifications,
                     searchform=search_field
                 )
             if int(receiver_id) == session_ID:
@@ -1165,6 +1173,7 @@ def messages():
                     current_sessionID=int(session_ID),
                     recent_chats=recent_chats,
                     selected_chat=None,
+                    customer_notifications=customer_notifications,
                     searchform=search_field  #<- always put
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
@@ -1203,12 +1212,7 @@ def messages():
                 'messages': message
             }
         
-        #get notifs
-        if session_ID != 0:
-            customer = customers_dict.get(session_ID)
-            customer_notifications = customer.get_unread_notifications()
-        elif session_ID == 0:
-            customer_notifications = 0 
+        
         
 
         return render_template(
@@ -1245,7 +1249,6 @@ def delete_chat():
     print(updated_chats)
     db[str(session_ID)] = updated_chats
     return jsonify({'message': f'Receiver ID {receiver_id} processed successfully.'})
-
 
 @app.route('/delete_message', methods=['POST'])
 def delete_message():
@@ -1325,6 +1328,62 @@ def searchresults(keyword):
         customer_notifications = 0 
     return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications)
 
+@app.route('/feedback', methods = ['GET', 'POST'])
+def feedback():
+    global session_ID
+    customers_dict = {}
+    db1 = shelve.open('customer.db','c')
+    feedbacks_dict = {}
+    db7 = shelve.open('feedback.db','c')
+    search_field = SearchBar(request.form)
+    feedback_form = FeedbackForm(request.form)
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Feedback" in db7:
+            feedbacks_dict = db7["Feedback"] #sync local with db1
+        else:
+            db7['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening feedback.db")
+        
+    #sync IDs
+    try:
+        db7 = shelve.open('feedback.db','c')    
+        Feedback.Feedback.count_ID = db7["FeedbackCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB7 Feedback count or count is at 0")
+
+    #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
+
+    if request.method == 'POST' and feedback_form.validate():
+        feedback = Feedback.Feedback(feedback_form.rating.data,feedback_form.feedback.data)
+        feedbacks_dict[feedback.get_ID()] = feedback #store obj in dict
+        db7['Feedback'] = feedbacks_dict
+        db7['FeedbackCount'] = Feedback.Feedback.count_ID
+        db7.close()
+        return redirect(url_for('Customerhome'))
+    
+    return render_template('CustomerFeedback.html',searchform =search_field,
+            customer_notifications=customer_notifications,current_sessionID=int(session_ID),form=feedback_form)
+
 @app.route('/notifications/<int:id>')
 def viewnotifications(id): #id is current_sessionID
     global session_ID
@@ -1379,6 +1438,7 @@ def viewnotifications(id): #id is current_sessionID
     
     
     return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display)
+
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID
@@ -1451,7 +1511,6 @@ def dashboardusers():
     
     return render_template('Operatordashboard_users.html',form = user_search_field,customers_list = customers_list)
 
-
 @app.route('/dashboard/users/search=<keyword>',methods=['GET', 'POST'])
 def dashboarduserssearch(keyword):
     user_search_field = SearchUserField(request.form)
@@ -1494,11 +1553,11 @@ def operatorviewprofile(id): #id of profile they are viewing
     customers_dict = {} #local one
     listings_dict = {}
     operatoractions_dict = {}
-    terminate_user = OperatorTerminateUser(request.form)
-    suspend_user = OperatorSuspendUser(request.form)
-    restore_user = OperatorRestoreUser(request.form)
-    disable_listing = OperatorDisableListing(request.form)
-    restore_listing = OperatorRestoreListing(request.form)
+    terminate_user = OperatorTerminateUser(request.form,typeofaction='terminate user')
+    suspend_user = OperatorSuspendUser(request.form,typeofaction='suspend user')
+    restore_user = OperatorRestoreUser(request.form,typeofaction='report user')
+    disable_listing = OperatorDisableListing(request.form,typeofaction='disable listing')
+    restore_listing = OperatorRestoreListing(request.form,typeofaction='restore listing')
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -1564,8 +1623,8 @@ def operatorviewprofile(id): #id of profile they are viewing
     #disable listing
     if request.method == 'POST' and disable_listing.validate():
         if disable_listing.password.data == "sysadmin1":
-            #create operator action object
-            operator_action = operatoractions.Operatoractions(id,disable_listing.category.data,disable_listing.disable_text.data)
+            #create operator action object)
+            operator_action = operatoractions.Operatoractions(id,disable_listing.typeofaction.data,disable_listing.category.data,disable_listing.disable_text.data)
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
             
             #syncs db5 with local dict
@@ -1583,9 +1642,9 @@ def operatorviewprofile(id): #id of profile they are viewing
 
     #restore listing
     if request.method == 'POST' and restore_listing.validate():
-        if disable_listing.password.data == "sysadmin1":
+        if restore_listing.password.data == "sysadmin1":
             #create operator action object
-            operator_action = operatoractions.Operatoractions(id,"restored listing","nil")
+            operator_action = operatoractions.Operatoractions(id,restore_listing.typeofaction.data,"nil","nil")
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
             
             #syncs db5 with local dict
@@ -1596,15 +1655,15 @@ def operatorviewprofile(id): #id of profile they are viewing
 
             #make changes to affected listing
             listing = listings_dict.get(int(restore_listing.id.data))
-            listing.set_status("active")
+            listing.set_status("available")
             print(listing.get_status())
             db2['Listings'] = listings_dict
             return(redirect(url_for('operatorviewprofile', id=id)))   
-    #suspend func
+    #suspend user func
     if request.method == 'POST' and suspend_user.validate():
         if suspend_user.password.data == "sysadmin1":
             #create operator action object
-            operator_action = operatoractions.Operatoractions(id,suspend_user.category.data,suspend_user.suspend_text.data)
+            operator_action = operatoractions.Operatoractions(id,suspend_user.typeofaction.data,suspend_user.category.data,suspend_user.suspend_text.data)
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
             #syncs db5 with local dict
@@ -1619,11 +1678,11 @@ def operatorviewprofile(id): #id of profile they are viewing
             db1['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
     
-    #terminate func
+    #terminate user func
     if request.method == 'POST' and terminate_user.validate():
         if terminate_user.password.data == "sysadmin1":
             #create operator action object
-            operator_action = operatoractions.Operatoractions(id,terminate_user.category.data,terminate_user.terminate_text.data)
+            operator_action = operatoractions.Operatoractions(id,terminate_user.typeofaction.data,terminate_user.category.data,terminate_user.terminate_text.data)
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
             #syncs db5 with local dict
@@ -1638,11 +1697,11 @@ def operatorviewprofile(id): #id of profile they are viewing
             db1['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
         
-    #restore func
+    #restore user func
     if request.method == 'POST' and restore_user.validate():
-        if terminate_user.password.data == "sysadmin1":
+        if restore_user.password.data == "sysadmin1":
             #create operator action object
-            operator_action = operatoractions.Operatoractions(id,"restored user","nil")
+            operator_action = operatoractions.Operatoractions(id,restore_user.typeofaction.data,"nil","nil")
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
             #syncs db5 with local dict
@@ -1660,7 +1719,6 @@ def operatorviewprofile(id): #id of profile they are viewing
     return render_template('OperatorViewProfile.html', customer=customer,
                             listings_list = listing_list,terminate_user_form = terminate_user, suspend_user_form = suspend_user, restore_user_form = restore_user,disable_listing_form = disable_listing,restore_listing_form=restore_listing)
 
-
 @app.route('/operatorviewprofilereviews/<int:id>',methods=['GET', 'POST'])
 def operatorviewprofilereviews(id):
     db1 = shelve.open('customer.db','c')
@@ -1669,9 +1727,9 @@ def operatorviewprofilereviews(id):
     reviews_dict ={}
     customers_dict = {} #local one
     operatoractions_dict = {}
-    terminate_user = OperatorTerminateUser(request.form)
-    suspend_user = OperatorSuspendUser(request.form)
-    restore_user = OperatorRestoreUser(request.form)
+    terminate_user = OperatorTerminateUser(request.form,typeofaction='terminate user')
+    suspend_user = OperatorSuspendUser(request.form,typeofaction='suspend user')
+    restore_user = OperatorRestoreUser(request.form,typeofaction='report user')
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -1734,15 +1792,16 @@ def operatorviewprofilereviews(id):
             customer_reviews_list.append(review)
 
 
-    #suspend func
+    
+    #suspend user func
     if request.method == 'POST' and suspend_user.validate():
         if suspend_user.password.data == "sysadmin1":
             #create operator action object
-            operator_action = operatoractions.Operatoractions(id,suspend_user.category.data,suspend_user.suspend_text.data)
+            operator_action = operatoractions.Operatoractions(id,suspend_user.typeofaction.data,suspend_user.category.data,suspend_user.suspend_text.data)
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
-            #syncs db1 with local dict
-            #syncs db1 count with local count (aka customer class)
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
             db5['operatoractions'] = operatoractions_dict
             db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
             db5.close()
@@ -1753,15 +1812,16 @@ def operatorviewprofilereviews(id):
             db1['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
         
-    #terminate func
+    
+    #terminate user func
     if request.method == 'POST' and terminate_user.validate():
         if terminate_user.password.data == "sysadmin1":
             #create operator action object
-            operator_action = operatoractions.Operatoractions(id,terminate_user.category.data,terminate_user.terminate_text.data)
+            operator_action = operatoractions.Operatoractions(id,terminate_user.typeofaction.data,terminate_user.category.data,terminate_user.terminate_text.data)
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
-            #syncs db1 with local dict
-            #syncs db1 count with local count (aka customer class)
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
             db5['operatoractions'] = operatoractions_dict
             db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
             db5.close()
@@ -1772,15 +1832,16 @@ def operatorviewprofilereviews(id):
             db1['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
     
-    #restore func
+        
+    #restore user func
     if request.method == 'POST' and restore_user.validate():
-        if terminate_user.password.data == "sysadmin1":
+        if restore_user.password.data == "sysadmin1":
             #create operator action object
-            operator_action = operatoractions.Operatoractions(id,"restored user","nil")
+            operator_action = operatoractions.Operatoractions(id,restore_user.typeofaction.data,"nil","nil")
             operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
 
-            #syncs db1 with local dict
-            #syncs db1 count with local count (aka customer class)
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
             db5['operatoractions'] = operatoractions_dict
             db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
             db5.close()
@@ -1939,7 +2000,89 @@ def dashboardreportssearch(keyword):
     except:
         pass
     return render_template('Operatordashboard_reports_search.html',reports_list=reports_list,form=report_search_field)
+
+@app.route('/dashboard/operatoractions',methods=['GET', 'POST'])
+def dashboardoperatoractions():
+    db5 = shelve.open('operatoractions.db','c')
+    operatoractions_dict = {}
+    operatoraction_search_field = SearchOperatorActionField(request.form)
+    #sync db5
+    try:
+        if "operatoractions" in db5:
+            operatoractions_dict = db5["operatoractions"] #sync local with db1
+        else:
+            db5['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening operatoractions.db")
+        
+    #sync IDs
+    try:
+        db5 = shelve.open('operatoractions.db','c')    
+        operatoractions.Operatoractions.count_ID = db5["operatoractionsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB5 operatoractions count or count is at 0")
+    operator_actions_list = []
+    for key in operatoractions_dict:
+        operatoraction = operatoractions_dict.get(key)
+        operator_actions_list.append(operatoraction)
+    try:
+        if request.method == 'POST' and operatoraction_search_field.validate():
+            return redirect(url_for('dashboardoperatoractionssearch',keyword = operatoraction_search_field.searchfield.data))
+    except:
+        pass
+    return render_template('Operatordashboard_operatoraction.html',form = operatoraction_search_field,operator_actions_list=operator_actions_list)
+
+@app.route('/dashboard/operatoractions/search=<keyword>',methods=['GET', 'POST'])
+def dashboardoperatoractionssearch(keyword):
+    db5 = shelve.open('operatoractions.db','c')
+    operatoractions_dict = {}
+    operatoraction_search_field = SearchOperatorActionField(request.form)
+    #sync db5
+    try:
+        if "operatoractions" in db5:
+            operatoractions_dict = db5["operatoractions"] #sync local with db1
+        else:
+            db5['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening operatoractions.db")
+        
+    #sync IDs
+    try:
+        db5 = shelve.open('operatoractions.db','c')    
+        operatoractions.Operatoractions.count_ID = db5["operatoractionsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB5 operatoractions count or count is at 0")
+
+    operator_actions_list = []
+    for key in operatoractions_dict:
+        operatoraction = operatoractions_dict.get(key)
+        if operatoraction.get_category() == keyword:
+            operator_actions_list.append(operatoraction)
+    try:
+        if request.method == 'POST' and operatoraction_search_field.validate():
+            return redirect(url_for('dashboardoperatoractionssearch',keyword = operatoraction_search_field.searchfield.data))
+    except:
+        pass
     
+    return render_template('Operatordashboard_operatoraction_search.html',form = operatoraction_search_field,operator_actions_list=operator_actions_list)
+
+@app.route('/dashboard/feedbacks')
+def dashboardfeedbacks():
+    feedbacks_dict = {}
+    db7 = shelve.open('feedback.db','c')
+    try:
+        if "Feedback" in db7:
+            feedbacks_dict = db7["Feedback"] #sync local with db1
+        else:
+            db7['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening feedback.db")
+    feedbacks_list=[]
+    for key in feedbacks_dict:
+        feedback = feedbacks_dict.get(key)
+        feedbacks_list.append(feedback)
+    
+    return render_template("Operatordashboard_feedback.html",feedbacks_list=feedbacks_list)
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'

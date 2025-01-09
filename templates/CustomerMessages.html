@@ -9,7 +9,13 @@
 <script>
     window.onload = function() {
         new bootstrap.Modal(document.getElementById('invalidReceiverModal')).show();
+        var modalElement = document.getElementById('invalidReceiverModal');
+        modalElement.addEventListener('hidden.bs.modal', function () {
+        // Redirect to the 'messages' page when the modal is closed
+            window.location.href = "{{ url_for('messages') }}";
+          });
     }
+
 </script>
 {% endif %}
 <style>
@@ -254,7 +260,7 @@
                 <ul class="list-group">
                     {% if recent_chats %}
                         {% for chat in recent_chats %}
-                            <a href="{{ url_for('messages', receiver_id=chat['receiver_id']) }}" style="text-decoration: none; color: inherit;">
+                            <a href="{{ url_for('messages', receiver_id=chat['receiver_id']) }}" style="text-decoration: none; color: inherit;" id="{{ chat['receiver_id'] }}">
                                 <li class="list-group-item" style="height: 60px; display: flex;
                                     {% if selected_chat and selected_chat['receiver_id'] == chat['receiver_id'] %}
                                         background-color: lightgray;  /* Dark Gray */
@@ -335,12 +341,12 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form action="/messages" method="POST">
+                <form action="/messages" method="POST" id="receiveridform222">
                     <div class="mb-3">
                         <label for="receiver_id" class="form-label">Enter User ID:</label>
                         <input type="text" class="form-control" id="receiver_id" name="receiver_id" required maxlength="20">
                     </div>
-                    <button type="submit" class="btn btn-primary">Start Chat</button>
+                    <button type="submit" class="btn btn-primary" id="startChatButton">Start Chat</button>
                 </form>
             </div>
         </div>
@@ -398,7 +404,8 @@
                 <!-- Buttons below Profile Picture -->
                 <div class="mt-3" style="text-align: center;">
                     <button class="btn btn-primary" id="goToProfileButton">Profile</button>
-                    <button class="btn btn-danger" id="blockUserButton" style="margin-left: 10px;">Block User</button>
+                    <button class="btn btn-danger" id="blockUserButton" style="margin-left: 10px; margin-right: 10px;">Block User</button>
+                    <button class="btn btn-danger" id="deletechat111" data-receiver-id="{{ selected_chat['receiver_id'] }}">Delete chat</button>
                 </div>
             </div>
         </div>
@@ -517,7 +524,7 @@
         });
         //Scroll to the bottom
         function scrollToBottom() {
-            const messageBox = document.querySelector('.message-box'); // Replace '.message-box' with your container's class or ID
+            const messageBox = document.querySelector('.message-box');
             messageBox.scrollTop = messageBox.scrollHeight;
         }
         window.onload = function() {
@@ -552,13 +559,33 @@
 
         // Example handling for the buttons in the modal (Go to Profile, Block User)
         document.getElementById('goToProfileButton').addEventListener('click', function() {
-            // You can replace the URL with the actual user profile URL
             window.location.href = `/profile/{{ selected_chat['receiver_id'] }}`;
         });
 
         document.getElementById('blockUserButton').addEventListener('click', function() {
 
         });
+        document.getElementById('deletechat111').addEventListener('click', function () {
+            const receiverId = this.getAttribute('data-receiver-id');
+            const modalElement = document.getElementById('userProfileModal'); // Replace with your modal's ID
+            if (modalElement) {
+                const modalInstance = bootstrap.Modal.getInstance(modalElement); // Get the Bootstrap modal instance
+                modalInstance.hide(); // Hide the modal
+            }
+            fetch('/delete_chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ receiver_id: receiverId }),
+            })
+            window.location.href = "/messages";
+        });
+
+
+
+
+
     </script>
 </body>
 

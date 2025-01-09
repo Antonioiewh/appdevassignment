@@ -912,6 +912,7 @@ def viewLikedListings(id): #retrieve current session_ID
 
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
+
     global session_ID
     # add in for official project
     if session_ID == 0:
@@ -919,11 +920,16 @@ def messages():
     db = shelve.open('messages.db', 'c')  # Open shelve database
     users_db = shelve.open('customer.db')
     user = User(session_ID)
-    recent_chats = user.get_recent_chats() 
+    recent_chats = user.get_recent_chats()
     search_field = SearchBar(request.form)
     try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword=search_field.searchfield.data))
+    except:
+        pass
+    try:
         if request.method == 'POST':
-            receiver_id = request.form.get('receiver_id', type=str)
+            receiver_id = request.form.get('receiver_id', type=str)# searchbar refers to this code when used, causes crash
             content = request.form.get('content', '').strip()  # Strip leading/trailing spaces
             customers_dict = users_db.get('Customers', {})
             if not receiver_id.isdigit() or int(receiver_id) == 0 or int(receiver_id) not in customers_dict:
@@ -936,10 +942,10 @@ def messages():
                     selected_chat=None,
                     searchform=search_field
                 )
-            elif int(receiver_id) == session_ID:
+            if int(receiver_id) == session_ID:
                 return render_template(
                     'CustomerMessages.html',
-                    error_message=f"You can't message yourself",
+                    error_message="You can't message yourself",
                     show_error_modal=True,
                     current_sessionID=int(session_ID),
                     recent_chats=recent_chats,
@@ -954,8 +960,8 @@ def messages():
             if content:
                 user.send_message(receiver_id, content, db)  # This will update recent chats order
             return redirect(url_for('messages', receiver_id=receiver_id))  # Reload to show the new message
-        # Display messages and recent chats
 
+        # Display messages and recent chats
         received_messages = user.get_received_messages(db)
         sent_messages = user.get_sent_messages(db)
 
@@ -981,13 +987,6 @@ def messages():
                 'receiver_id': receiver_id,
                 'messages': message
             }
-        #search func
-        try:
-            if request.method == 'POST' and search_field.validate():
-                return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
-        except:
-            pass
-        
 
         return render_template(
             'CustomerMessages.html',
@@ -995,13 +994,16 @@ def messages():
             sent_messages=sent_messages,
             current_sessionID=session_ID,
             recent_chats=recent_chats,
-            selected_chat=selected_chat,searchform =search_field
+            selected_chat=selected_chat,
+            searchform=search_field,
+            show_error_modal=False,
         )
+
     finally:
         db.close()
     # dropdown menu: option to delete chat/hyperlink to user's profile/block profile,
-    # option to send pictures in chat, make enter key send message, message delivered/read/notifications(red number icon),
-    # message previews, make date appear like whatsapp
+    # option to send pictures in chat message delivered/read/notifications(red number icon),
+    # message previews, make date appear like whatsapp, message deletion timer (max 15min to delete msg)
     #
 
 @app.route('/delete_message', methods=['POST'])
@@ -1029,6 +1031,25 @@ def delete_message():
     db['Messages'] = messages2
 
     db.close()
+
+@app.route('/delete_chat', methods=['POST'])
+def delete_chat():
+    db = shelve.open('recentChat.db', 'c')
+    user = User(session_ID)
+    recent_chats = user.get_recent_chats()
+    data = request.get_json()  # Get the JSON data
+    receiver_id = data.get('receiver_id')
+    # Process the receiver_id as needed
+    print(recent_chats)
+    print(f"Received receiver_id: {receiver_id}")
+    updated_chats = []
+    for chat in recent_chats:
+        if not chat['receiver_id'] == int(receiver_id):
+            updated_chats.append(chat)
+    print(updated_chats)
+    db[str(session_ID)] = updated_chats
+    return jsonify({'message': f'Receiver ID {receiver_id} processed successfully.'})
+
 
 
     # to do: ask teacher if it counts as "deletion" of database to do the above, must there be real time messages(current code only shows message upon refresh),

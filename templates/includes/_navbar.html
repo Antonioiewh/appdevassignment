@@ -73,15 +73,12 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
                         <li class="dropdown-item">Current sessionID: {{current_sessionID}}</li>
                         {% if current_sessionID != 0 %}
-                        <li><a class="dropdown-item" href="/profile/{{current_sessionID}}">View profile</a></li> <!--will only direct you to your profile-->
-                        {% endif %}
-
-                        {% if current_sessionID == 0 %}
-                        <li><a class="dropdown-item" href="/signup">Login</a></li>
-                        {% endif %}
-                        {% if current_sessionID != 0 %}
+                        <li><a class="dropdown-item" href="/profile/{{current_sessionID}}">View profile</a></li>
+                        <li><a class="dropdown-item" href="/feedback">Submit Feedback</a></li>
                         <li><a class="dropdown-item" href="/loginoptions">Logout</a></li>
                         <li><a class="dropdown-item" href="/createlisting">Create listing</a></li>
+                        {% else %}
+                        <li><a class="dropdown-item" href="/signup">Login</a></li>
                         {% endif %}
                     </ul>
                     </div>

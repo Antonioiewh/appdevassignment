@@ -60,9 +60,9 @@
                 </div>
                 <div class="d-flex align-items-center" style="margin-right:1%"> <!--Does a bit out of alignment but idc-->
                     <div class="btn-group"> <!--very impt to have this here-->
-                    <button type="button" class="btn btn-primary border-dark bg-danger rounded" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button type="button" class="btn btn-primary border-dark bg-danger" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
                         <li class="nav-item m-auto me-auto">
-                            <i class="bi bi-person-circle" style="color: white; font-size: 2rem;"></li>
+                            <i class="bi bi-person-circle" style="color: white; font-size: 2rem;"></i>
                         </li>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
@@ -77,7 +77,7 @@
 
                         {% if current_sessionID != 0 %}
                         <li><a class="dropdown-item" href="/loginoptions">Logout</a></li>
-                        <li><a class="dropdown-item" href="/dashboard/users" style="color: red;">View dashboard</a></li>
+                        <li><a class="dropdown-item" href="#" style="color: red;">View dashboard</a></li>
                         {% endif %}
                         <!--
                         {% if current_sessionID != 0 %}

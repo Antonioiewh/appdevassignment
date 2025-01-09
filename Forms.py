@@ -1,5 +1,5 @@
 
-from wtforms import Form, BooleanField, StringField, validators, PasswordField, SelectField, RadioField, SelectMultipleField, FileField #import the fields u need
+from wtforms import Form, BooleanField, StringField, validators, PasswordField, SelectField, RadioField, SelectMultipleField, FileField,HiddenField,TextAreaField #import the fields u need
 class CustomerSignupForm(Form): #Form for CustomerSignup.html
     username = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
     email        = StringField('Email Address', [validators.Length(min=6, max=35),validators.DataRequired()]) #we will add validator to this later
@@ -48,29 +48,47 @@ class OperatorLoginVerifyForm(Form):
 class SearchUserField(Form):
     searchfield = StringField("Enter Username")
 
+
+
 class OperatorSuspendUser(Form):
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     suspend_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+    typeofaction = HiddenField()
+
 class OperatorTerminateUser(Form):
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     terminate_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+    typeofaction = HiddenField()
+
 class OperatorRestoreUser(Form):
     password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+    typeofaction = HiddenField()
 
 class OperatorDisableListing(Form):
     id = StringField('ID of post', [validators.Length(min=1, max=35),validators.DataRequired()])
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     disable_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+    typeofaction = HiddenField()
 
 class OperatorRestoreListing(Form):
     id = StringField('ID of post', [validators.Length(min=1, max=35),validators.DataRequired()])
     password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
+    typeofaction = HiddenField()
+
 
 class SearchListingField(Form):
     searchfield = StringField("Enter listing name")
 
 class SearchReportField(Form):
     searchfield = StringField("Enter offender username")
+
+class SearchOperatorActionField(Form):
+    searchfield = SelectField('Category',[validators.DataRequired()], choices=[('suspend user','Suspend user'),('terminate user','Terminate user'),('restore listing','Restore listing'),('disable listing','Disable listing')])
+
+class FeedbackForm(Form):
+    rating = RadioField('Rate your experience', [validators.DataRequired()],choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])
+    feedback = TextAreaField('Have you encountered any issues so far? If so, please describe it', [validators.InputRequired(), validators.Length(max=500)])
+

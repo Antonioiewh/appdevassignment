@@ -20,7 +20,10 @@ class ListingForm(Form):
     condition = RadioField('Condition', [validators.DataRequired()], choices=[('Barely used', "Barely used"), ('Frequently used', 'Frequently used'), ('Used daily', 'Used daily')])
     title = StringField('Title',[validators.Length(min=4, max=25),validators.DataRequired()])
     description = StringField('Description',[validators.Length(min=4, max=300),validators.DataRequired()])
-    payment_method = RadioField('Payment method',[validators.DataRequired()],choices=[('meetup','Meet-up'),('delivery','Delivery')]) #idk how to do this but gl to anyone trying to either
+    meetup = BooleanField('Meetup', false_values=None) 
+    meetupinfo = StringField('Meetup location',[validators.Length(min=4, max=25),validators.DataRequired()])
+    delivery = BooleanField('Delivery', false_values=None)
+    deliveryinfo = StringField('Delivery info',[validators.Length(min=4, max=25),validators.DataRequired()])
 
 #class uploadListingimg(Form): 
     #listingimg = FileField('image')
@@ -92,3 +95,5 @@ class FeedbackForm(Form):
     rating = RadioField('Rate your experience', [validators.DataRequired()],choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])
     feedback = TextAreaField('Have you encountered any issues so far? If so, please describe it', [validators.InputRequired(), validators.Length(max=500)])
 
+class FilterForm(Form):
+    pass

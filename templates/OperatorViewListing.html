@@ -30,22 +30,39 @@
     <div style="width:40vw; border:red solid 5px; margin-left:7%" class="d-flex align-items-center justify-content-center ">
         <div style="background:gray; width:35vw; justify-self:center; padding:2%; border-radius:5% ">
             <div  class="d-flex flex-column">
-                <div class="d-flex flex-column" style="margin:7%;"><!--for category-->
+                <div class="d-flex flex-column" style="margin:3%;"><!--for category-->
                     <p style="font-weight:bold; font-size:2.5em;">Category</p>
                     <p>{{listing.get_category()}}</p>
                 </div>
-                <div class="d-flex flex-column" style="margin:7%;">
+                <div class="d-flex flex-column" style="margin:3%;">
                     <p style="font-weight:bold; font-size:2.5em;">Condition</p>
                     <p>{{listing.get_condition()}}</p>
                 </div>
-                <div class="d-flex flex-column" style="margin:7%;">
+                <div class="d-flex flex-column" style="margin:3%;">
                     <p style="font-weight:bold; font-size:2.5em;">Description</p>
                     <p>{{listing.get_description()}}</p>
                 </div>
-              
-            </div>
+                
+                <div class="d-flex flex-column"style="margin:3%;">
+                    {% if listing.get_deal_method() == "meetup"%}
+                    <p style="font-weight:bold; font-size:2.5em;">Meetup</p>
+                    {{listing.get_deal_meetupinfo()}}
+                    {%endif%}
+                    {% if listing.get_deal_method() == "delivery"%}
+                    <p style="font-weight:bold; font-size:2.5em;">Delivery</p>
+                    {{listing.get_deal_deliveryinfo()}}
+                    {%endif%}
+                    {% if listing.get_deal_method() == "meetupdelivery"%}
+                    <p style="font-weight:bold; font-size:2.5em;">Meetup</p>
+                    {{listing.get_deal_meetupinfo()}}
+                    <p style="font-weight:bold; font-size:2.5em;">Delivery</p>
+                    {{listing.get_deal_deliveryinfo()}}
+                    {%endif%}
+                </div>
+            </div> 
         </div>
     </div>
+    
 </div>
 {% endblock %}
 {% from "includes/_formHelper.html" import render_field %}

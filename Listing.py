@@ -1,6 +1,6 @@
 class Listing:
     count_ID = 0
-    def __init__(self,creatorID,title,description,condition,category,deal_method):
+    def __init__(self,creatorID,title,description,condition,category,deal_method,deal_methodinfo): #dealmethod info as an
         Listing.count_ID+=1
         self.__ID = Listing.count_ID
         self.__creatorID = creatorID #same as current_sessionID
@@ -11,7 +11,13 @@ class Listing:
         self.__deal_method = deal_method
         self.__likes = 0
         self.__status = "available" #or "disabled"
-        #self.__deal_meetup = deal_meetup
+        if deal_method == "meetup":
+            self.__deal_meetupinfo = deal_methodinfo[0]
+        if deal_method == "delivery":
+            self.__deal_deliveryinfo = deal_methodinfo[1]
+        if deal_method =="meetupdelivery":
+            self.__deal_meetupinfo = deal_methodinfo[0]
+            self.__deal_deliveryinfo = deal_methodinfo[1]
         #self.__deal_delivery = deal_delivery
 
     
@@ -38,14 +44,15 @@ class Listing:
     
     def get_likes(self):
         return self.__likes
+    
     def get_status(self):
         return self.__status
-    #def get_deal_meetup(self):
-        #return self.__deal_meetup
     
-    #def get_deal_delivery(self):
-        #return self.__deal_delivery
+    def get_deal_meetupinfo(self):
+        return self.__deal_meetupinfo
     
+    def get_deal_deliveryinfo(self):
+        return self.__deal_deliveryinfo
     
 
     def set_creatorID(self,creatorID):
@@ -77,11 +84,12 @@ class Listing:
     
     def set_status(self,status):
         self.__status = status
-    #def set_deal_meetup(self,deal_meetup):
-        #self.__deal_meetup = deal_meetup
 
-    #def set_deal_delivery(self,deal_delivery):
-        #self.__deal_delivery = deal_delivery
+    def set_deal_meetupinfo(self,info):
+        self.__deal_meetupinfo = info
+    
+    def set_deal_meetupdelivery(self,info):
+        self.__deal_deliveryinfo = info
 
     
 

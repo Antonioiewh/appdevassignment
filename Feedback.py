@@ -15,7 +15,7 @@ class Feedback:
         return self.__remark
     
 
-    #DONT USE THESE FUNCS
+    #DONT USE THESE FUNCS idk
     def set_rating(self,rating):
         self.__rating = rating
     

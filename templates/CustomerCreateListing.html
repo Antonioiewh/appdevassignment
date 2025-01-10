@@ -52,8 +52,19 @@
 
 
             <div style="background:gray; width:40vw; justify-self:center; padding:2%; margin:2%;">
-                <div class="form-group " >
-                    {{ render_field(form.payment_method, class="form-control paymentmethodsection1") }}
+                <div class="form-group form-check form-switch" >
+                    {{form.meetup.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                    {{form.meetup (class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault")}}
+                </div>
+                <div class="form-group" >
+                    {{ render_field(form.meetupinfo, class="form-control") }}
+                </div>
+                <div class="form-group form-check form-switch" >
+                    {{form.delivery.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                    {{form.delivery (class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault")}}
+                </div>
+                <div class="form-group" >
+                    {{ render_field(form.deliveryinfo, class="form-control") }}
                 </div>
             </div>
             <div style="justify-self:center"> <!--div for button only-->

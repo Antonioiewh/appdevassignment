@@ -11,6 +11,7 @@ from Messages import User
 import string
 import random
 from datetime import datetime
+import Filters
 app = Flask(__name__)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
@@ -592,7 +593,6 @@ def createlisting():
     global session_ID
     db2 = shelve.open('listing.db','c')
     db1 = shelve.open('customer.db','c')
-    listings_images_dict = {}
     listings_dict = {}
     customers_dict = {}
     create_listing_form = ListingForm(request.form)
@@ -637,15 +637,27 @@ def createlisting():
 
     #retrieve data from form
     if request.method == 'POST' and create_listing_form.validate():
-        #print(create_listing_form.data)
-        #print(create_listing_img_form.data)
+
+        paymentmethod = ""
+        paymentinfo =[]
+        print(create_listing_form.meetup.data,create_listing_form.delivery.data)
+        #payment method etc
+        if create_listing_form.meetup.data == True:
+            paymentmethod += "meetup"
+            paymentinfo.append(create_listing_form.meetupinfo.data)
+
+        else:
+            pass
+        if create_listing_form.delivery.data == True:
+            paymentmethod += "delivery"
+            paymentinfo.append(create_listing_form.deliveryinfo.data)
+        else:
+            pass
         
-        #create img object
-        #create listing obj
-        listing = Listing.Listing(session_ID,create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,
-                                  create_listing_form.category.data,create_listing_form.payment_method.data)
-        #returns listings details
-        print(f"Listing count:{Listing.Listing.count_ID}\nListing ID: {listing.get_ID()} \nListing creator ID:{listing.get_creatorID()}\nListing title: {listing.get_title()}\nListing Desc: {listing.get_description()}\nListing condition: {listing.get_condition()}\nListing category: {listing.get_category()}\nListing payment method: {listing.get_deal_method()}")
+        print(paymentmethod,paymentinfo)
+        listing = Listing.Listing(session_ID,create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data,paymentmethod,paymentinfo)
+                
+        #print(f"Listing count:{Listing.Listing.count_ID}\nListing ID: {listing.get_ID()} \nListing creator ID:{listing.get_creatorID()}\nListing title: {listing.get_title()}\nListing Desc: {listing.get_description()}\nListing condition: {listing.get_condition()}\nListing category: {listing.get_category()}\nListing payment method: {listing.get_deal_method()}")
         #stores into db2
         listings_dict[listing.get_ID()] = listing
         db2['Listings'] = listings_dict
@@ -656,17 +668,10 @@ def createlisting():
         file = request.files['file']
         check_upload_file_type(file,"listing",listing.get_ID())
 
-        #create listingimg obj
-        #listing = ListingImage.ListingImage(listing.get_ID(),file.filename)
-        #stores into db2_1
-        #db2_1['ListingImages'] =listings_images_dict #syncs with db2_1
-
         for key in customers_dict:
             if key == session_ID:
                 customer = customers_dict[key]
-                #add it to the user's listings
                 customer.add_listings(Listing.Listing.count_ID)
-                print(customer.get_listings())
                 db1['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
         return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
@@ -710,6 +715,24 @@ def updateListing(id):
             db2['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
             print("Error in opening listings.db")
+    paymentmethod = ""
+    paymentinfo =[]
+    print(update_listing_form.meetup.data,update_listing_form.delivery.data)
+    #payment method etc
+    if update_listing_form.meetup.data == True:
+        paymentmethod += "meetup"
+        paymentinfo.append(update_listing_form.meetupinfo.data)
+
+    else:
+        pass
+    if update_listing_form.data == True:
+        paymentmethod += "delivery"
+        paymentinfo.append(update_listing_form.deliveryinfo.data)
+    else:
+        pass
+        
+    print(paymentmethod,paymentinfo)
+    
     if request.method == 'POST' and update_listing_form.validate():
         
 
@@ -721,7 +744,16 @@ def updateListing(id):
         listing.set_category(update_listing_form.category.data)
         listing.set_description(update_listing_form.description.data)
         listing.set_condition(update_listing_form.condition.data)
-        listing.set_deal_method(update_listing_form.payment_method.data)
+        listing.set_deal_method(paymentmethod)
+        if paymentmethod == 'meetup':
+            listing.set_deal_meetupinfo(paymentinfo[0])
+        if paymentmethod =='delivery':
+            listing.set_deal_deliveryinfo(paymentinfo[0])
+        if paymentmethod == 'meetupdelivery':
+            listing.set_deal_meetupinfo(paymentinfo[0])
+            listing.set_deal_deliveryinfo(paymentinfo[1])
+
+        
         db2['Listings'] = listings_dict #sync local to db2
         db2.close() 
         return redirect(url_for('Customerprofile', id = id)) #go back to profile page after submit
@@ -1283,7 +1315,7 @@ def delete_message():
     # option to send pictures in chat, message delivered/read/notifications(red number icon),
     # message previews, make date appear like whatsapp
 
-@app.route('/searchresults/<keyword>')
+@app.route('/searchresults/<keyword>', methods=['GET', 'POST'])
 def searchresults(keyword):
     global session_ID
     db1 = shelve.open('customer.db','c')
@@ -1327,7 +1359,27 @@ def searchresults(keyword):
     elif session_ID == 0:
         customer_notifications = 0 
     return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications)
+    
 
+@app.route('/category1', methods=['GET', 'POST'])
+def category1():
+    global session_ID
+    customers_dict = {}
+    db1 = shelve.open('customer.db','c')
+    search_field = SearchBar(request.form)
+    #
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
+    
 @app.route('/feedback', methods = ['GET', 'POST'])
 def feedback():
     global session_ID

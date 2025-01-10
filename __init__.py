@@ -1,7 +1,7 @@
 from flask import Flask, render_template, url_for,request,redirect,session,jsonify
 import os,sys,stat
 from werkzeug.utils import secure_filename
-import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
+import Customer, Listing,Reviews,Report,operatoractions,Feedback #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
 from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm
 import Email,Search,Notifications
@@ -114,14 +114,17 @@ def Customerhome():
     #search func
     if request.method == 'POST' and search_field.validate():
         return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+
     #get notifs
+    customer = None  # Initialize customer
+    customer_notifications = 0
     if session_ID != 0:
         customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
-    elif session_ID == 0:
-        customer_notifications = 0  
+        if customer:
+            customer_notifications = customer.get_unread_notifications()
+    db1.close()
 
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications)
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,customer = customer)
     
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
@@ -1110,8 +1113,9 @@ def viewLikedListings(id): #retrieve current session_ID
     if session_ID != 0:
         customer = customers_dict.get(session_ID)
         customer_notifications = customer.get_unread_notifications()
-    elif session_ID == 0:
-        customer_notifications == 0
+        if customer:
+            customer_notifications = customer.get_unread_notifications()
+    db1.close()
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications)
 
 @app.route('/messages', methods=['GET', 'POST'])
@@ -2086,4 +2090,4 @@ def dashboardfeedbacks():
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'
-    app.run()
+    app.run(debug=True)

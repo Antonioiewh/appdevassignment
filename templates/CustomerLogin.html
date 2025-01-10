@@ -8,11 +8,13 @@
         <h2 style="justify-self:center">Login</h2>
 
         <div class="form-group" style="margin-left:3vh; margin-right:3vh;">
-            {{ render_field(form.username, class="form-control") }}
+            {{ render_field(form.username, class="form-control", placeholder="Enter your username") }}
+
         </div>
 
         <div class="form-group" style="margin-left:3vh; margin-right:3vh;">
-            {{ render_field(form.password, class="form-control") }}
+            {{ render_field(form.password, class="form-control", placeholder="Enter your password") }}
+
         </div>
 
         <div class="align-items-center " style="justify-self:center; margin-top:10px;">  <!--div for text-->

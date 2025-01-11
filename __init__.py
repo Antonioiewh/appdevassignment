@@ -3,7 +3,7 @@ import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
-from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm
 import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
@@ -49,7 +49,115 @@ def upload_file(folder,file):
     file.save(os.path.join(f"static/{folder}", filename))
     #for some reason it keeps returning ERRNO13 aka no permission but err it works so idk
 
+def get_searchquery(formdict,outputlist):
+    print(formdict)
+    conditions = ['category1','category2','category3','category4','category5','condition_barelyused','condition_frequentlyused','condition_useddaily','sortlatest']
+    for condition in conditions:
+        if formdict.get(condition) == True:
+            outputlist.append(condition)
+        else:
+            pass
+    return outputlist
+
+def get_matchinglistingID(searchquerylist,outputlist):
+    db2 = shelve.open('listing.db','c') #note that redirect urls convert anything and everything into a string, so use session attributes to store lists such as this one
+    listings_dict = {}
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    #first sort the search query into 2 sections, category, conditions
+    conditionfilter = []
+    categoryfilter = []
+    filtercategory = False
+    filtercondition = False
+    for condition in searchquerylist:
+        print(f"Condition is {condition}")
+        if "category" in condition:
+            categoryfilter.append(condition)
+            filtercategory = True
+        if "condition" in condition:
+            conditionfilter.append(condition)
+            filtercondition = True
+    filtersortlatest = False
+    for condition in searchquerylist:
+        if "sortlatest" in condition:
+            filtersortlatest = True
     
+    #filter category
+    if filtercategory  == True: #2 scenarios, A) the outputlist is empty , B) it is not. If A) this becomes a simple if match then add. If B) If match add, if no match delete
+        for key in listings_dict: #loop through objects
+            listing = listings_dict.get(key)
+            for category in categoryfilter:
+                
+                if category == "category1":
+                    Filters.category(listing,'Category 1',outputlist,"addonly")
+                if category == "category2":
+                    Filters.category(listing,'Category 2',outputlist,"addonly")
+                if category == "category3":
+                    Filters.category(listing,'Category 3',outputlist,"addonly")
+                if category == "category4":
+                    Filters.category(listing,'Category 4',outputlist,"addonly")
+                if category == "category5":
+                    Filters.category(listing,'Category 5',outputlist,"addonly")
+    #filter condition
+    # 2 scenarios here
+    if filtercondition == True:
+        if filtercategory == True:#implement remove if not match and to read directly from outputlist as it shld be not emtpy due to previous filter
+            copyofoutputlist = outputlist #just leave this here lmao
+            for ID in outputlist: #so basically if does not match, it will remove, if does it adds
+                listing = listings_dict.get(ID)
+                for condition in conditionfilter:
+                    if condition == "condition_barelyused":
+                        Filters.condition(listing,'Barely used',outputlist,"addanddelete")
+                    if condition == "condition_frequentlyused":
+                        Filters.condition(listing,'Frequently used',outputlist,"addanddelete")
+                    if condition == "condition_useddaily":
+                        Filters.condition(listing,'Used daily',outputlist,'addanddelete')
+        
+        if filtercategory == False: #outputlist will be empty
+            for key in listings_dict:
+                listing = listings_dict.get(key)
+                for condition in conditionfilter:
+                    if condition == "condition_barelyused":
+                        Filters.condition(listing,'Barely used',outputlist,"addonly")
+                    if condition == "condition_frequentlyused":
+                        Filters.condition(listing,'Frequently used',outputlist,"addonly")
+                    if condition == "condition_useddaily":
+                        Filters.condition(listing,'Used daily',outputlist,'addonly')
+    #sort latest
+    if filtersortlatest == True:
+        if outputlist == []:
+            for key in listings_dict:
+                listing = listings_dict.get(key)
+                outputlist.append(listing.get_ID())
+                outputlist.sort(reverse=True)
+        else:
+            outputlist.sort(reverse=True)
+
+    return outputlist 
+
+def deduper(inputlistID):
+    return list(dict.fromkeys(inputlistID))
+
+def ID_to_obj(inputlistID,outputlistobj):
+    db2 = shelve.open('listing.db','c')
+    listings_dict = {}
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    for ID in inputlistID:
+        listing = listings_dict.get(ID)
+        outputlistobj.append(listing.get_ID())#for now it will be to ID, easier during testing
+    return outputlistobj
+
 
 def send_welcomenotifcation(id): #id of person to add notifactions to
     db1 = shelve.open('customer.db','c')
@@ -103,6 +211,7 @@ def Customerhome():
     customers_dict = {} #local one
     global session_ID
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -113,17 +222,30 @@ def Customerhome():
     except:
         print("Error in opening customer.db")
     #search func
-    if request.method == 'POST' and search_field.validate():
-        return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
     #get notifs
     if session_ID != 0:
         customer = customers_dict.get(session_ID)
         customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0  
-
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications)
     
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    
+
+
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
+
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
     global session_ID
@@ -135,6 +257,7 @@ def Customerprofile(id):
     reports_dict = {}
     report_form = ReportForm(request.form)
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -232,10 +355,15 @@ def Customerprofile(id):
         customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0  
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
 
-    #get img
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
-                            current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications)
+                            current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
 
 @app.route('/updateprofile/<int:id>', methods = ['GET', 'POST'])
 def updateCustomerprofile(id):
@@ -244,6 +372,7 @@ def updateCustomerprofile(id):
     customers_dict = {} #local one
     customer_update_form = CustomerUpdateForm(request.form)
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -311,9 +440,15 @@ def updateCustomerprofile(id):
     elif session_ID == 0:
         customer_notifications = 0  
 
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
 
 
-    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field,customer_notifications = customer_notifications)
+    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
 
 @app.route('/profilereviews/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile_reviews(id):
@@ -326,6 +461,7 @@ def Customerprofile_reviews(id):
     reports_dict = {}
     report_form = ReportForm(request.form)
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -419,14 +555,23 @@ def Customerprofile_reviews(id):
         customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0  
+    
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
 
-    return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications)
+
+    return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     global session_ID
     create_customer_form = CustomerSignupForm(request.form)
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     db1 = shelve.open('customer.db','c')  
     customers_dict = {} #local one
     if request.method == 'POST' and create_customer_form.validate():
@@ -491,14 +636,23 @@ def signup():
         customer_notifcations = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifcations = 0  
+    
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
 
-    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifcations)
+
+    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifcations,filterform=filterform)
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
     global session_ID
     login_customer_form = CustomerLoginForm(request.form)
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     db1 = shelve.open('customer.db','c')
     customers_dict = {} #local one
     if request.method == 'POST' and login_customer_form.validate():
@@ -554,8 +708,16 @@ def login():
         customer_notifcations = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifcations = 0  
+    
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
 
-    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations)
+
+    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform)
 
 @app.route('/loginoptions',methods = ['GET', 'POST'])
 def loginoptions():
@@ -564,6 +726,7 @@ def loginoptions():
     customers_dict = {} #local one
     session_ID = 0
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -585,8 +748,12 @@ def loginoptions():
         customer_notifcations = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifcations = 0  
-
-    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations)
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        return redirect(url_for('filterresults',searchconditionslist = searchconditionlist))
+    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform)
 
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
@@ -597,7 +764,7 @@ def createlisting():
     customers_dict = {}
     create_listing_form = ListingForm(request.form)
     search_field = SearchBar(request.form)
-
+    filterform = FilterForm(request.form)
     #UPLOAD FOLDER, should be local
     UPLOAD_FOLDER = 'static/listingpics/'
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -687,12 +854,19 @@ def createlisting():
         customer_notifcations = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifcations = 0 
-    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations)
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
     global session_ID
     update_listing_form = ListingForm(request.form)
+    filterform = FilterForm(request.form)
     db2 = shelve.open('listing.db','c') #RMBR THIS
     search_field = SearchBar(request.form)
     db1 = shelve.open('customer.db','c')
@@ -768,7 +942,13 @@ def updateListing(id):
         customer_notifcations = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifcations = 0 
-    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations) #to render the form 
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform) #to render the form 
 
 @app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
 def viewListing(id):
@@ -778,6 +958,7 @@ def viewListing(id):
     listings_dict = {}
     customers_dict = {}
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     try:
         if "Listings" in db2:
             listings_dict = db2["Listings"] #sync local with db2
@@ -820,7 +1001,13 @@ def viewListing(id):
         customer_notifcations = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifcations = 0 
-    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifcations)
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform)
 
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
 def deleteListing(id):
@@ -867,7 +1054,7 @@ def createReview(id):
     db1 = shelve.open('customer.db','c')
     db6 = shelve.open('notifications.db','c')
     search_field = SearchBar(request.form)
-
+    filterform = FilterForm(request.form)
     try:
         if "Notifications" in db6:
             notifications_dict = db6["Notifications"] #sync local with db1
@@ -957,8 +1144,14 @@ def createReview(id):
         customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0 
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
 
-    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications)
+    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/createLikedListing/<int:id>', methods = ['GET', 'POST'])
 def createLikedListing(id): #ID of listing
@@ -1107,6 +1300,7 @@ def viewLikedListings(id): #retrieve current session_ID
     listings_dict = {}
     customers_dict = {}
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     try:
         if "Listings" in db2:
             listings_dict = db2["Listings"] #sync local with db2
@@ -1144,7 +1338,13 @@ def viewLikedListings(id): #retrieve current session_ID
         customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications == 0
-    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications)
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        return redirect(url_for('filterresults',searchconditionslist = searchconditionlist))
+
+    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
@@ -1168,6 +1368,13 @@ def messages():
     user = User(session_ID)
     recent_chats = user.get_recent_chats() 
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
 
     #get notifs
     if session_ID != 0:
@@ -1195,7 +1402,8 @@ def messages():
                     recent_chats=recent_chats,
                     selected_chat=None,
                     customer_notifications=customer_notifications,
-                    searchform=search_field
+                    searchform=search_field,
+                    filterform=filterform
                 )
             if int(receiver_id) == session_ID:
                 return render_template(
@@ -1206,7 +1414,8 @@ def messages():
                     recent_chats=recent_chats,
                     selected_chat=None,
                     customer_notifications=customer_notifications,
-                    searchform=search_field  #<- always put
+                    searchform=search_field,
+                    filterform=filterform  #<- always put
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
             # Handle Start New Chat (without content) logic
@@ -1257,6 +1466,7 @@ def messages():
             searchform =search_field,
             customer_notifcations=customer_notifications,
             show_error_modal=False,
+            filterform=filterform
         )
     finally:
         db.close()
@@ -1323,7 +1533,7 @@ def searchresults(keyword):
     customers_dict = {}
     listings_dict = {}
     search_field = SearchBar(request.form)
-
+    filterform = FilterForm(request.form)
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -1358,16 +1568,47 @@ def searchresults(keyword):
         customer_notifications = len(customer.get_notifications())
     elif session_ID == 0:
         customer_notifications = 0 
-    return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications)
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications,filterform=filterform)
     
 
 @app.route('/category1', methods=['GET', 'POST'])
 def category1():
     global session_ID
     customers_dict = {}
+    listings_dict = {}
     db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
     search_field = SearchBar(request.form)
-    #
+    filterform = FilterForm(request.form)
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    #search
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
@@ -1379,7 +1620,266 @@ def category1():
         customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0 
+    #get prods from cat1
+    listings_to_display = []
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        if listing.get_category() == 'Category 1':
+            listings_to_display.append(listing)
+
+    return render_template('CustomerCategory1.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
+@app.route('/category2',methods = ['GET','POST'])
+def category2():
+    global session_ID
+    customers_dict = {}
+    listings_dict = {}
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
     
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    #search
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
+    #get prods from cat1
+    listings_to_display = []
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        if listing.get_category() == 'Category 2':
+            listings_to_display.append(listing)
+
+    return render_template('CustomerCategory2.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
+@app.route('/category3',methods = ['GET','POST'])
+def category3():
+    global session_ID
+    customers_dict = {}
+    listings_dict = {}
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    #search
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
+    #get prods from cat1
+    listings_to_display = []
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        if listing.get_category() == 'Category 3':
+            listings_to_display.append(listing)
+
+    return render_template('CustomerCategory3.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
+@app.route('/category4',methods = ['GET','POST'])
+def category4():
+    global session_ID
+    customers_dict = {}
+    listings_dict = {}
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    #search
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
+    #get prods from cat1
+    listings_to_display = []
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        if listing.get_category() == 'Category 4':
+            listings_to_display.append(listing)
+
+    return render_template('CustomerCategory4.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
+@app.route('/category5',methods = ['GET','POST'])
+def category5():
+    global session_ID
+    customers_dict = {}
+    listings_dict = {}
+    db1 = shelve.open('customer.db','c')
+    db2 = shelve.open('listing.db','c') #RMBR THIS
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        return redirect(url_for('filterresults',searchconditionslist = searchconditionlist))
+    #search
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
+    #get prods from cat1
+    listings_to_display = []
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        if listing.get_category() == 'Category 5':
+            listings_to_display.append(listing)
+
+    return render_template('CustomerCategory5.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
+
+@app.route('/filterresults/',methods = ['GET','POST'])
+def filterresults():
+    global session_ID
+    customers_dict = {}
+    db1 = shelve.open('customer.db','c')
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    #search
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0 
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    #func
+    outputlistID = []
+    listings_to_display = []
+    get_matchinglistingID(session['filters'],outputlistID)
+    outputlistID = deduper(outputlistID)
+    ID_to_obj(outputlistID,listings_to_display)
+    print(listings_to_display)
+    
+    return render_template('Customerfilterresults.html',listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
 @app.route('/feedback', methods = ['GET', 'POST'])
 def feedback():
     global session_ID
@@ -1389,6 +1889,7 @@ def feedback():
     db7 = shelve.open('feedback.db','c')
     search_field = SearchBar(request.form)
     feedback_form = FeedbackForm(request.form)
+    filterform = FilterForm(request.form)
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in db1:
@@ -1432,9 +1933,16 @@ def feedback():
         db7['FeedbackCount'] = Feedback.Feedback.count_ID
         db7.close()
         return redirect(url_for('Customerhome'))
+
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
     
     return render_template('CustomerFeedback.html',searchform =search_field,
-            customer_notifications=customer_notifications,current_sessionID=int(session_ID),form=feedback_form)
+            customer_notifications=customer_notifications,current_sessionID=int(session_ID),form=feedback_form,filterform=filterform)
 
 @app.route('/notifications/<int:id>')
 def viewnotifications(id): #id is current_sessionID
@@ -1444,6 +1952,7 @@ def viewnotifications(id): #id is current_sessionID
     notifications_dict = {}
     customers_dict = {}
     search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -1487,9 +1996,14 @@ def viewnotifications(id): #id is current_sessionID
         customer_notifications = len(customer.get_notifications())
     elif session_ID == 0:
         customer_notifications = 0 
+    #filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data,searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
     
-    
-    return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display)
+    return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display,filterform=filterform)
 
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():

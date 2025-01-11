@@ -19,16 +19,61 @@
     width:300px;
     border-radius: 5%;
 }
+.btn1:hover{
+    background-color: lightgray;
+}
 
 
 </style>
 <h1 class="display-4">Profile</h1>
 
 
-<div id="profilebar " style="background: gray; height: 17vh; left:20%;" class=" w-50 p-3 d-flex flex-row" > <!--vh means 15% of viewport aka dynamic lmao-->
-    <img src="../static/profilepics/customer{{customer.get_id()}}.jpg" style="width:100px; height:100px; border-radius:50%" class="align-self-center"> <!--load profile pic-->
+<div id="profilebar " style="background: gray; height: 14vh; left:20%; border-radius:10px" class=" w-50 p-3 d-flex flex-row" > <!--vh means 15% of viewport aka dynamic lmao-->
+    <img src="../static/profilepics/customer{{customer.get_id()}}.jpg" style="width:100px; height:100px; border-radius:50%; border:solid black 3px;" class="align-self-center"> <!--load profile pic-->
+    {%if customer.get_status() =="active"%}
+    <div class="d-flex flex-row">
+        <div style="margin-right:140%; margin-left:5%;">
+
+            <p class="m-auto align-self-center" style="font-size:1.5rem">@{{customer.get_username()}}</p>
+
+        </div>
+        <div class="d-flex flex-row" ><!--section for reviews,rating,date joined,etc.-->
+            <div class="d-flex flex-column" style="margin-right:15%"><!--reviews-->
+                <a class="btn btn1" href="#" role="button" style="background:gray; border-right:solid 2px black; border-radius:0px; ">
+                    <p class="m-auto" style="font-size:1.5rem;">{{customer.get_rating()}}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i></p> 
+                    <p>x reviews</p>
+                </a>
+            </div>
+            <div class="d-flex flex-column" style="margin-top:7%">
+                <p>Date joined</p>
+                <p>{{customer.get_date_joined()}}</p>
+            </div>
+            <div><!--follow button-->
+                <div>
+                    <button type="button" class="btn btn-primary border-0" type="button" id="dropdownMenuButton2" data-bs-toggle="dropdown" aria-expanded="false" style="background:gray;">
+                        <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;background: gray; border:none;"></i> 
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
+                        <li><a class="dropdown-item" href="/createReview/{{current_sessionID}}" class="align-items-center">Leave review<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
+                        <li><a class="dropdown-item" href="" class="align-items-center" data-bs-toggle="modal" data-bs-target="#myModal1" style="color:red;">Report user<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+                        {%if current_sessionID == customer.get_id()%}
+                        <li><a class="dropdown-item" href="/updateprofile/{{current_sessionID}}" class="align-items-center">Edit profile<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {%endif%}
+        {%if customer.get_status() =="suspended"%}
+        <p class="m-auto" style="font-size:1.5rem; color:red">This account is under suspension</p>
+        {%endif%}
+        {%if customer.get_status() =="terminated"%}
+        <p class="m-auto" style="font-size:1.5rem; color:red">This account is terminated</p>
+        {%endif%}
+    </div>
     
-    <p class="m-auto align-self-baseline" style="font-size:1.5rem">{{customer.get_username()}}</p>
+    
+    <!---
     {%if customer.get_status() =="active"%}
     <p class="m-auto" style="font-size:1.5rem;">{{customer.get_rating()}}
         <i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i>
@@ -40,10 +85,11 @@
     {%endif%}
     {%if customer.get_status() == "terminated"%}
     <p class="m-auto" style="font-size:1.5rem; color:red">This account is terminated</p>
-    {%endif%}
+    {%endif%}-->
+    <!--
     <div>
-        <button type="button" class="btn btn-primary bg-secondary border-0" type="button" id="dropdownMenuButton2" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
+        <button type="button" class="btn btn-primary border-0" type="button" id="dropdownMenuButton2" data-bs-toggle="dropdown" aria-expanded="false" style="background:gray;">
+            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;background: gray; border:none;"></i> 
         </button>
         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
             <li><a class="dropdown-item" href="/createReview/{{current_sessionID}}" class="align-items-center">Leave review<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
@@ -53,6 +99,7 @@
             {% endif %}
         </ul>
     </div>
+-->
 </div>
 
 <div class=" w-25 p-3 d-flex align-items-center"> <!--still a wip-->

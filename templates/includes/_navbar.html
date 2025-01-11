@@ -17,19 +17,19 @@
                     </button>
                     {%if current_sessionID != 0%}
                     <li class="nav-item">
-                        <a class="nav-link" href="javascript:void(0)">Category 1</a>
+                        <a class="nav-link" href="/category1">Electronics</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="javascript:void(0)">Category 2</a>
+                        <a class="nav-link" href="/category2">Books</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="javascript:void(0)">Category 3</a>
+                        <a class="nav-link" href="/category3">Fashion</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="javascript:void(0)">Category 4</a>
+                        <a class="nav-link" href="/category4">Entertainment</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="javascript:void(0)">Category 5</a>
+                        <a class="nav-link" href="/category5">Misc</a>
                     </li>
                     {% endif %}
                 </div>
@@ -89,14 +89,18 @@
             <div class="w-100 "> <!--to increase the search field length. also make sure its the same width as the first row-->
                 <form class="d-flex align-items-end" method="POST">
                     <form method="POST" action="" >
-                        <div class="form-group" style="width:95%">
+                        <div class="form-group" style="width:90%">
                             {{ render_field(searchform.searchfield, class="form-control") }}
+                        </div>
+                        <div style="margin-left:1%;">
+                            <button type="button" class="btn btn-primary border-0 " type="button" data-bs-toggle="modal" data-bs-target="#filterModal" aria-expanded="false" style="background:purple; top:-5%;">
+                                <i class="bi bi-funnel" style="color:white; font-size: 1.2rem;background: purple; border:none;"></i> 
+                            </button>
                         </div>
                         <div style="margin-left:1%;"> <!--div for button only-->
                             <input type="submit" value="Submit" class="btn btn-primary"/>
                         </div>
                     </form>
-                    
                 </form>
             </div>
 
@@ -104,3 +108,82 @@
     </div>
     </div>
   </nav>
+
+  <!--Popup to confirm delete listing!-->
+  <div class="modal" id="filterModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <!-- Modal Header -->
+        <div class="modal-header">
+          <h4 class="modal-title">Filter</h4>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <!-- Modal body -->
+        <div class="modal-body">
+            <div><!--for categories-->
+                <div><h3>Categories</h3></div> <!--categories-->
+                <div class="d-flex flex-column">
+                    <form method="POST" action="" enctype="multipart/form-data">
+                    <div class="d-flex flex-row">
+                        <div class="form-check">
+                            {{filterform.category1.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.category1(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                        <div class="form-check">
+                            {{filterform.category2.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.category2(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                        <div class="form-check">
+                            {{filterform.category3.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.category3(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                    </div>
+                    <div class="d-flex flex-row">
+                        <div class="form-check">
+                            {{filterform.category4.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.category4(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                        <div class="form-check">
+                            {{filterform.category5.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.category5(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                    </div>
+                <div><h3>Conditions</h3></div>
+                <div class="d-flex flex-column">
+                    <div class="d-flex flex-row">
+                        <div class="form-check">
+                            {{filterform.condition_barelyused.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.condition_barelyused(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                        <div class="form-check">
+                            {{filterform.condition_frequentlyused.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.condition_frequentlyused(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                        <div class="form-check">
+                            {{filterform.condition_useddaily.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.condition_useddaily(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                    </div>
+                    
+                </div>
+                <div><h3>Sort by</h3></div>
+                </div>
+                <div class="d-flex flex-column">
+                    <div class="d-flex flex-row">
+                        <div class="form-check">
+                            {{filterform.sortlatest.label(class_="form-check-label",for="flexSwitchCheckDefault")}}
+                            {{filterform.sortlatest(class_="form-control form-check-input", type_="checkbox", role_="switch", id_="flexSwitchCheckDefault") }}
+                        </div>
+                    </div>
+                </div>
+            
+            </div>
+        </div>
+        <!-- Modal footer -->
+        <div class="modal-footer">
+            <input type="submit" value="Search" class="btn btn-primary"/>
+        </form>
+        </div>
+      </div>
+    </div>
+  </div>

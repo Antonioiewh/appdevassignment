@@ -11,7 +11,6 @@ from Messages import User
 import string
 import random
 from datetime import datetime
-import Filters
 app = Flask(__name__)
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}

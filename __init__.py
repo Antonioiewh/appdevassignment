@@ -228,23 +228,23 @@ def Customerhome():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
     except:
         pass
+    
     #get notifs
     if session_ID != 0:
         customer = customers_dict.get(session_ID)
         customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0  
-    
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []
         get_searchquery(filterform.data,searchconditionlist)
         session['filters'] = searchconditionlist
         return redirect(url_for('filterresults'))
-    
+    customer = customers_dict.get(session_ID)
 
 
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer)
 
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
@@ -596,33 +596,40 @@ def signup():
         except:
             print("Error in retrieving data from DB1 Customer count or count is at 0")
 
+        #checks if username is taken
+        username_list=[]
+        for key in customers_dict:
+            customer = customers_dict.get(key)
+            username_list.append(customer.get_username())
         
-        
-        #create user, stores data in local dict
-        customer =  Customer.Customer(create_customer_form.username.data, create_customer_form.email.data,create_customer_form.password.data)
-        customers_dict[customer.get_id()] = customer
+        if create_customer_form.username.data in username_list:
+            print("username taken!")
+            redirect(url_for('signup'))
+        else:
+            #create user, stores data in local dict
+            customer =  Customer.Customer(create_customer_form.username.data, create_customer_form.email.data,create_customer_form.password.data)
+            customers_dict[customer.get_id()] = customer
 
+            #syncs db1 with local dict
+            #syncs db1 count with local count (aka customer class)
+            db1['Customers'] = customers_dict
+            db1['CustomerCount'] = Customer.Customer.count_id
 
-        #syncs db1 with local dict
-        #syncs db1 count with local count (aka customer class)
-        db1['Customers'] = customers_dict
-        db1['CustomerCount'] = Customer.Customer.count_id
+            #upload img
+            file = request.files['file']
+            check_upload_file_type(file,"customer",customer.get_id())
 
-        #upload img
-        file = request.files['file']
-        check_upload_file_type(file,"customer",customer.get_id())
+            #verifies new user is stored
+            customers_dict = db1['Customers'] #sync local dict with db1
+            customer = customers_dict[customer.get_id()]
 
-        #verifies new user is stored
-        customers_dict = db1['Customers'] #sync local dict with db1
-        customer = customers_dict[customer.get_id()]
-
-        print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
-        session_ID = Customer.Customer.count_id
-        db1.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
-        #notifs
-        send_welcomenotifcation(customer.get_id())
-        
-        return redirect(url_for('Customerhome'))
+            print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
+            session_ID = Customer.Customer.count_id
+            db1.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
+            #notifs
+            send_welcomenotifcation(customer.get_id())
+            
+            return redirect(url_for('Customerhome'))
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -820,9 +827,9 @@ def createlisting():
             paymentinfo.append(create_listing_form.deliveryinfo.data)
         else:
             pass
-        
+        customer = customers_dict.get(session_ID)
         print(paymentmethod,paymentinfo)
-        listing = Listing.Listing(session_ID,create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data,paymentmethod,paymentinfo)
+        listing = Listing.Listing(session_ID,customer.get_username(),create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data,paymentmethod,paymentinfo)
                 
         #print(f"Listing count:{Listing.Listing.count_ID}\nListing ID: {listing.get_ID()} \nListing creator ID:{listing.get_creatorID()}\nListing title: {listing.get_title()}\nListing Desc: {listing.get_description()}\nListing condition: {listing.get_condition()}\nListing category: {listing.get_category()}\nListing payment method: {listing.get_deal_method()}")
         #stores into db2
@@ -988,7 +995,7 @@ def viewListing(id):
     user_liked_post = 'False'
     if listing.get_ID() in customer_liked_posts:
         user_liked_post = 'True'
-    
+    #get seller info
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1625,9 +1632,10 @@ def category1():
     for key in listings_dict:
         listing = listings_dict.get(key)
         if listing.get_category() == 'Category 1':
+            print("true!")
             listings_to_display.append(listing)
 
-    return render_template('CustomerCategory1.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('CustomerCategory1.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/category2',methods = ['GET','POST'])
 def category2():
@@ -1679,7 +1687,7 @@ def category2():
         if listing.get_category() == 'Category 2':
             listings_to_display.append(listing)
 
-    return render_template('CustomerCategory2.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('CustomerCategory2.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/category3',methods = ['GET','POST'])
 def category3():
@@ -1731,7 +1739,7 @@ def category3():
         if listing.get_category() == 'Category 3':
             listings_to_display.append(listing)
 
-    return render_template('CustomerCategory3.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('CustomerCategory3.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/category4',methods = ['GET','POST'])
 def category4():
@@ -1783,7 +1791,7 @@ def category4():
         if listing.get_category() == 'Category 4':
             listings_to_display.append(listing)
 
-    return render_template('CustomerCategory4.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('CustomerCategory4.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/category5',methods = ['GET','POST'])
 def category5():
@@ -1834,7 +1842,7 @@ def category5():
         if listing.get_category() == 'Category 5':
             listings_to_display.append(listing)
 
-    return render_template('CustomerCategory5.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('CustomerCategory5.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 
 @app.route('/filterresults/',methods = ['GET','POST'])
@@ -1878,7 +1886,7 @@ def filterresults():
     ID_to_obj(outputlistID,listings_to_display)
     print(listings_to_display)
     
-    return render_template('Customerfilterresults.html',listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('Customerfilterresults.html',listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/feedback', methods = ['GET', 'POST'])
 def feedback():
@@ -1981,8 +1989,9 @@ def viewnotifications(id): #id is current_sessionID
     notifs_list = customer.get_notifications()
     notifs_to_display = []
     for key in notifications_dict:
-        notification = notifications_dict.get(key)
-        notifs_to_display.append(notification)
+        if key in notifs_list:
+            notification = notifications_dict.get(key)
+            notifs_to_display.append(notification)
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -2037,7 +2046,7 @@ def verifyoperator(email):
         if session['OTP'] == operator_OTP.OTP.data:
             return(redirect(url_for('dashboardusers')))
         else:#IF first time fail then
-            OTP = ' '.join([str(random.randint(0, 999)).zfill(3) for _ in range(2)])
+            OTP = ' '.join([str(random.randint(0,999999)).zfill(6)])
             session['OTP'] = OTP
             print(f"Session OTP is {session['OTP']}")
             Email.send_message_operator_OTP(email,OTP)

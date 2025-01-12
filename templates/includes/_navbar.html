@@ -11,7 +11,7 @@
             <div> <!--start of first row-->    
             <ul class="navbar-nav w-100 " > <!--first row first half, idk why w-100 makes its width not the full lenghth of the navbar, edit: fixed it by adding w-100 to the line above-->
                 <div class="d-flex align-items-center me-auto" >
-                    <a class="navbar-brand p-auto" href="/">Logo</a>
+                    <a class="navbar-brand p-auto" href="/">FreeSell</a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mynavbar">
                     <span class="navbar-toggler-icon"></span>
                     </button>
@@ -45,7 +45,7 @@
                         <i class="bi bi-cart2" style="color:white; font-size: 2rem;"></i>
                     </li>
                     <li class="nav-item p-2">
-                        <a href="/notifications/{{current_sessionID}}"type="button" class="btn btn-primary position-relative">
+                        <a href="/notifications/{{current_sessionID}}"type="button" class="btn btn-dark position-relative">
                             <i class="bi bi-bell" style="color:white; font-size: 2rem;"></i>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                 {{customer_notifications}}
@@ -88,6 +88,7 @@
 
             <div class="w-100 "> <!--to increase the search field length. also make sure its the same width as the first row-->
                 <form class="d-flex align-items-end" method="POST">
+                    {% if current_sessionID != 0 %}
                     <form method="POST" action="" >
                         <div class="form-group" style="width:90%">
                             {{ render_field(searchform.searchfield, class="form-control") }}
@@ -101,6 +102,7 @@
                             <input type="submit" value="Submit" class="btn btn-primary"/>
                         </div>
                     </form>
+                    {% endif %}
                 </form>
             </div>
 

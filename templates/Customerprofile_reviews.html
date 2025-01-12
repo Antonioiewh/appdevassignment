@@ -38,7 +38,9 @@
         </button>
         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
             <li><a class="dropdown-item" href="/createReview/{{current_sessionID}}" class="align-items-center">Leave review<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
+            {%if current_sessionID != customer.get_id()%}
             <li><a class="dropdown-item" href="" class="align-items-center" data-bs-toggle="modal" data-bs-target="#myModal1" style="color:red;">Report user<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+            {% endif %}
             {%if current_sessionID == customer.get_id()%}
             <li><a class="dropdown-item" href="#" class="align-items-center">Edit profile<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
             {% endif %}

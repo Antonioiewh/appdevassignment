@@ -937,7 +937,7 @@ def updateListing(id):
         
         db2['Listings'] = listings_dict #sync local to db2
         db2.close() 
-        return redirect(url_for('Customerprofile', id = id)) #go back to profile page after submit
+        return redirect(url_for('Customerprofile', id = session_ID)) #go back to profile page after submit
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))

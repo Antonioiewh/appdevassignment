@@ -155,7 +155,7 @@ def ID_to_obj(inputlistID,outputlistobj):
             print("Error in opening listings.db")
     for ID in inputlistID:
         listing = listings_dict.get(ID)
-        outputlistobj.append(listing.get_ID())#for now it will be to ID, easier during testing
+        outputlistobj.append(listing)#for now it will be to ID, easier during testing
     return outputlistobj
 
 
@@ -312,9 +312,12 @@ def Customerprofile(id):
     #code for profile pic img 
     pfpimg = os.path.join('..\static','profilepics')
     user_id = os.path.join(pfpimg,'hermos.jpg') 
-    
+    idreal = id
+    print(idreal)
     #get ID list of current user listings
-    customer = customers_dict.get(id)
+    customer = customers_dict.get(idreal)
+    #test code
+    print(f"ID is {idreal}. username is {customer.get_username()} YOUR ID IS {session_ID}")
     customer_listings = customer.get_listings()
     print(f"\n*start of message *\nCurrent user has the following listings:{customer_listings}\n*end of message*")
     listing_list = []
@@ -351,8 +354,8 @@ def Customerprofile(id):
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
@@ -435,10 +438,10 @@ def updateCustomerprofile(id):
     
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0  
+        customer_notifications = 0    
 
     #filter
     if request.method == "POST" and filterform.validate():
@@ -551,10 +554,10 @@ def Customerprofile_reviews(id):
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0  
+        customer_notifications = 0   
     
     #filter
     if request.method == "POST" and filterform.validate():
@@ -639,10 +642,10 @@ def signup():
     
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifcations = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifcations = 0  
+        customer_notifications = 0  
     
     #filter
     if request.method == "POST" and filterform.validate():
@@ -652,7 +655,7 @@ def signup():
         return redirect(url_for('filterresults'))
 
 
-    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifcations,filterform=filterform)
+    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
@@ -711,10 +714,10 @@ def login():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifcations = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifcations = 0  
+        customer_notifications = 0  
     
     #filter
     if request.method == "POST" and filterform.validate():
@@ -724,7 +727,7 @@ def login():
         return redirect(url_for('filterresults'))
 
 
-    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform)
+    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/loginoptions',methods = ['GET', 'POST'])
 def loginoptions():
@@ -751,16 +754,16 @@ def loginoptions():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifcations = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifcations = 0  
+        customer_notifications = 0  
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []
         get_searchquery(filterform.data,searchconditionlist)
         return redirect(url_for('filterresults',searchconditionslist = searchconditionlist))
-    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform)
+    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
@@ -857,17 +860,17 @@ def createlisting():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifcations = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifcations = 0 
+        customer_notifications = 0  
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []
         get_searchquery(filterform.data,searchconditionlist)
         session['filters'] = searchconditionlist
         return redirect(url_for('filterresults'))
-    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform)
+    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
@@ -945,17 +948,17 @@ def updateListing(id):
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifcations = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifcations = 0 
+        customer_notifications = 0  
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []
         get_searchquery(filterform.data,searchconditionlist)
         session['filters'] = searchconditionlist
         return redirect(url_for('filterresults'))
-    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform) #to render the form 
+    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform) #to render the form 
 
 @app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
 def viewListing(id):
@@ -1004,17 +1007,17 @@ def viewListing(id):
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifcations = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifcations = 0 
+        customer_notifications = 0  
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []
         get_searchquery(filterform.data,searchconditionlist)
         session['filters'] = searchconditionlist
         return redirect(url_for('filterresults'))
-    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifcations,filterform=filterform)
+    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
 def deleteListing(id):
@@ -1147,10 +1150,10 @@ def createReview(id):
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []
@@ -1341,10 +1344,10 @@ def viewLikedListings(id): #retrieve current session_ID
     
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications == 0
+        customer_notifications = 0  
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []
@@ -1385,10 +1388,10 @@ def messages():
 
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1571,10 +1574,10 @@ def searchresults(keyword):
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = len(customer.get_notifications())
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []
@@ -1623,10 +1626,10 @@ def category1():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #get prods from cat1
     listings_to_display = []
     for key in listings_dict:
@@ -1676,10 +1679,10 @@ def category2():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #get prods from cat1
     listings_to_display = []
     for key in listings_dict:
@@ -1728,10 +1731,10 @@ def category3():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #get prods from cat1
     listings_to_display = []
     for key in listings_dict:
@@ -1780,10 +1783,10 @@ def category4():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #get prods from cat1
     listings_to_display = []
     for key in listings_dict:
@@ -1831,10 +1834,10 @@ def category5():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #get prods from cat1
     listings_to_display = []
     for key in listings_dict:
@@ -1868,10 +1871,10 @@ def filterresults():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0  
     #filter
     if request.method == "POST" and filterform.validate():
         searchconditionlist = []

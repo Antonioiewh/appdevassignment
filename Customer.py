@@ -20,6 +20,7 @@ class Customer:
         self.__status = "active" #3 states : active,suspended,terminated
         self.__notifications = [] #starts at 0 , stores ID of notifcations
         self.__unread_notifications = 0 #starts at 0
+        self.__feedbacks = []
     def get_id(self):
         return self.__id
     
@@ -64,6 +65,9 @@ class Customer:
     
     def get_unread_notifications(self):
         return self.__unread_notifications
+    
+    def get_feedbacks(self):
+        return self.__feedbacks
 
     def set_id(self,id): #just here but god forbid u actually run this as why would u
         self.__id = id 
@@ -132,6 +136,14 @@ class Customer:
         self.__unread_notifications +=1
     def clear_unread_notifications(self):
         self.__unread_notifications = 0
+
+    #feedback
+
+    def add_feedback(self,feedbackid):
+        self.__feedbacks.append(feedbackid)
+    
+    def remove_feedback(self,feedbackid):
+        self.__feedbacks.remove(feedbackid)
 
     
     

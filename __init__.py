@@ -3,7 +3,7 @@ import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
 from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
-from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback
 import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
@@ -236,11 +236,15 @@ def Customerhome():
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
     customer = customers_dict.get(session_ID)
 
 
@@ -359,11 +363,14 @@ def Customerprofile(id):
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
 
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
@@ -444,11 +451,15 @@ def updateCustomerprofile(id):
         customer_notifications = 0    
 
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
 
 
     return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
@@ -560,11 +571,15 @@ def Customerprofile_reviews(id):
         customer_notifications = 0   
     
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
 
 
     return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
@@ -648,11 +663,15 @@ def signup():
         customer_notifications = 0  
     
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
 
 
     return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
@@ -720,11 +739,15 @@ def login():
         customer_notifications = 0  
     
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
 
 
     return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
@@ -759,10 +782,15 @@ def loginoptions():
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        return redirect(url_for('filterresults',searchconditionslist = searchconditionlist))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/createlisting', methods = ['GET', 'POST'])
@@ -865,11 +893,15 @@ def createlisting():
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
@@ -953,11 +985,15 @@ def updateListing(id):
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform) #to render the form 
 
 @app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
@@ -1012,11 +1048,15 @@ def viewListing(id):
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
@@ -1155,11 +1195,15 @@ def createReview(id):
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
 
     return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
@@ -1380,11 +1424,15 @@ def messages():
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
 
     #get notifs
     if session_ID != 0:
@@ -1579,11 +1627,15 @@ def searchresults(keyword):
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications,filterform=filterform)
     
 
@@ -1613,11 +1665,15 @@ def category1():
             print("Error in opening listings.db")
     
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     #search
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1666,11 +1722,15 @@ def category2():
             print("Error in opening listings.db")
     
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     #search
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1718,11 +1778,15 @@ def category3():
             print("Error in opening listings.db")
     
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     #search
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1770,11 +1834,15 @@ def category4():
             print("Error in opening listings.db")
     
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     #search
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1822,10 +1890,15 @@ def category5():
             print("Error in opening listings.db")
     
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        return redirect(url_for('filterresults',searchconditionslist = searchconditionlist))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     #search
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1876,11 +1949,15 @@ def filterresults():
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     #func
     outputlistID = []
     listings_to_display = []
@@ -1932,25 +2009,38 @@ def feedback():
         pass
     #get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0 
 
     if request.method == 'POST' and feedback_form.validate():
+        #add the feedback into feedback db
         feedback = Feedback.Feedback(feedback_form.rating.data,feedback_form.feedback.data)
         feedbacks_dict[feedback.get_ID()] = feedback #store obj in dict
         db7['Feedback'] = feedbacks_dict
         db7['FeedbackCount'] = Feedback.Feedback.count_ID
         db7.close()
+        
+        #add feedback ID to customer
+        customer = customers_dict.get(session_ID)
+        customer.add_feedback(feedback.get_ID())
+        db1['Customers'] = customers_dict
+        db1.close()
+
         return redirect(url_for('Customerhome'))
 
+
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     
     return render_template('CustomerFeedback.html',searchform =search_field,
             customer_notifications=customer_notifications,current_sessionID=int(session_ID),form=feedback_form,filterform=filterform)
@@ -1995,6 +2085,11 @@ def viewnotifications(id): #id is current_sessionID
         if key in notifs_list:
             notification = notifications_dict.get(key)
             notifs_to_display.append(notification)
+    #set unread notifs to 0
+    customer.clear_unread_notifications()
+    db1['Customers'] = customers_dict
+    db1.close()
+
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -2002,21 +2097,147 @@ def viewnotifications(id): #id is current_sessionID
     except:
         pass
 
-    #get notifs
+    # get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = len(customer.get_notifications())
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0 
+        customer_notifications = 0
+
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+
     
     return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display,filterform=filterform)
+    
+@app.route('/profilefeedback/<int:id>', methods = ['GET', 'POST'])
+def CustomerProfile_feedback(id):
+    db1 = shelve.open('customer.db', 'c')
+    db7 = shelve.open('feedback.db', 'c')
+    db4 =shelve.open('reports.db','c')  # Open the feedback database
+    customers_dict = {}  # local one
+    global session_ID
+    feedbacks_dict = {}
+    customer_update_form = CustomerUpdateForm(request.form)
+    report_form = ReportForm(request.form)
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    updatefeedbackform = UpdateFeedback(request.form)
+    try:
+        if "Feedback" in db7:
+            feedbacks_dict = db7["Feedback"]  # sync local with db1
+        else:
+            db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening feedback.db")
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"]  # sync local with db1
+        else:
+            db1['Customers'] = customers_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    #sync report dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reports" in db4:
+            reports_dict = db4["Reports"] #sync local with db2
+        else:
+            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening reports.db")
+    #sync listing IDs
+    try:
+        db4 = shelve.open('reports.db','c')    
+        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB4 Report count or count is at 0")
+    feedbacks_list = []
+    for key in feedbacks_dict:
+        feedback = feedbacks_dict.get(key)
+        feedbacks_list.append(feedback)
+    #report function
+    try:
+        if request.method == 'POST' and report_form.validate():
+            customer = customers_dict.get(id)
 
+            #create report obj and store it
+            print(report_form.category.data,report_form.report_text.data)
+            report = Report.Report(session_ID,id,customer.get_username(),report_form.category.data,report_form.report_text.data)
+            reports_dict[report.get_ID()] = report #store obj in dict
+            db4['Reports'] = reports_dict
+            db4['ReportsCount'] = Report.Report.count_ID
+            db4.close()
+
+            #store report in offender's report_listings
+            customer = customers_dict.get(id)
+            customer.add_reports(report.get_ID())
+            db1['Customers'] = customers_dict
+            db1.close()
+            redirect(url_for('Customerprofile', id=id))
+    except:
+        pass
+    # search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(
+                url_for('searchresults', keyword=search_field.searchfield.data))  # get the word from the search field
+    except:
+        pass
+    # get notifs
+    if session_ID != 0:
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0
+    # filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data, searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    customer = customers_dict.get(session_ID)
+    return render_template('CustomerProfile_feedback.html',feedbacks_list=feedbacks_list,current_sessionID=session_ID,searchform=search_field
+                           ,customer_notifications=customer_notifications, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform,form = report_form)
+
+@app.route('/deletefeedback/<int:id>', methods = ['GET', 'POST'])
+def deletefeedback(id): #id will be that of feedback
+    global session_ID
+    customers_dict = {}
+    db1 = shelve.open('customer.db','c')
+    feedbacks_dict = {}
+    db7 = shelve.open('feedback.db','c')
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"] #sync local with db1
+        else:
+            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+    try:
+        if "Feedback" in db7:
+            feedbacks_dict = db7["Feedback"] #sync local with db1
+        else:
+            db7['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening feedback.db")
+    #remove the feedback ID from feedbacks db
+    feedbacks_dict.pop(id)
+    customer = customers_dict.get(session_ID)
+    
+    
+    
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID
@@ -2089,6 +2310,7 @@ def dashboardusers():
     
     return render_template('Operatordashboard_users.html',form = user_search_field,customers_list = customers_list)
 
+
 @app.route('/dashboard/users/search=<keyword>',methods=['GET', 'POST'])
 def dashboarduserssearch(keyword):
     user_search_field = SearchUserField(request.form)
@@ -2133,7 +2355,7 @@ def operatorviewprofile(id): #id of profile they are viewing
     operatoractions_dict = {}
     terminate_user = OperatorTerminateUser(request.form,typeofaction='terminate user')
     suspend_user = OperatorSuspendUser(request.form,typeofaction='suspend user')
-    restore_user = OperatorRestoreUser(request.form,typeofaction='report user')
+    restore_user = OperatorRestoreUser(request.form,typeofaction='restore user')
     disable_listing = OperatorDisableListing(request.form,typeofaction='disable listing')
     restore_listing = OperatorRestoreListing(request.form,typeofaction='restore listing')
     #make sure local and db1 are the same state
@@ -2307,7 +2529,7 @@ def operatorviewprofilereviews(id):
     operatoractions_dict = {}
     terminate_user = OperatorTerminateUser(request.form,typeofaction='terminate user')
     suspend_user = OperatorSuspendUser(request.form,typeofaction='suspend user')
-    restore_user = OperatorRestoreUser(request.form,typeofaction='report user')
+    restore_user = OperatorRestoreUser(request.form,typeofaction='restore user')
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:

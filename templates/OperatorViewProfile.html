@@ -46,8 +46,12 @@
                 <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
             </button>
             <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
+                {%if customer.get_status() != "suspended"%}
                 <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal1">Suspend User<i class="bi bi-exclamation-trianglen" style="color: red; margin-left:7%;"></i></a></li>
+                {%endif%}
+                {%if customer.get_status() != "terminated"%}
                 <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal2">Terminate User<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+                {%endif%}
                 {%if customer.get_status() != "active"%} <!--for now u can restore a terminated account-->
                 <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal3">Restore user<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
                 {%endif%}
@@ -71,7 +75,7 @@
                 <img src=../static/listingpics/listing{{listing.get_ID()}}.jpg style="width:250px; height:200px; border-radius: 5%; justify-self:center">
             </div>
             {% if listing.get_status() == "disabled"%}
-            
+            <div>
             <p class="" style="justify-self:center; color:red;">This listing is under review</p> 
             </div>
             {%endif%}
@@ -79,7 +83,7 @@
             <div style="margin-left:9%; margin-bottom:0px;">
                 <p class="" style="justify-self:start; margin-bottom:0px;">{{listing.get_title()}}</p> 
             <p class=""style="justify-self:start; margin-bottom:0px; font-weight:bold"> {{listing.get_condition()}}</p>
-            </div>
+        </div>
             
     
             {%endif%}
@@ -92,7 +96,9 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton1">
                         <li><a class="dropdown-item" href="#" class="align-items-center" style="color:black">View listing<i class="bi bi-eye" style="color: black; margin-left:13%;"></i></a></li><!--everyone should be able to view-->
+                        {% if listing.get_status() != "disabled"%}
                         <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red"data-bs-toggle="modal" data-bs-target="#myModal4">Disable listing<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+                        {%endif%}
                         {% if listing.get_status() == "disabled"%}
                         <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red"data-bs-toggle="modal" data-bs-target="#myModal5">Restore listing<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
                         {%endif%}

@@ -1,17 +1,14 @@
-{% extends "Customerbase.html"%}
-{% block title %}Your Profile - reviews{% endblock %}
+{% extends "Customerbase.html" %}
+{% block title %}Your profile- feedbacks{% endblock %}
 {% from "includes/_formHelper.html" import render_field %}
 {% block content %}
 <style>
 .categories{
     font-size:1.5rem;
 }
-
 .categories:active{
     color:green;
 }
-
-
 #reviewbar{
     margin:20px;
     background:lightgray;
@@ -19,12 +16,8 @@
     width:40vw;
     float:left;
 }
-
-
 </style>
 <h1 class="display-4">Profile</h1>
-
-
 <div id="profilebar " style="background: gray; height: 17vh; left:20%;" class=" w-50 p-3 d-flex " > <!--vh means 15% of viewport aka dynamic lmao-->
     <img src="../static/profilepics/customer{{customer.get_id()}}.jpg" style="width:100px; height:100px; border-radius:50%" class="align-self-center"> <!--load profile pic-->
     <p class="m-auto align-self-baseline" style="font-size:1.5rem">{{customer.get_username()}}</p>
@@ -34,10 +27,10 @@
     <p class="m-auto" style="font-size:1.5rem">{{customer.get_date_joined()}}</p>
     <div>
         <button type="button" class="btn btn-primary bg-secondary border-0" type="button" id="dropdownMenuButton2" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
+            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i>
         </button>
         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
-            <li><a class="dropdown-item" href="/createReview/{{customer.get_id()}}" class="align-items-center">Leave review<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
+            <li><a class="dropdown-item" href="/feedback" class="align-items-center">Leave feedback<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
             {%if current_sessionID != customer.get_id()%}
             <li><a class="dropdown-item" href="" class="align-items-center" data-bs-toggle="modal" data-bs-target="#myModal1" style="color:red;">Report user<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
             {% endif %}
@@ -47,7 +40,6 @@
         </ul>
     </div>
 </div>
-
 <div class=" w-25 p-3 d-flex align-items-center"> <!--still a wip-->
     <a href="/profile/{{customer.get_id()}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Listings</a>
     <a href="/profilereviews/{{customer.get_id()}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Reviews</a>
@@ -56,19 +48,37 @@
     {%endif%}
 </div>
 
-{% if number_of_reviews == 0 %}
-<p>There are no reviews.</p>
+<!--feedback section-->
+<div>
+    <table class="table table-striped">
+        <thead><tr><th>Feedback ID</th><th>Rating</th><th>Remarks</th>
+        </tr></thead>
+        <tbody>
+            {% for feedback in feedbacks_list%}
+            <tr><td>{{feedback.get_ID()}}</td><td>{{feedback.get_rating()}}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i></td><td>{{feedback.get_remark()}}</td><td>
+                    <a href="#">Delete feedback goes here</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% if number_of_feedback == 0 %}
+<p>There are no feedbacks.</p>
 {% else %}
-<div id="reviews_container" class="w-50 p-3 h-auto d-inline-block justify-content-center"> <!--container for the reviews, same concept as listings-->
-{% for review in list_reviews%}
-    <div id="reviewbar" class="p-3 d-flex">
-
+<div id="feedback_container" class="w-50 p-3 h-auto d-inline-block justify-content-center"> <!--container for the reviews, same concept as listings-->
+{% for feedback in list_feedbacks%}
+    <div id="feedbackbar" class="p-3 d-flex">
         <div class="d-flex flex-column"> <!--display profile pic with name underneath-->
-            <img src="{{reviewer_imgid}}" style="width:70px; height:70px; border-radius:50%">
-            <p>{{review.get_creator_username()}}</p>
+            <img src="{{feedbacker_imgid}}" style="width:70px; height:70px; border-radius:50%">
+            <p>{{feedback.get_creator_username()}}</p>
         </div>
-    
-        <p style="margin-left:4%">{{review.get_comment()}}</p>
+        <p style="margin-left:4%">{{feedback.get_comment()}}</p>
+        <form method="POST">
+            <div class="form-group" style="margin-left:3vh; margin-right:3vh;">
+            {{ render_field(updatefeedbackform.rating, class="form-control") }}
+            </div>
+        </form>
     </div>
 {% endfor %}
 {% endif %}
@@ -101,11 +111,11 @@
                    
             
                 </div>
-        
             </form>
         </div>
+
       </div>
     </div>
-</div>
+  </div>
 {% endblock %}
 {% from "includes/_formHelper.html" import render_field %}

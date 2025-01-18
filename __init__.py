@@ -2118,18 +2118,12 @@ def viewnotifications(id): #id is current_sessionID
     return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display,filterform=filterform)
     
 @app.route('/profilefeedback/<int:id>', methods = ['GET', 'POST'])
-def CustomerProfile_feedback(id):
+def Customerprofilefeedback(id):#id not needed for now
     db1 = shelve.open('customer.db', 'c')
-    db7 = shelve.open('feedback.db', 'c')
-    db4 =shelve.open('reports.db','c')  # Open the feedback database
+    db7 = shelve.open('feedback.db', 'c')  # Open the feedback database
     customers_dict = {}  # local one
     global session_ID
     feedbacks_dict = {}
-    customer_update_form = CustomerUpdateForm(request.form)
-    report_form = ReportForm(request.form)
-    search_field = SearchBar(request.form)
-    filterform = FilterForm(request.form)
-    updatefeedbackform = UpdateFeedback(request.form)
     try:
         if "Feedback" in db7:
             feedbacks_dict = db7["Feedback"]  # sync local with db1
@@ -2137,6 +2131,17 @@ def CustomerProfile_feedback(id):
             db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
     except:
         print("Error in opening feedback.db")
+    feedbacks_list = []
+    for key in feedbacks_dict:
+        print(key)
+        feedback = feedbacks_dict.get(key)
+        feedbacks_list.append(feedback)
+    numberfeedbacks = len(feedbacks_list)
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    updatefeedbackform = UpdateFeedback(request.form)
+    # make sure local and db1 are the same state
+    # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in db1:
             customers_dict = db1["Customers"]  # sync local with db1
@@ -2144,46 +2149,90 @@ def CustomerProfile_feedback(id):
             db1['Customers'] = customers_dict  # sync db1 with local (basically null)
     except:
         print("Error in opening customer.db")
-    #sync report dbs
-    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    # search func
     try:
-        if "Reports" in db4:
-            reports_dict = db4["Reports"] #sync local with db2
+
+        if request.method == 'POST' and search_field.validate():
+            return redirect(
+                url_for('searchresults', keyword=search_field.searchfield.data))  # get the word from the search field
+    except:
+        pass
+
+    # get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0
+        # filter
+    if request.method == "POST" and filterform.validate():
+        searchconditionlist = []
+        get_searchquery(filterform.data, searchconditionlist)
+        session['filters'] = searchconditionlist
+        return redirect(url_for('filterresults'))
+    customer = customers_dict.get(session_ID)
+    print(feedbacks_list)
+    return render_template('Customerprofile_feedback.html',number_of_feedbacks = numberfeedbacks,list_feedback = feedbacks_list, current_sessionID=session_ID,searchform=search_field
+                           ,customer_notifications=customer_notifications, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform)
+
+@app.route('/update_feedback/<int:feedback_id>', methods=['POST', 'GET'])
+def update_feedback(feedback_id):
+    feedbacks_dict = {}
+    db7 = shelve.open('feedback.db', 'c')
+    db1 = shelve.open('customer.db', 'c')
+    customers_dict = {}  # local one
+    global session_ID
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    # Get the feedback dictionary
+    try:
+        if "Feedback" in db7:
+            feedbacks_dict = db7["Feedback"]  # sync local with db1
         else:
-            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+            db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
     except:
-            print("Error in opening reports.db")
-    #sync listing IDs
+        print("Error in opening feedback.db")
+
+    # sync IDs
     try:
-        db4 = shelve.open('reports.db','c')    
-        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+        db7 = shelve.open('feedback.db', 'c')
+        Feedback.Feedback.count_ID = db7["FeedbackCount"]  # sync count between local and db1
     except:
-        print("Error in retrieving data from DB4 Report count or count is at 0")
+        print("Error in retrieving data from DB7 Feedback count or count is at 0")
+    # Check if the feedback ID exists
+    if feedback_id not in feedbacks_dict:
+        db7.close()
+        return "Feedback not found", 404
+
+
+    update_feedback_form = UpdateFeedback(request.form)
+    print(f"Feedback id:{feedback_id}")
+    feedback = feedbacks_dict.get(feedback_id)  # Retrieve the feedback obj
+    if request.method == 'POST' and update_feedback_form.validate():
+        # Update feedback details
+        feedback.set_rating(update_feedback_form.rating.data)
+        feedback.set_remark(update_feedback_form.feedback.data)
+        db7['Feedback'] = feedbacks_dict  # Update the database
+        db7.close()
+        return redirect(url_for('Customerprofilefeedback', id = session_ID))  # Redirect to the feedback dashboard
     feedbacks_list = []
     for key in feedbacks_dict:
         feedback = feedbacks_dict.get(key)
-        feedbacks_list.append(feedback)
-    #report function
+        feedbacks_list.append(feedback) #get all feedback obj
+    db7.close()
+
+    # make sure local and db1 are the same state
+    # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if request.method == 'POST' and report_form.validate():
-            customer = customers_dict.get(id)
-
-            #create report obj and store it
-            print(report_form.category.data,report_form.report_text.data)
-            report = Report.Report(session_ID,id,customer.get_username(),report_form.category.data,report_form.report_text.data)
-            reports_dict[report.get_ID()] = report #store obj in dict
-            db4['Reports'] = reports_dict
-            db4['ReportsCount'] = Report.Report.count_ID
-            db4.close()
-
-            #store report in offender's report_listings
-            customer = customers_dict.get(id)
-            customer.add_reports(report.get_ID())
-            db1['Customers'] = customers_dict
-            db1.close()
-            redirect(url_for('Customerprofile', id=id))
+        if "Customers" in db1:
+            customers_dict = db1["Customers"]  # sync local with db1
+        else:
+            db1['Customers'] = customers_dict  # sync db1 with local (basically null)
     except:
-        pass
+        print("Error in opening customer.db")
+
+
+
     # search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -2193,57 +2242,55 @@ def CustomerProfile_feedback(id):
         pass
     # get notifs
     if session_ID != 0:
-        owncustomer = customers_dict.get(session_ID)
-        customer_notifications = owncustomer.get_unread_notifications()
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0
-    # filter
+        # filter
     try:
         if request.method == "POST" and filterform.validate():
             searchconditionlist = []
             get_searchquery(filterform.data, searchconditionlist)
             session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+            return redirect(url_for('Customerprofilefeedback'))
     except:
         pass
-    customer = customers_dict.get(session_ID)
-    return render_template('CustomerProfile_feedback.html',feedbacks_list=feedbacks_list,current_sessionID=session_ID,searchform=search_field
-                           ,customer_notifications=customer_notifications, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform,form = report_form)
 
-@app.route('/deletefeedback/<int:id>', methods = ['GET', 'POST'])
-def deletefeedback(id): #id will be that of feedback
+    return render_template("CustomerUpdatefeedback.html",current_sessionID = session_ID,feedback=feedback,feedbacks_list=feedbacks_list,update_feedback_form=update_feedback_form,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer)
+
+@app.route('/delete_feedback/<int:feedback_id>', methods=['POST','GET'])
+def delete_feedback(feedback_id):
     global session_ID
-    customers_dict = {}
-    db1 = shelve.open('customer.db','c')
-    feedbacks_dict = {}
-    db7 = shelve.open('feedback.db','c')
-    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
-    try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
-        else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
-    except:
-        print("Error in opening customer.db")
+    print('reached delete feedback')
+    db7 = shelve.open('feedback.db', 'w')  # Open the feedback database in write mode
+    feedbacks_dict = db7.get('Feedback', {})  # Get the feedback dictionary
     try:
         if "Feedback" in db7:
-            feedbacks_dict = db7["Feedback"] #sync local with db1
+            feedbacks_dict = db7["Feedback"]  # sync local with db1
         else:
-            db7['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
+            db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
     except:
         print("Error in opening feedback.db")
-    #remove the feedback ID from feedbacks db
-    feedbacks_dict.pop(id)
-    customer = customers_dict.get(session_ID)
-    
-    
-    
+
+    # sync IDs
+    try:
+        db7 = shelve.open('feedback.db', 'c')
+        Feedback.Feedback.count_ID = db7["FeedbackCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB7 Feedback count or count is at 0")
+    # Check if the feedback ID exists
+    if feedback_id in feedbacks_dict:
+        del feedbacks_dict[feedback_id]  # Remove the feedback
+        db7['Feedback'] = feedbacks_dict# Save changes to the database
+    db7.close()
+    return redirect(url_for('Customerprofilefeedback',id=session_ID))
+      
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID
     search_field = SearchBar(request.form)
     operator_login_form = OperatorLoginForm(request.form)
-    OTP = False #set it to false if you dont want to use the OTP feature
+    OTP = True #set it to false if you dont want to use the OTP feature
     if request.method == 'POST' and operator_login_form.validate():
         session['Email'] = operator_login_form.email.data #stores the data
         if operator_login_form.operator_username.data == "sysadmin1":
@@ -2309,7 +2356,6 @@ def dashboardusers():
         return redirect(url_for('dashboarduserssearch',keyword = user_search_field.searchfield.data))
     
     return render_template('Operatordashboard_users.html',form = user_search_field,customers_list = customers_list)
-
 
 @app.route('/dashboard/users/search=<keyword>',methods=['GET', 'POST'])
 def dashboarduserssearch(keyword):

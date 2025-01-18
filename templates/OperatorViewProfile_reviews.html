@@ -44,11 +44,15 @@
             <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
         </button>
         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
-            <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal1">Suspend User<i class="bi bi-exclamation-trianglen" style="color: red; margin-left:7%;"></i></a></li>
-            <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal2">Terminate User<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
-            {%if customer.get_status() != "active"%} <!--for now u can restore a terminated account-->
-            <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal3">Restore user<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
-            {%endif%}
+            {%if customer.get_status() != "suspended"%}
+                <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal1">Suspend User<i class="bi bi-exclamation-trianglen" style="color: red; margin-left:7%;"></i></a></li>
+                {%endif%}
+                {%if customer.get_status() != "terminated"%}
+                <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal2">Terminate User<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+                {%endif%}
+                {%if customer.get_status() != "active"%} <!--for now u can restore a terminated account-->
+                <li><a class="dropdown-item" href="#" class="align-items-center" style="color:red" data-bs-toggle="modal" data-bs-target="#myModal3">Restore user<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
+                {%endif%}
         </ul>
     </div>
 </div>

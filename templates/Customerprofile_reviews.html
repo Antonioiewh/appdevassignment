@@ -50,7 +50,10 @@
 
 <div class=" w-25 p-3 d-flex align-items-center"> <!--still a wip-->
     <a href="/profile/{{customer.get_id()}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Listings</a>
-    <a href="/profilereviews/{{customer.get_id()}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Reviews {{number_of_reviews}}</a>
+    <a href="/profilereviews/{{customer.get_id()}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Reviews</a>
+    {% if current_sessionID == customer.get_id()%}
+    <a href="/profilefeedback/{{customer.get_id()}}"style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Feedback {{number_of_feedback}}</a>
+    {%endif%}
 </div>
 
 {% if number_of_reviews == 0 %}

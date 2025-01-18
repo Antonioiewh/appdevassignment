@@ -1,0 +1,75 @@
+{% extends "Customerbase.html" %}
+{% block title %}Your Profile - Feedback{% endblock %}
+{% from "includes/_formHelper.html" import render_field %}
+{% block content %}
+<style>
+.feedback-container {
+    margin: 20px;
+    background: lightgray;
+    padding: 15px;
+    border-radius: 8px;
+    width: 60%;
+}
+
+.feedback-header {
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.feedback-body {
+    font-size: 1.2rem;
+    margin: 10px 0;
+}
+
+.feedback-footer {
+    font-size: 0.9rem;
+    color: gray;
+    text-align: right;
+}
+
+.no-feedback {
+    font-size: 1.2rem;
+    color: darkgray;
+    margin-top: 20px;
+    text-align: center;
+}
+</style>
+
+<h1 class="display-4">Feedback</h1>
+
+
+<!-- Navigation Links -->
+<div class="w-50 p-3 d-flex align-items-center">
+    <a href="/profile/{{current_sessionID}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Listings</a>
+    <a href="/profilereviews/{{current_sessionID}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Reviews</a>
+    <a href="/profilefeedback/{{current_sessionID}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Feedback</a>
+</div>
+
+<!-- Feedback Section -->
+{% if number_of_feedbacks == 0 %}
+<p class="no-feedback">You have not received any feedback on your profile yet.</p>
+{% else %}
+<div id="feedback_section" class="d-flex flex-column align-items-center">
+    {% for feedback in list_feedback %}
+    <div class="feedback-container">
+        <!-- Feedback Header -->
+        <div class="feedback-header">
+            Feedback rating {{ feedback.get_rating() }}
+        </div>
+
+        <!-- Feedback Body -->
+        <div class="feedback-body">
+            "{{ feedback.get_remark() }}"
+        </div>
+        <a href="/update_feedback/{{feedback.get_ID()}}" class="btn btn-danger" >
+                    </a>
+        <a href="/delete_feedback/{{feedback.get_ID()}}" class="btn btn-danger" onclick="confirmDelete('{{ feedback.get_ID() }}')">
+                        <input type="submit" value="Delete" class="btn btn-danger">
+                    </a>
+
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

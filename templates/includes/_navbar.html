@@ -47,10 +47,12 @@
                     <li class="nav-item p-2">
                         <a href="/notifications/{{current_sessionID}}"type="button" class="btn btn-dark position-relative">
                             <i class="bi bi-bell" style="color:white; font-size: 2rem;"></i>
+                            {%if customer_notifications != 0%}
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
                                 {{customer_notifications}}
                                 <span class="visually-hidden">unread messages</span>
                             </span>
+                            {%endif%}
                         </a>
                     </li>
                     <li class="nav-item p-2">

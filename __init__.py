@@ -380,7 +380,7 @@ def updateCustomerprofile(id):
     global session_ID
     db1 = shelve.open('customer.db','c')
     customers_dict = {} #local one
-    customer_update_form = CustomerUpdateForm(request.form)
+    
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
 
@@ -400,7 +400,8 @@ def updateCustomerprofile(id):
         Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
     except:
         print("Error in retrieving data from DB1 Customer count or count is at 0")
-
+    customer = customers_dict.get(id) #get current customer
+    customer_update_form = CustomerUpdateForm(request.form,username=customer.get_username(),email = customer.get_email(),password = customer.get_password())
     
     if request.method == 'POST' and customer_update_form.validate():
         print(customer_update_form.username.data, customer_update_form.email.data,customer_update_form.password.data)
@@ -907,13 +908,32 @@ def createlisting():
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
     global session_ID
-    update_listing_form = ListingForm(request.form)
     filterform = FilterForm(request.form)
     db2 = shelve.open('listing.db','c') #RMBR THIS
     search_field = SearchBar(request.form)
     db1 = shelve.open('customer.db','c')
     customers_dict = {} #local one
     listings_dict = {}
+    #retreive listing info
+    try:
+        if "Listings" in db2:
+            listings_dict = db2["Listings"] #sync local with db2
+        else:
+            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening listings.db")
+    listing = listings_dict.get(id)
+
+    if listing.get_deal_method() == "meetup":
+        print("meetup")
+        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),meetup = True,meetupinfo=listing.get_deal_meetupinfo())
+    elif listing.get_deal_method() == "delivery":
+        print("delivery")
+        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),delivery = True,deliveryinfo=listing.get_deal_deliveryinfo())
+    elif listing.get_deal_method() == "meetupdelivery":
+        print("meetupdelivery")
+        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),meetup = True,meetupinfo=listing.get_deal_meetupinfo(),deliveryinfo=listing.get_deal_deliveryinfo())
+    
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -924,13 +944,7 @@ def updateListing(id):
     except:
         print("Error in opening customer.db")
         
-    try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
-        else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
-    except:
-            print("Error in opening listings.db")
+    
     paymentmethod = ""
     paymentinfo =[]
     print(update_listing_form.meetup.data,update_listing_form.delivery.data)
@@ -946,13 +960,10 @@ def updateListing(id):
         paymentinfo.append(update_listing_form.deliveryinfo.data)
     else:
         pass
-        
-    print(paymentmethod,paymentinfo)
     
     if request.method == 'POST' and update_listing_form.validate():
         
 
-        listing = listings_dict.get(id)
         #upload img
         file = request.files['file']
         check_upload_file_type(file,"listing",listing.get_ID())
@@ -994,7 +1005,7 @@ def updateListing(id):
     except:
         pass
 
-    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform) #to render the form 
+    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing) #to render the form 
 
 @app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
 def viewListing(id):

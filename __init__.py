@@ -103,21 +103,29 @@ def get_matchinglistingID(searchquerylist,outputlist):
                     Filters.category(listing,'Category 4',outputlist,"addonly")
                 if category == "category5":
                     Filters.category(listing,'Category 5',outputlist,"addonly")
+
     #filter condition
     # 2 scenarios here
+    print(outputlist)
     if filtercondition == True:
         if filtercategory == True:#implement remove if not match and to read directly from outputlist as it shld be not emtpy due to previous filter
-            copyofoutputlist = outputlist #just leave this here lmao
+            checklist = []
             for ID in outputlist: #so basically if does not match, it will remove, if does it adds
-                listing = listings_dict.get(ID)
-                for condition in conditionfilter:
-                    if condition == "condition_barelyused":
-                        Filters.condition(listing,'Barely used',outputlist,"addanddelete")
-                    if condition == "condition_frequentlyused":
-                        Filters.condition(listing,'Frequently used',outputlist,"addanddelete")
-                    if condition == "condition_useddaily":
-                        Filters.condition(listing,'Used daily',outputlist,'addanddelete')
-        
+                if ID not in checklist:
+                    checklist.append(ID)
+                    listing = listings_dict.get(ID)
+                    for condition in conditionfilter:
+                        if condition == "condition_barelyused":
+                            print("b_used")
+                            Filters.condition(listing,'Barely used',outputlist,"addanddelete")
+                        if condition == "condition_frequentlyused":
+                            print("f_used")
+                            Filters.condition(listing,'Frequently used',outputlist,"addanddelete")
+                        if condition == "condition_useddaily":
+                            print("ud_used")
+                            Filters.condition(listing,'Used daily',outputlist,'addanddelete')
+                    print("looped")
+                    
         if filtercategory == False: #outputlist will be empty
             for key in listings_dict:
                 listing = listings_dict.get(key)
@@ -128,6 +136,7 @@ def get_matchinglistingID(searchquerylist,outputlist):
                         Filters.condition(listing,'Frequently used',outputlist,"addonly")
                     if condition == "condition_useddaily":
                         Filters.condition(listing,'Used daily',outputlist,'addonly')
+                print("L")
     #sort latest
     if filtersortlatest == True:
         if outputlist == []:

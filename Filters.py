@@ -15,6 +15,7 @@ from datetime import datetime
 
 def sortbycategory(category,listing,outputlist):#enter category,object,output list
     if listing.get_category == category: #check if it matches
+        print(listing.get_category())
         outputlist.append(listing.get_ID())
     return outputlist
 
@@ -28,6 +29,7 @@ def dupechecker(inputlist,outputlist):#output list should be empty as in dupe ch
     
 def sortbycondition(condition,listing,outputlist): #enter condition, listingobj,output list
     if listing.get_condition == condition:
+        print(listing.get_condition())
         outputlist.append(listing.get_ID())
     return outputlist
 

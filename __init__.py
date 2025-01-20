@@ -103,21 +103,29 @@ def get_matchinglistingID(searchquerylist,outputlist):
                     Filters.category(listing,'Category 4',outputlist,"addonly")
                 if category == "category5":
                     Filters.category(listing,'Category 5',outputlist,"addonly")
+
     #filter condition
     # 2 scenarios here
+    print(outputlist)
     if filtercondition == True:
         if filtercategory == True:#implement remove if not match and to read directly from outputlist as it shld be not emtpy due to previous filter
-            copyofoutputlist = outputlist #just leave this here lmao
+            checklist = []
             for ID in outputlist: #so basically if does not match, it will remove, if does it adds
-                listing = listings_dict.get(ID)
-                for condition in conditionfilter:
-                    if condition == "condition_barelyused":
-                        Filters.condition(listing,'Barely used',outputlist,"addanddelete")
-                    if condition == "condition_frequentlyused":
-                        Filters.condition(listing,'Frequently used',outputlist,"addanddelete")
-                    if condition == "condition_useddaily":
-                        Filters.condition(listing,'Used daily',outputlist,'addanddelete')
-        
+                if ID not in checklist:
+                    checklist.append(ID)
+                    listing = listings_dict.get(ID)
+                    for condition in conditionfilter:
+                        if condition == "condition_barelyused":
+                            print("b_used")
+                            Filters.condition(listing,'Barely used',outputlist,"addanddelete")
+                        if condition == "condition_frequentlyused":
+                            print("f_used")
+                            Filters.condition(listing,'Frequently used',outputlist,"addanddelete")
+                        if condition == "condition_useddaily":
+                            print("ud_used")
+                            Filters.condition(listing,'Used daily',outputlist,'addanddelete')
+                    print("looped")
+                    
         if filtercategory == False: #outputlist will be empty
             for key in listings_dict:
                 listing = listings_dict.get(key)
@@ -128,6 +136,7 @@ def get_matchinglistingID(searchquerylist,outputlist):
                         Filters.condition(listing,'Frequently used',outputlist,"addonly")
                     if condition == "condition_useddaily":
                         Filters.condition(listing,'Used daily',outputlist,'addonly')
+                print("L")
     #sort latest
     if filtersortlatest == True:
         if outputlist == []:
@@ -158,6 +167,12 @@ def ID_to_obj(inputlistID,outputlistobj):
         outputlistobj.append(listing)#for now it will be to ID, easier during testing
     return outputlistobj
 
+def filterdict(dict):
+    if True in dict.values():
+        return True
+    else:
+        return False
+    
 
 def send_welcomenotifcation(id): #id of person to add notifactions to
     db1 = shelve.open('customer.db','c')
@@ -907,6 +922,7 @@ def createlisting():
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
+    print('nil')
     global session_ID
     filterform = FilterForm(request.form)
     db2 = shelve.open('listing.db','c') #RMBR THIS
@@ -923,17 +939,18 @@ def updateListing(id):
     except:
             print("Error in opening listings.db")
     listing = listings_dict.get(id)
-
+    print(listing.get_deal_method())
     if listing.get_deal_method() == "meetup":
         print("meetup")
-        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),meetup = True,meetupinfo=listing.get_deal_meetupinfo())
+        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),meetupinfo=listing.get_deal_meetupinfo())
     elif listing.get_deal_method() == "delivery":
         print("delivery")
-        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),delivery = True,deliveryinfo=listing.get_deal_deliveryinfo())
+        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),deliveryinfo=listing.get_deal_deliveryinfo())
     elif listing.get_deal_method() == "meetupdelivery":
         print("meetupdelivery")
-        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),meetup = True,meetupinfo=listing.get_deal_meetupinfo(),deliveryinfo=listing.get_deal_deliveryinfo())
-    
+        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),meetupinfo=listing.get_deal_meetupinfo(),deliveryinfo=listing.get_deal_deliveryinfo())
+    else:
+        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description())
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -944,7 +961,7 @@ def updateListing(id):
     except:
         print("Error in opening customer.db")
         
-    
+    print(update_listing_form.data)
     paymentmethod = ""
     paymentinfo =[]
     print(update_listing_form.meetup.data,update_listing_form.delivery.data)
@@ -955,14 +972,14 @@ def updateListing(id):
 
     else:
         pass
-    if update_listing_form.data == True:
+    if update_listing_form.delivery.data == True:
         paymentmethod += "delivery"
         paymentinfo.append(update_listing_form.deliveryinfo.data)
     else:
         pass
     
     if request.method == 'POST' and update_listing_form.validate():
-        
+        print(paymentinfo,paymentmethod)
 
         #upload img
         file = request.files['file']
@@ -1434,15 +1451,6 @@ def messages():
     recent_chats = user.get_recent_chats() 
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
-    #filter
-    try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
-    except:
-        pass
 
 
     #get notifs
@@ -1455,6 +1463,15 @@ def messages():
     try:
         if request.method == 'POST' and search_field.validate():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
     except:
         pass
     try:

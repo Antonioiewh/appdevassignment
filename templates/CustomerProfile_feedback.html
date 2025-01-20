@@ -83,7 +83,7 @@
         <div class="feedback-body">
             "{{ feedback.get_remark() }}"
         </div>
-        <a href="/update_feedback/{{feedback.get_ID()}}" class="btn btn-danger" >
+        <a href="/update_feedback/{{feedback.get_ID()}}" class="btn btn-primary" >
                     </a>
         <a href="/delete_feedback/{{feedback.get_ID()}}" class="btn btn-danger" onclick="confirmDelete('{{ feedback.get_ID() }}')">
                         <input type="submit" value="Delete" class="btn btn-danger">

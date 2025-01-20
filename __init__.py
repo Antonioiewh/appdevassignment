@@ -634,14 +634,14 @@ def signup():
         username_list=[]
         for key in customers_dict:
             customer = customers_dict.get(key)
-            username_list.append(customer.get_username())
+            username_list.append(customer.get_username().strip())
         
-        if create_customer_form.username.data in username_list:
+        if create_customer_form.username.data.strip() in username_list:
             print("username taken!")
-            redirect(url_for('signup'))
+            redirect(url_for('Customerhome'))
         else:
             #create user, stores data in local dict
-            customer =  Customer.Customer(create_customer_form.username.data, create_customer_form.email.data,create_customer_form.password.data)
+            customer =  Customer.Customer(create_customer_form.username.data.strip(), create_customer_form.email.data,create_customer_form.password.data.strip())
             customers_dict[customer.get_id()] = customer
 
             #syncs db1 with local dict
@@ -680,11 +680,14 @@ def signup():
     
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -722,8 +725,8 @@ def login():
 
         
         #retrieve data from the form
-        input_username = login_customer_form.username.data
-        input_password = login_customer_form.password.data
+        input_username = login_customer_form.username.data.strip()
+        input_password = login_customer_form.password.data.strip()
 
         #check
         for key in customers_dict:
@@ -756,11 +759,14 @@ def login():
     
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -799,11 +805,14 @@ def loginoptions():
         customer_notifications = 0  
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -910,11 +919,14 @@ def createlisting():
         customer_notifications = 0  
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -1014,14 +1026,16 @@ def updateListing(id):
         customer_notifications = 0  
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
-
     return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing) #to render the form 
 
 @app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
@@ -1077,11 +1091,14 @@ def viewListing(id):
         customer_notifications = 0  
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -1111,7 +1128,7 @@ def deleteListing(id):
     except:
         print("Error in opening customer.db")
     
-    listings_dict.pop(id)
+    del listings_dict[id]
     customer = customers_dict.get(session_ID)
     customer.remove_listings(id)
     print("listing has been removed")
@@ -1224,14 +1241,16 @@ def createReview(id):
         customer_notifications = 0  
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
-
 
     return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
@@ -1421,11 +1440,17 @@ def viewLikedListings(id): #retrieve current session_ID
     elif session_ID == 0:
         customer_notifications = 0  
     #filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data,searchconditionlist)
-        return redirect(url_for('filterresults',searchconditionslist = searchconditionlist))
-
+    try:
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
+    except:
+        pass
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
 @app.route('/messages', methods=['GET', 'POST'])
@@ -1467,11 +1492,14 @@ def messages():
         pass
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
     try:
@@ -1550,7 +1578,7 @@ def messages():
             recent_chats=recent_chats,
             selected_chat=selected_chat,
             searchform =search_field,
-            customer_notifcations=customer_notifications,
+            customer_notifications=customer_notifications,
             show_error_modal=False,
             filterform=filterform
         )
@@ -1656,11 +1684,14 @@ def searchresults(keyword):
         customer_notifications = 0  
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -1694,11 +1725,14 @@ def category1():
     
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -1751,11 +1785,14 @@ def category2():
     
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -1807,11 +1844,14 @@ def category3():
     
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -1863,11 +1903,14 @@ def category4():
     
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -1919,11 +1962,14 @@ def category5():
     
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -1978,11 +2024,14 @@ def filterresults():
         customer_notifications = 0  
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -2061,11 +2110,14 @@ def feedback():
 
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -2134,11 +2186,14 @@ def viewnotifications(id): #id is current_sessionID
 
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -2152,6 +2207,9 @@ def Customerprofilefeedback(id):#id not needed for now
     customers_dict = {}  # local one
     global session_ID
     feedbacks_dict = {}
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    updatefeedbackform = UpdateFeedback(request.form)
     try:
         if "Feedback" in db7:
             feedbacks_dict = db7["Feedback"]  # sync local with db1
@@ -2159,16 +2217,7 @@ def Customerprofilefeedback(id):#id not needed for now
             db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
     except:
         print("Error in opening feedback.db")
-    feedbacks_list = []
-    for key in feedbacks_dict:
-        print(key)
-        feedback = feedbacks_dict.get(key)
-        feedbacks_list.append(feedback)
-    numberfeedbacks = len(feedbacks_list)
-    search_field = SearchBar(request.form)
-    filterform = FilterForm(request.form)
-    updatefeedbackform = UpdateFeedback(request.form)
-    # make sure local and db1 are the same state
+        # make sure local and db1 are the same state
     # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in db1:
@@ -2177,6 +2226,18 @@ def Customerprofilefeedback(id):#id not needed for now
             db1['Customers'] = customers_dict  # sync db1 with local (basically null)
     except:
         print("Error in opening customer.db")
+    #get current customer
+    customer = customers_dict.get(session_ID)
+    customer_feedbacks_list = customer.get_feedbacks()
+    feedbacks_list = []
+    for key in feedbacks_dict:
+        if key in customer_feedbacks_list: #ensure is own customer
+            feedback = feedbacks_dict.get(key)
+            feedbacks_list.append(feedback)
+            
+    numberfeedbacks = len(feedbacks_list)
+    
+    
     # search func
     try:
 
@@ -2188,17 +2249,25 @@ def Customerprofilefeedback(id):#id not needed for now
 
     # get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0
-        # filter
-    if request.method == "POST" and filterform.validate():
-        searchconditionlist = []
-        get_searchquery(filterform.data, searchconditionlist)
-        session['filters'] = searchconditionlist
-        return redirect(url_for('filterresults'))
-    customer = customers_dict.get(session_ID)
+
+    # filter
+    #filter
+    try:
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
+    except:
+        pass
+    
     print(feedbacks_list)
     return render_template('Customerprofile_feedback.html',number_of_feedbacks = numberfeedbacks,list_feedback = feedbacks_list, current_sessionID=session_ID,searchform=search_field
                            ,customer_notifications=customer_notifications, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform)
@@ -2274,13 +2343,16 @@ def update_feedback(feedback_id):
         customer_notifications = customer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0
-        # filter
+    #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data, searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('Customerprofilefeedback'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -2291,7 +2363,9 @@ def delete_feedback(feedback_id):
     global session_ID
     print('reached delete feedback')
     db7 = shelve.open('feedback.db', 'w')  # Open the feedback database in write mode
+    db1 = shelve.open('customer.db', 'c')
     feedbacks_dict = db7.get('Feedback', {})  # Get the feedback dictionary
+    customers_dict = {}
     try:
         if "Feedback" in db7:
             feedbacks_dict = db7["Feedback"]  # sync local with db1
@@ -2299,6 +2373,14 @@ def delete_feedback(feedback_id):
             db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
     except:
         print("Error in opening feedback.db")
+    # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in db1:
+            customers_dict = db1["Customers"]  # sync local with db1
+        else:
+            db1['Customers'] = customers_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
 
     # sync IDs
     try:
@@ -2310,7 +2392,16 @@ def delete_feedback(feedback_id):
     if feedback_id in feedbacks_dict:
         del feedbacks_dict[feedback_id]  # Remove the feedback
         db7['Feedback'] = feedbacks_dict# Save changes to the database
+
+    customer = customers_dict.get(session_ID)
+    customer.remove_feedback(feedback_id)
+    db1['Customers'] = customers_dict
+    db1.close()
+
+    
+    
     db7.close()
+    
     return redirect(url_for('Customerprofilefeedback',id=session_ID))
       
 @app.route('/loginoperator', methods=['GET', 'POST'])

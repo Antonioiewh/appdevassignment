@@ -15,7 +15,7 @@ class Listing:
         if deal_method == "meetup":
             self.__deal_meetupinfo = deal_methodinfo[0]
         if deal_method == "delivery":
-            self.__deal_deliveryinfo = deal_methodinfo[1]
+            self.__deal_deliveryinfo = deal_methodinfo[0]
         if deal_method =="meetupdelivery":
             self.__deal_meetupinfo = deal_methodinfo[0]
             self.__deal_deliveryinfo = deal_methodinfo[1]
@@ -93,6 +93,12 @@ class Listing:
     
     def set_deal_meetupdelivery(self,info):
         self.__deal_deliveryinfo = info
+
+    def set_deal_meetupinfo(self,info):
+        self.__deal_deliveryinfo = info
+    
+    def set_deal_deliveryinfo(self,info):
+        self.__deal_meetupinfo = info
 
     
 

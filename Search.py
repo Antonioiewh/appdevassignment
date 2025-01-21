@@ -28,6 +28,7 @@ def check_listing(obj): #check if creator is suspended,terminated and if listing
         
     customer = customers_dict.get(obj.get_creatorID())
     if customer.get_status() == "active":
+        print("success")
         return True
     else:
         return False

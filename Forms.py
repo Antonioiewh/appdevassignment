@@ -70,7 +70,7 @@ class OperatorRestoreUser(Form):
     typeofaction = HiddenField()
 
 class OperatorDisableListing(Form):
-    id = StringField('ID of post', [validators.Length(min=1, max=35),validators.DataRequired()])
+    id = HiddenField()
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     disable_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])

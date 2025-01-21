@@ -14,6 +14,6 @@
         {{ render_field(update_feedback_form.feedback, class="form-control") }}
     </div>
     <button type="submit" class="btn btn-primary">Update Feedback</button>
-    <a href="{{ url_for('dashboardfeedbacks') }}" class="btn btn-secondary">Cancel</a>
+    <a href="/profilefeedback/{{current_sessionID}}" class="btn btn-secondary">Cancel</a>
 </form>
 {% endblock %}

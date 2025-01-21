@@ -14,8 +14,10 @@ from datetime import datetime
 import Filters
 app = Flask(__name__)
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+
 def check_allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -28,6 +30,9 @@ def check_upload_file_type(file,type,id): #file obj here, listing/userid here to
     elif type == "customer" and check_allowed_file(file.filename):
         file.filename = f"customer{id}.jpg"
         check_dupe_file(file_to_upload,"profilepics")
+    elif type == "message" and check_allowed_file(file.filename):
+        file.filename = f"message{id}.jpg"
+        check_dupe_file(file_to_upload,"messagepics")
     else:
         print("invalid type or ID")
 
@@ -60,15 +65,15 @@ def get_searchquery(formdict,outputlist):
     return outputlist
 
 def get_matchinglistingID(searchquerylist,outputlist):
-    db2 = shelve.open('listing.db','c') #note that redirect urls convert anything and everything into a string, so use session attributes to store lists such as this one
+    dbmain = shelve.open('main.db','c') #note that redirect urls convert anything and everything into a string, so use session attributes to store lists such as this one
     listings_dict = {}
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     #first sort the search query into 2 sections, category, conditions
     conditionfilter = []
     categoryfilter = []
@@ -153,15 +158,15 @@ def deduper(inputlistID):
     return list(dict.fromkeys(inputlistID))
 
 def ID_to_obj(inputlistID,outputlistobj):
-    db2 = shelve.open('listing.db','c')
+    dbmain = shelve.open('main.db','c')
     listings_dict = {}
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     for ID in inputlistID:
         listing = listings_dict.get(ID)
         outputlistobj.append(listing)#for now it will be to ID, easier during testing
@@ -175,41 +180,40 @@ def filterdict(dict):
     
 
 def send_welcomenotifcation(id): #id of person to add notifactions to
-    db1 = shelve.open('customer.db','c')
-    db6 = shelve.open('notifications.db','c')
+    dbmain = shelve.open('main.db','c')
+    
     customers_dict = {}
     notifications_dict = {}
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Notifications" in db6:
-            notifications_dict = db6["Notifications"] #sync local with db1
+        if "Notifications" in dbmain:
+            notifications_dict = dbmain["Notifications"] #sync local with db1
         else:
-            db6['Notifications'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Notifications'] = notifications_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening notifications.db")
+        print("Error in opening main.db")
     
     try:
-        db6 = shelve.open('notifications.db','c')    
-        Notifications.Notifications.count_ID = db6["NotificationsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Notifications.Notifications.count_ID = dbmain["NotificationsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB6 Notifications count or count is at 0")
+        print("Error in retrieving data from DB main Notifications count or count is at 0")
     
     #create notifcation obj
     notification = Notifications.Notifications(id,"Welcome to Freesell!")
     notifications_dict[notification.get_ID()] = notification
-    db6["Notifications"] = notifications_dict
-    db6["NotificationsCount"] = Notifications.Notifications.count_ID
-    db6.close()
+    dbmain["Notifications"] = notifications_dict
+    dbmain["NotificationsCount"] = Notifications.Notifications.count_ID
     #add it to customer notifcations
     customer = customers_dict.get(id)
     customer.add_notifications(notification.get_ID()) #adds notifs
-    db1["Customers"] = customers_dict
+    dbmain["Customers"] = customers_dict
 
     #send the notifcation to their email
 
@@ -222,7 +226,7 @@ session_ID = 0
 
 @app.route('/', methods = ['GET', 'POST']) #shld be the same as href for buttons,links,navbar, etc...
 def Customerhome():
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
     global session_ID
     search_field = SearchBar(request.form)
@@ -230,12 +234,12 @@ def Customerhome():
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     #search func
     try:
         
@@ -268,9 +272,7 @@ def Customerhome():
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
     global session_ID
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c')
-    db4 =shelve.open('reports.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
     listings_dict = {}
     reports_dict = {}
@@ -281,51 +283,51 @@ def Customerprofile(id):
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
     #sync listing dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listing.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db2 = shelve.open('listing.db','c')    
-        Listing.Listing.count_ID = db2["ListingsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB2 Listing count or count is at 0")
+        print("Error in retrieving data from DB main Listing count or count is at 0")
 
     #sync report dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Reports" in db4:
-            reports_dict = db4["Reports"] #sync local with db2
+        if "Reports" in dbmain:
+            reports_dict = dbmain["Reports"] #sync local with db2
         else:
-            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+            dbmain['Reports'] = reports_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening reports.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db4 = shelve.open('reports.db','c')    
-        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Report.Report.count_ID = dbmain["ReportsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB4 Report count or count is at 0")
+        print("Error in retrieving data from DB main Report count or count is at 0")
 
 
     #code for profile pic img 
@@ -354,15 +356,14 @@ def Customerprofile(id):
         print(report_form.category.data,report_form.report_text.data)
         report = Report.Report(session_ID,id,customer.get_username(),report_form.category.data,report_form.report_text.data)
         reports_dict[report.get_ID()] = report #store obj in dict
-        db4['Reports'] = reports_dict
-        db4['ReportsCount'] = Report.Report.count_ID
-        db4.close()
+        dbmain['Reports'] = reports_dict
+        dbmain['ReportsCount'] = Report.Report.count_ID
 
         #store report in offender's report_listings
         customer = customers_dict.get(id)
         customer.add_reports(report.get_ID())
-        db1['Customers'] = customers_dict
-        db1.close()
+        dbmain['Customers'] = customers_dict
+        dbmain.close()
         redirect(url_for('Customerprofile', id=id))
 
     #search func
@@ -393,7 +394,7 @@ def Customerprofile(id):
 @app.route('/updateprofile/<int:id>', methods = ['GET', 'POST'])
 def updateCustomerprofile(id):
     global session_ID
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
     
     search_field = SearchBar(request.form)
@@ -402,19 +403,19 @@ def updateCustomerprofile(id):
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
     customer = customers_dict.get(id) #get current customer
     customer_update_form = CustomerUpdateForm(request.form,username=customer.get_username(),email = customer.get_email(),password = customer.get_password())
     
@@ -441,8 +442,8 @@ def updateCustomerprofile(id):
             else:
                 print(customer_update_form.password.data)
 
-            db1['Customers'] = customers_dict
-            db1.close()
+            dbmain['Customers'] = customers_dict
+            dbmain.close()
             #upload img
             file = request.files['file']
             check_upload_file_type(file,"customer",customer.get_id())
@@ -483,11 +484,9 @@ def updateCustomerprofile(id):
 @app.route('/profilereviews/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile_reviews(id):
     global session_ID
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {}
     reviews_dict ={}
-    db3 = shelve.open('reviews.db', 'c')
-    db4 =shelve.open('reports.db','c')
     reports_dict = {}
     report_form = ReportForm(request.form)
     search_field = SearchBar(request.form)
@@ -496,51 +495,51 @@ def Customerprofile_reviews(id):
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Reviews" in db3:
-            reviews_dict = db3["Reviews"] #sync local with db1
+        if "Reviews" in dbmain:
+            reviews_dict = dbmain["Reviews"] #sync local with db1
         else:
-            db3['Reviews'] = reviews_dict #sync db1 with local (basically null)
+            dbmain['Reviews'] = reviews_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening reviews.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db3 = shelve.open('reviews.db','c')    
-        Reviews.Reviews.count_ID = db3["ReviewsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Reviews.Reviews.count_ID = dbmain["ReviewsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB3 Review count or count is at 0")
+        print("Error in retrieving data from DB main Review count or count is at 0")
 
     #sync report dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Reports" in db4:
-            reports_dict = db4["Reports"] #sync local with db2
+        if "Reports" in dbmain:
+            reports_dict = dbmain["Reports"] #sync local with db2
         else:
-            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+            dbmain['Reports'] = reports_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening reports.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db4 = shelve.open('reports.db','c')    
-        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Report.Report.count_ID = dbmain["ReportsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB4 Report count or count is at 0")
+        print("Error in retrieving data from DB main Report count or count is at 0")
 
 
     
@@ -563,15 +562,14 @@ def Customerprofile_reviews(id):
         print(report_form.category.data,report_form.report_text.data)
         report = Report.Report(session_ID,id,customer.get_username(),report_form.category.data,report_form.report_text.data)
         reports_dict[report.get_ID()] = report #store obj in dict
-        db4['Reports'] = reports_dict
-        db4['ReportsCount'] = Report.Report.count_ID
-        db4.close()
+        dbmain['Reports'] = reports_dict
+        dbmain['ReportsCount'] = Report.Report.count_ID
 
         #store report in offender's report_listings
         customer = customers_dict.get(id)
         customer.add_reports(report.get_ID())
-        db1['Customers'] = customers_dict
-        db1.close()
+        dbmain['Customers'] = customers_dict
+        dbmain.close()
         redirect(url_for('Customerprofile', id=id))
         #search func
     try:
@@ -606,7 +604,7 @@ def signup():
     create_customer_form = CustomerSignupForm(request.form)
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
-    db1 = shelve.open('customer.db','c')  
+    dbmain = shelve.open('main.db','c')  
     customers_dict = {} #local one
     if request.method == 'POST' and create_customer_form.validate():
         
@@ -615,20 +613,20 @@ def signup():
         #make sure local and db1 are the same state
         #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
         try:
-            if "Customers" in db1:
-                customers_dict = db1["Customers"] #sync local with db1
+            if "Customers" in dbmain:
+                customers_dict = dbmain["Customers"] #sync local with db1
             else:
-                db1['Customers'] = customers_dict #sync db1 with local (basically null)
+                dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
         except:
-            print("Error in opening customer.db")
+            print("Error in opening main.db")
 
         
         #sync IDs
         try:
-            db1 = shelve.open('customer.db','c')    
-            Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+            dbmain = shelve.open('main.db','c')    
+            Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
         except:
-            print("Error in retrieving data from DB1 Customer count or count is at 0")
+            print("Error in retrieving data from DB main Customer count or count is at 0")
 
         #checks if username is taken
         username_list=[]
@@ -646,20 +644,20 @@ def signup():
 
             #syncs db1 with local dict
             #syncs db1 count with local count (aka customer class)
-            db1['Customers'] = customers_dict
-            db1['CustomerCount'] = Customer.Customer.count_id
+            dbmain['Customers'] = customers_dict
+            dbmain['CustomerCount'] = Customer.Customer.count_id
 
             #upload img
             file = request.files['file']
             check_upload_file_type(file,"customer",customer.get_id())
 
             #verifies new user is stored
-            customers_dict = db1['Customers'] #sync local dict with db1
+            customers_dict = dbmain['Customers'] #sync local dict with db1
             customer = customers_dict[customer.get_id()]
 
             print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
             session_ID = Customer.Customer.count_id
-            db1.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
+            dbmain.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
             #notifs
             send_welcomenotifcation(customer.get_id())
             
@@ -701,7 +699,7 @@ def login():
     login_customer_form = CustomerLoginForm(request.form)
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
     if request.method == 'POST' and login_customer_form.validate():
         
@@ -709,19 +707,19 @@ def login():
         #make sure local and db1 are the same state
         #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
         try:
-            if "Customers" in db1:
-                customers_dict = db1["Customers"] #sync local with db1
+            if "Customers" in dbmain:
+                customers_dict = dbmain["Customers"] #sync local with db1
             else:
-                db1['Customers'] = customers_dict #sync db1 with local (basically null)
+                dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
         except:
-            print("Error in opening customer.db")
+            print("Error in opening main.db")
         
         #sync IDs
         try:
-            db1 = shelve.open('customer.db','c')    
-            Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+            dbmain = shelve.open('main.db','c')    
+            Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
         except:
-            print("Error in retrieving data from DB1 Customer count or count is at 0")
+            print("Error in retrieving data from DB main Customer count or count is at 0")
 
         
         #retrieve data from the form
@@ -777,7 +775,7 @@ def login():
 @app.route('/loginoptions',methods = ['GET', 'POST'])
 def loginoptions():
     global session_ID
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
     session_ID = 0
     search_field = SearchBar(request.form)
@@ -785,12 +783,12 @@ def loginoptions():
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -821,8 +819,8 @@ def loginoptions():
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
     global session_ID
-    db2 = shelve.open('listing.db','c')
-    db1 = shelve.open('customer.db','c')
+
+    dbmain = shelve.open('main.db','c')
     listings_dict = {}
     customers_dict = {}
     create_listing_form = ListingForm(request.form)
@@ -834,35 +832,35 @@ def createlisting():
     #sync listing dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db2 = shelve.open('listing.db','c')    
-        Listing.Listing.count_ID = db2["ListingsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB2 Listing count or count is at 0")
+        print("Error in retrieving data from DB main Listing count or count is at 0")
 
      #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
 
     #retrieve data from form
@@ -890,8 +888,8 @@ def createlisting():
         #print(f"Listing count:{Listing.Listing.count_ID}\nListing ID: {listing.get_ID()} \nListing creator ID:{listing.get_creatorID()}\nListing title: {listing.get_title()}\nListing Desc: {listing.get_description()}\nListing condition: {listing.get_condition()}\nListing category: {listing.get_category()}\nListing payment method: {listing.get_deal_method()}")
         #stores into db2
         listings_dict[listing.get_ID()] = listing
-        db2['Listings'] = listings_dict
-        db2['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
+        dbmain['Listings'] = listings_dict
+        dbmain['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
 
         
         #upload img
@@ -902,7 +900,7 @@ def createlisting():
             if key == session_ID:
                 customer = customers_dict[key]
                 customer.add_listings(Listing.Listing.count_ID)
-                db1['Customers'] = customers_dict #syncs with db1
+                dbmain['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
         return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
     #search func
@@ -937,19 +935,18 @@ def updateListing(id):
     print('nil')
     global session_ID
     filterform = FilterForm(request.form)
-    db2 = shelve.open('listing.db','c') #RMBR THIS
     search_field = SearchBar(request.form)
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
     listings_dict = {}
     #retreive listing info
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     listing = listings_dict.get(id)
     print(listing.get_deal_method())
     if listing.get_deal_method() == "meetup":
@@ -966,12 +963,12 @@ def updateListing(id):
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     print(update_listing_form.data)
     paymentmethod = ""
@@ -1010,8 +1007,8 @@ def updateListing(id):
             listing.set_deal_deliveryinfo(paymentinfo[1])
 
         
-        db2['Listings'] = listings_dict #sync local to db2
-        db2.close() 
+        dbmain['Listings'] = listings_dict #sync local to db2
+        dbmain.close() 
         return redirect(url_for('Customerprofile', id = session_ID)) #go back to profile page after submit
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1041,28 +1038,27 @@ def updateListing(id):
 @app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
 def viewListing(id):
     global session_ID
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     listings_dict = {}
     customers_dict = {}
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
 
     listing = listings_dict.get(id)
     for key in customers_dict:
@@ -1107,34 +1103,33 @@ def viewListing(id):
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
 def deleteListing(id):
     global session_ID
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     listings_dict = {}
     customers_dict = {}
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     
     del listings_dict[id]
     customer = customers_dict.get(session_ID)
     customer.remove_listings(id)
     print("listing has been removed")
     print(customer.get_listings())
-    db1['Customers'] = customers_dict
-    db2['Listings'] = listings_dict
+    dbmain['Customers'] = customers_dict
+    dbmain['Listings'] = listings_dict
     
     return redirect(url_for('Customerprofile', id=session_ID))
 
@@ -1145,54 +1140,53 @@ def createReview(id):
     customers_dict = {}
     reviews_dict ={}
     notifications_dict = {}
-    db3 = shelve.open('reviews.db', 'c')
-    db1 = shelve.open('customer.db','c')
-    db6 = shelve.open('notifications.db','c')
+    dbmain = shelve.open('main.db','c')
+
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     try:
-        if "Notifications" in db6:
-            notifications_dict = db6["Notifications"] #sync local with db1
+        if "Notifications" in dbmain:
+            notifications_dict = dbmain["Notifications"] #sync local with db1
         else:
-            db6['Notifications'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Notifications'] = notifications_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening notifications.db")
+        print("Error in opening main.db")
     try:
-        db6 = shelve.open('notifications.db','c')    
-        Notifications.Notifications.count_ID = db6["NotificationsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Notifications.Notifications.count_ID = dbmain["NotificationsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB6 Notifications count or count is at 0")
+        print("Error in retrieving data from DB main Notifications count or count is at 0")
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Reviews" in db3:
-            reviews_dict = db3["Reviews"] #sync local with db1
+        if "Reviews" in dbmain:
+            reviews_dict = dbmain["Reviews"] #sync local with db1
         else:
-            db3['Reviews'] = reviews_dict #sync db1 with local (basically null)
+            dbmain['Reviews'] = reviews_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening reviews.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db3 = shelve.open('reviews.db','c')    
-        Reviews.Reviews.count_ID = db3["ReviewsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Reviews.Reviews.count_ID = dbmain["ReviewsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB3 Review count or count is at 0")
+        print("Error in retrieving data from DB main Review count or count is at 0")
 
     if request.method == 'POST' and review_form.validate():
         #get current user username
@@ -1203,8 +1197,8 @@ def createReview(id):
         #update reviews
         review = Reviews.Reviews(session_ID,current_customer_username,(float(review_form.rating.data)), review_form.review_text.data)
         reviews_dict[review.get_ID()] = review
-        db3['Reviews'] = reviews_dict
-        db3['ReviewsCount'] = Reviews.Reviews.count_ID
+        dbmain['Reviews'] = reviews_dict
+        dbmain['ReviewsCount'] = Reviews.Reviews.count_ID
         print(f"Review has been added to db3\nReview ID:{review.get_ID()}\nReview creator_ID:{review.get_creator_ID()}\nReview rating:{review.get_rating()}\nReview comment:{review.get_comment()}")
 
         #update customer's reviews
@@ -1212,19 +1206,19 @@ def createReview(id):
         customer.add_reviews(review.get_ID())
         customer.set_rating(float(review.get_rating()))
         print(f"Customer reviews are {customer.get_reviews()}\n Customer current rating is {customer.get_rating()}")
-        db1['Customers'] = customers_dict
+        dbmain['Customers'] = customers_dict
 
         #notif
         #create notif obj
         notification = Notifications.Notifications(customer.get_id(),f"{current_customer_username} has left you a review!")
         notifications_dict[notification.get_ID()] = notification
-        db6['Notifications'] = notifications_dict
-        db6['NotificationsCount'] = Notifications.Notifications.count_ID
+        dbmain['Notifications'] = notifications_dict
+        dbmain['NotificationsCount'] = Notifications.Notifications.count_ID
 
         #add notif to customer
         customer.add_notifications(notification.get_ID())
-        db1['Customers'] = customers_dict
-
+        dbmain['Customers'] = customers_dict
+    
         #Email user
         Email.send_review_notifcation_gmail(customer.get_email(),customer.get_username(),current_customer_username,review.get_comment())
         return redirect(url_for('Customerprofile', id = id))
@@ -1257,138 +1251,135 @@ def createReview(id):
 @app.route('/createLikedListing/<int:id>', methods = ['GET', 'POST'])
 def createLikedListing(id): #ID of listing
     global session_ID
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c')
-    db6 = shelve.open('notifications.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
     listings_dict = {}
     notifications_dict = {}
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
     #sync listing dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db2 = shelve.open('listing.db','c')    
-        Listing.Listing.count_ID = db2["ListingsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB2 Listing count or count is at 0")
+        print("Error in retrieving data from DB main Listing count or count is at 0")
     
     try:
-        if "Notifications" in db6:
-            notifications_dict = db6["Notifications"] #sync local with db1
+        if "Notifications" in dbmain:
+            notifications_dict = dbmain["Notifications"] #sync local with db1
         else:
-            db6['Notifications'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Notifications'] = notifications_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening notifications.db")
+        print("Error in opening main.db")
     try:
-        db6 = shelve.open('notifications.db','c')    
-        Notifications.Notifications.count_ID = db6["NotificationsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Notifications.Notifications.count_ID = dbmain["NotificationsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB6 Notifications count or count is at 0")
+        print("Error in retrieving data from DB main Notifications count or count is at 0")
     
     customer = customers_dict.get(session_ID) #get current user obj
     listing = listings_dict.get(id) #id that was entered
 
     #increment liked count of listing
     listing.add_likes() #add 
-    db2['Listings'] = listings_dict
+    dbmain['Listings'] = listings_dict
     print(f'Listing ID:{listing.get_ID()}, likes count is {listing.get_likes()}')
 
     #add liked post ID 
     customer.add_liked_listings(listing.get_ID())
-    db1['Customers'] =  customers_dict
+    dbmain['Customers'] =  customers_dict
     print(f"Customer ID:{customer.get_id()} liked posts are {customer.get_liked_listings()}")
     
     #notif
     notification = Notifications.Notifications(listing.get_creatorID(),f"{customer.get_username()} liked your post:{listing.get_title()}")
     notifications_dict[notification.get_ID()] = notification
-    db6['Notifications'] = notifications_dict
-    db6['NotificationsCount'] = Notifications.Notifications.count_ID
+    dbmain['Notifications'] = notifications_dict
+    dbmain['NotificationsCount'] = Notifications.Notifications.count_ID
     for key in notifications_dict:
         print(notifications_dict.get(key))
 
     #add notif to customer
     seller = customers_dict.get(listing.get_creatorID())
     seller.add_notifications(notification.get_ID())
-    db1['Customers'] = customers_dict
+    dbmain['Customers'] = customers_dict
 
     return redirect(url_for('viewListing', id = id))
 
 @app.route('/createUnlikedListing/<int:id>', methods = ['GET', 'POST'])
 def createUnlikedListing(id):
     global session_ID
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
     listings_dict = {}
 
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
     #sync listing dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db2 = shelve.open('listing.db','c')    
-        Listing.Listing.count_ID = db2["ListingsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB2 Listing count or count is at 0")
+        print("Error in retrieving data from DB main Listing count or count is at 0")
     
     customer = customers_dict.get(session_ID) #get current user obj
     listing = listings_dict.get(id) #id that was entered
 
     #increment liked count of listing
     listing.minus_likes() #minus
-    db2['Listings'] = listings_dict
+    dbmain['Listings'] = listings_dict
     print(f'Listing ID:{listing.get_ID()}, likes count is {listing.get_likes()}')
 
 
     customer.remove_liked_listings(id)
-    db1['Customers'] = customers_dict
+    dbmain['Customers'] = customers_dict
     print(f"Customer ID:{customer.get_id()} liked posts are {customer.get_liked_listings()}")
 
     return redirect(url_for('viewListing', id = id))
@@ -1396,28 +1387,27 @@ def createUnlikedListing(id):
 @app.route('/viewLikedListings/<int:id>', methods = ['GET', 'POST'])
 def viewLikedListings(id): #retrieve current session_ID
     global session_ID
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     listings_dict = {}
     customers_dict = {}
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
 
     customer = customers_dict.get(id) #current user
     customer_liked_listings = customer.get_liked_listings()
@@ -1458,20 +1448,20 @@ def messages():
 
     global session_ID
     customers_dict = {}
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     # add in for official project
     if session_ID == 0:
         return redirect(url_for('Customerhome'))
     db = shelve.open('messages.db', 'c')  # Open shelve database
-    users_db = shelve.open('customer.db')
+    users_db = shelve.open('main.db')
     user = User(session_ID)
     recent_chats = user.get_recent_chats() 
     search_field = SearchBar(request.form)
@@ -1642,8 +1632,7 @@ def delete_message():
 @app.route('/searchresults/<keyword>', methods=['GET', 'POST'])
 def searchresults(keyword):
     global session_ID
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     customers_dict = {}
     listings_dict = {}
     search_field = SearchBar(request.form)
@@ -1651,19 +1640,19 @@ def searchresults(keyword):
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db") 
+            print("Error in opening main.db") 
 
     show_listings = []
     for key in listings_dict:
@@ -1703,25 +1692,24 @@ def category1():
     global session_ID
     customers_dict = {}
     listings_dict = {}
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #filter
     try:
@@ -1763,25 +1751,25 @@ def category2():
     global session_ID
     customers_dict = {}
     listings_dict = {}
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
+
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #filter
     try:
@@ -1822,25 +1810,24 @@ def category3():
     global session_ID
     customers_dict = {}
     listings_dict = {}
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #filter
     try:
@@ -1881,25 +1868,24 @@ def category4():
     global session_ID
     customers_dict = {}
     listings_dict = {}
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #filter
     try:
@@ -1940,25 +1926,25 @@ def category5():
     global session_ID
     customers_dict = {}
     listings_dict = {}
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
+
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #filter
     try:
@@ -1999,15 +1985,15 @@ def category5():
 def filterresults():
     global session_ID
     customers_dict = {}
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
         print("Error in opening customer.db")
     #search
@@ -2049,34 +2035,33 @@ def filterresults():
 def feedback():
     global session_ID
     customers_dict = {}
-    db1 = shelve.open('customer.db','c')
+    dbmain  = shelve.open('main.db','c')
     feedbacks_dict = {}
-    db7 = shelve.open('feedback.db','c')
     search_field = SearchBar(request.form)
     feedback_form = FeedbackForm(request.form)
     filterform = FilterForm(request.form)
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Feedback" in db7:
-            feedbacks_dict = db7["Feedback"] #sync local with db1
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"] #sync local with db1
         else:
-            db7['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
+            dbmain['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening feedback.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db7 = shelve.open('feedback.db','c')    
-        Feedback.Feedback.count_ID = db7["FeedbackCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Feedback.Feedback.count_ID = dbmain["FeedbackCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB7 Feedback count or count is at 0")
+        print("Error in retrieving data from DB main Feedback count or count is at 0")
 
     #search func
     try:
@@ -2095,15 +2080,15 @@ def feedback():
         #add the feedback into feedback db
         feedback = Feedback.Feedback(feedback_form.rating.data,feedback_form.feedback.data)
         feedbacks_dict[feedback.get_ID()] = feedback #store obj in dict
-        db7['Feedback'] = feedbacks_dict
-        db7['FeedbackCount'] = Feedback.Feedback.count_ID
-        db7.close()
+        dbmain['Feedback'] = feedbacks_dict
+        dbmain['FeedbackCount'] = Feedback.Feedback.count_ID
+
         
         #add feedback ID to customer
         customer = customers_dict.get(session_ID)
         customer.add_feedback(feedback.get_ID())
-        db1['Customers'] = customers_dict
-        db1.close()
+        dbmain['Customers'] = customers_dict
+        dbmain.close()
 
         return redirect(url_for('Customerhome'))
 
@@ -2128,8 +2113,7 @@ def feedback():
 @app.route('/notifications/<int:id>')
 def viewnotifications(id): #id is current_sessionID
     global session_ID
-    db1 = shelve.open('customer.db','c')
-    db6 = shelve.open('notifications.db','c')
+    dbmain = shelve.open('main.db','c')
     notifications_dict = {}
     customers_dict = {}
     search_field = SearchBar(request.form)
@@ -2137,25 +2121,25 @@ def viewnotifications(id): #id is current_sessionID
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     try:
-        if "Notifications" in db6:
-            notifications_dict = db6["Notifications"] #sync local with db1
+        if "Notifications" in dbmain:
+            notifications_dict = dbmain["Notifications"] #sync local with db1
         else:
-            db6['Notifications'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Notifications'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening notifications.db")
+        print("Error in opening main.db")
     
     try:
-        db6 = shelve.open('notifications.db','c')    
-        Notifications.Notifications.count_ID = db6["NotificationsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Notifications.Notifications.count_ID = dbmain["NotificationsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB6 Notifications count or count is at 0")
+        print("Error in retrieving data from DB main notifs count or count is at 0")
 
     #get own notifs
     customer = customers_dict.get(id)
@@ -2167,8 +2151,8 @@ def viewnotifications(id): #id is current_sessionID
             notifs_to_display.append(notification)
     #set unread notifs to 0
     customer.clear_unread_notifications()
-    db1['Customers'] = customers_dict
-    db1.close()
+    dbmain['Customers'] = customers_dict
+    dbmain.close()
 
     #search func
     try:
@@ -2202,8 +2186,7 @@ def viewnotifications(id): #id is current_sessionID
     
 @app.route('/profilefeedback/<int:id>', methods = ['GET', 'POST'])
 def Customerprofilefeedback(id):#id not needed for now
-    db1 = shelve.open('customer.db', 'c')
-    db7 = shelve.open('feedback.db', 'c')  # Open the feedback database
+    dbmain = shelve.open('main.db', 'c')
     customers_dict = {}  # local one
     global session_ID
     feedbacks_dict = {}
@@ -2211,21 +2194,21 @@ def Customerprofilefeedback(id):#id not needed for now
     filterform = FilterForm(request.form)
     updatefeedbackform = UpdateFeedback(request.form)
     try:
-        if "Feedback" in db7:
-            feedbacks_dict = db7["Feedback"]  # sync local with db1
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"]  # sync local with db1
         else:
-            db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
+            dbmain['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
     except:
-        print("Error in opening feedback.db")
+        print("Error in opening main.db")
         # make sure local and db1 are the same state
     # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"]  # sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"]  # sync local with db1
         else:
-            db1['Customers'] = customers_dict  # sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     #get current customer
     customer = customers_dict.get(session_ID)
     customer_feedbacks_list = customer.get_feedbacks()
@@ -2275,30 +2258,29 @@ def Customerprofilefeedback(id):#id not needed for now
 @app.route('/update_feedback/<int:feedback_id>', methods=['POST', 'GET'])
 def update_feedback(feedback_id):
     feedbacks_dict = {}
-    db7 = shelve.open('feedback.db', 'c')
-    db1 = shelve.open('customer.db', 'c')
+    dbmain = shelve.open('main.db', 'c')
     customers_dict = {}  # local one
     global session_ID
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     # Get the feedback dictionary
     try:
-        if "Feedback" in db7:
-            feedbacks_dict = db7["Feedback"]  # sync local with db1
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"]  # sync local with db1
         else:
-            db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
+            dbmain['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
     except:
-        print("Error in opening feedback.db")
+        print("Error in opening main.db")
 
     # sync IDs
     try:
-        db7 = shelve.open('feedback.db', 'c')
-        Feedback.Feedback.count_ID = db7["FeedbackCount"]  # sync count between local and db1
+        dbmain = shelve.open('main.db', 'c')
+        Feedback.Feedback.count_ID = dbmain["FeedbackCount"]  # sync count between local and db1
     except:
-        print("Error in retrieving data from DB7 Feedback count or count is at 0")
+        print("Error in retrieving data from DB main Feedback count or count is at 0")
     # Check if the feedback ID exists
     if feedback_id not in feedbacks_dict:
-        db7.close()
+        dbmain.close()
         return "Feedback not found", 404
 
 
@@ -2309,24 +2291,25 @@ def update_feedback(feedback_id):
         # Update feedback details
         feedback.set_rating(update_feedback_form.rating.data)
         feedback.set_remark(update_feedback_form.feedback.data)
-        db7['Feedback'] = feedbacks_dict  # Update the database
-        db7.close()
+        dbmain['Feedback'] = feedbacks_dict  # Update the database
+
         return redirect(url_for('Customerprofilefeedback', id = session_ID))  # Redirect to the feedback dashboard
     feedbacks_list = []
+    #idk what this part below does anyways
     for key in feedbacks_dict:
         feedback = feedbacks_dict.get(key)
         feedbacks_list.append(feedback) #get all feedback obj
-    db7.close()
+    dbmain.close()
 
     # make sure local and db1 are the same state
     # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"]  # sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"]  # sync local with db1
         else:
-            db1['Customers'] = customers_dict  # sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
 
 
 
@@ -2339,8 +2322,8 @@ def update_feedback(feedback_id):
         pass
     # get notifs
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        customer_notifications = customer.get_unread_notifications()
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
         customer_notifications = 0
     #filter
@@ -2362,45 +2345,40 @@ def update_feedback(feedback_id):
 def delete_feedback(feedback_id):
     global session_ID
     print('reached delete feedback')
-    db7 = shelve.open('feedback.db', 'w')  # Open the feedback database in write mode
-    db1 = shelve.open('customer.db', 'c')
-    feedbacks_dict = db7.get('Feedback', {})  # Get the feedback dictionary
+    dbmain = shelve.open('main.db', 'c')
+    feedbacks_dict = dbmain.get('Feedback', {})  # Get the feedback dictionary
     customers_dict = {}
     try:
-        if "Feedback" in db7:
-            feedbacks_dict = db7["Feedback"]  # sync local with db1
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"]  # sync local with db1
         else:
-            db7['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
+            dbmain['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
     except:
-        print("Error in opening feedback.db")
+        print("Error in opening main.db")
     # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"]  # sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"]  # sync local with db1
         else:
-            db1['Customers'] = customers_dict  # sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
 
     # sync IDs
     try:
-        db7 = shelve.open('feedback.db', 'c')
-        Feedback.Feedback.count_ID = db7["FeedbackCount"]  # sync count between local and db1
+        dbmain = shelve.open('main.db', 'c')
+        Feedback.Feedback.count_ID = dbmain["FeedbackCount"]  # sync count between local and db1
     except:
-        print("Error in retrieving data from DB7 Feedback count or count is at 0")
+        print("Error in retrieving data from DB main Feedback count or count is at 0")
     # Check if the feedback ID exists
     if feedback_id in feedbacks_dict:
         del feedbacks_dict[feedback_id]  # Remove the feedback
-        db7['Feedback'] = feedbacks_dict# Save changes to the database
+        dbmain['Feedback'] = feedbacks_dict# Save changes to the database
 
     customer = customers_dict.get(session_ID)
     customer.remove_feedback(feedback_id)
-    db1['Customers'] = customers_dict
-    db1.close()
-
-    
-    
-    db7.close()
+    dbmain['Customers'] = customers_dict
+    dbmain.close()
     
     return redirect(url_for('Customerprofilefeedback',id=session_ID))
       
@@ -2448,22 +2426,22 @@ def verifyoperator(email):
 @app.route('/dashboard/users',methods=['GET', 'POST'])
 def dashboardusers():
     user_search_field = SearchUserField(request.form)
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {}
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
 
     customers_list = []
@@ -2479,22 +2457,22 @@ def dashboardusers():
 @app.route('/dashboard/users/search=<keyword>',methods=['GET', 'POST'])
 def dashboarduserssearch(keyword):
     user_search_field = SearchUserField(request.form)
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {}
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
     customers_list = []
     for key in customers_dict:
@@ -2512,9 +2490,8 @@ def dashboarduserssearch(keyword):
 
 @app.route('/operatorviewprofile/<int:id>',methods=['GET', 'POST'])
 def operatorviewprofile(id): #id of profile they are viewing
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c')
-    db5 = shelve.open('operatoractions.db','c')
+    dbmain = shelve.open('main.db','c')
+    
     customers_dict = {} #local one
     listings_dict = {}
     operatoractions_dict = {}
@@ -2526,51 +2503,51 @@ def operatorviewprofile(id): #id of profile they are viewing
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
     #sync listing dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listing.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db2 = shelve.open('listing.db','c')    
-        Listing.Listing.count_ID = db2["ListingsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB2 Listing count or count is at 0")
+        print("Error in retrieving data from DB main count or count is at 0")
 
     #sync db5
     try:
-        if "operatoractions" in db5:
-            operatoractions_dict = db5["operatoractions"] #sync local with db1
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"] #sync local with db1
         else:
-            db5['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+            dbmain['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening operatoractions.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db5 = shelve.open('operatoractions.db','c')    
-        operatoractions.Operatoractions.count_ID = db5["operatoractionsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB5 operatoractions count or count is at 0")
+        print("Error in retrieving data from DB main count or count is at 0")
     
     #get ID list of current user listings
     customer = customers_dict.get(id)
@@ -2594,15 +2571,15 @@ def operatorviewprofile(id): #id of profile they are viewing
             
             #syncs db5 with local dict
             #syncs db5 count with local count (aka customer class)
-            db5['operatoractions'] = operatoractions_dict
-            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-            db5.close()
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
 
             #make changes to affected listing
             listing = listings_dict.get(int(disable_listing.id.data))
             listing.set_status("disabled")
             print(listing.get_status())
-            db2['Listings'] = listings_dict
+            dbmain['Listings'] = listings_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
 
     #restore listing
@@ -2614,15 +2591,14 @@ def operatorviewprofile(id): #id of profile they are viewing
             
             #syncs db5 with local dict
             #syncs db5 count with local count (aka customer class)
-            db5['operatoractions'] = operatoractions_dict
-            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-            db5.close()
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
 
             #make changes to affected listing
             listing = listings_dict.get(int(restore_listing.id.data))
             listing.set_status("available")
             print(listing.get_status())
-            db2['Listings'] = listings_dict
+            dbmain['Listings'] = listings_dict
             return(redirect(url_for('operatorviewprofile', id=id)))   
     #suspend user func
     if request.method == 'POST' and suspend_user.validate():
@@ -2633,14 +2609,13 @@ def operatorviewprofile(id): #id of profile they are viewing
 
             #syncs db5 with local dict
             #syncs db5 count with local count (aka customer class)
-            db5['operatoractions'] = operatoractions_dict
-            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-            db5.close()
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
 
             #make changes to affected user
             customer = customers_dict.get(id)
             customer.set_status("suspended")
-            db1['Customers'] = customers_dict
+            dbmain['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
     
     #terminate user func
@@ -2652,14 +2627,13 @@ def operatorviewprofile(id): #id of profile they are viewing
 
             #syncs db5 with local dict
             #syncs db5 count with local count (aka customer class)
-            db5['operatoractions'] = operatoractions_dict
-            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-            db5.close()
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
 
             #make changes to affected user
             customer = customers_dict.get(id)
             customer.set_status("terminated")
-            db1['Customers'] = customers_dict
+            dbmain['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
         
     #restore user func
@@ -2671,14 +2645,13 @@ def operatorviewprofile(id): #id of profile they are viewing
 
             #syncs db5 with local dict
             #syncs db5 count with local count (aka customer class)
-            db5['operatoractions'] = operatoractions_dict
-            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-            db5.close()
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
 
             #make changes to affected user
             customer = customers_dict.get(id)
             customer.set_status("active")
-            db1['Customers'] = customers_dict
+            dbmain['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
     
     return render_template('OperatorViewProfile.html', customer=customer,
@@ -2686,9 +2659,8 @@ def operatorviewprofile(id): #id of profile they are viewing
 
 @app.route('/operatorviewprofilereviews/<int:id>',methods=['GET', 'POST'])
 def operatorviewprofilereviews(id):
-    db1 = shelve.open('customer.db','c')
-    db5 = shelve.open('operatoractions.db','c')
-    db3 = shelve.open('reviews.db', 'c')
+    dbmain = shelve.open('main.db','c')
+
     reviews_dict ={}
     customers_dict = {} #local one
     operatoractions_dict = {}
@@ -2698,49 +2670,49 @@ def operatorviewprofilereviews(id):
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db1 = shelve.open('customer.db','c')    
-        Customer.Customer.count_id = db1["CustomerCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB1 Customer count or count is at 0")
+        print("Error in retrieving data from DB main customer count or count is at 0")
 
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Reviews" in db3:
-            reviews_dict = db3["Reviews"] #sync local with db1
+        if "Reviews" in dbmain:
+            reviews_dict = dbmain["Reviews"] #sync local with db1
         else:
-            db3['Reviews'] = reviews_dict #sync db1 with local (basically null)
+            dbmain['Reviews'] = reviews_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening reviews.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db3 = shelve.open('reviews.db','c')    
-        Reviews.Reviews.count_ID = db3["ReviewsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Reviews.Reviews.count_ID = dbmain["ReviewsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB3 Review count or count is at 0")
+        print("Error in retrieving data from DB main Review count or count is at 0")
 
     #sync db5
     try:
-        if "operatoractions" in db5:
-            operatoractions_dict = db5["operatoractions"] #sync local with db1
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"] #sync local with db1
         else:
-            db5['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+            dbmain['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening operatoractions.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db5 = shelve.open('operatoractions.db','c')    
-        operatoractions.Operatoractions.count_ID = db5["operatoractionsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"] #sync count between local and db1
     except:
         print("Error in retrieving data from DB5 operatoractions count or count is at 0")
 
@@ -2767,14 +2739,14 @@ def operatorviewprofilereviews(id):
 
             #syncs db5 with local dict
             #syncs db5 count with local count (aka customer class)
-            db5['operatoractions'] = operatoractions_dict
-            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-            db5.close()
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+            
 
             #make changes to affected user
             customer = customers_dict.get(id)
             customer.set_status("suspended")
-            db1['Customers'] = customers_dict
+            dbmain['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
         
     
@@ -2787,14 +2759,14 @@ def operatorviewprofilereviews(id):
 
             #syncs db5 with local dict
             #syncs db5 count with local count (aka customer class)
-            db5['operatoractions'] = operatoractions_dict
-            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-            db5.close()
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
 
             #make changes to affected user
             customer = customers_dict.get(id)
             customer.set_status("terminated")
-            db1['Customers'] = customers_dict
+            dbmain['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
     
         
@@ -2807,14 +2779,13 @@ def operatorviewprofilereviews(id):
 
             #syncs db5 with local dict
             #syncs db5 count with local count (aka customer class)
-            db5['operatoractions'] = operatoractions_dict
-            db5['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-            db5.close()
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
 
             #make changes to affected user
             customer = customers_dict.get(id)
             customer.set_status("active")
-            db1['Customers'] = customers_dict
+            dbmain['Customers'] = customers_dict
             return(redirect(url_for('operatorviewprofile', id=id)))
     
 
@@ -2823,16 +2794,16 @@ def operatorviewprofilereviews(id):
 @app.route('/dashboard/listings',methods=['GET', 'POST'])
 def dashboardlistings():
     listing_search_field = SearchListingField(request.form)
-    db2 = shelve.open('listing.db','c')
+    dbmain = shelve.open('main.db','c')
     listings_dict = {}
 
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     listings_list = []
     for key in listings_dict:
         listing = listings_dict.get(key)
@@ -2846,16 +2817,16 @@ def dashboardlistings():
 @app.route('/dashboard/listings/search=<keyword>',methods=['GET', 'POST'])
 def dashboardlistingssearch(keyword):
     listing_search_field = SearchListingField(request.form)
-    db2 = shelve.open('listing.db','c')
+    dbmain = shelve.open('main.db','c')
     listings_dict = {}
 
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     listings_list = []        
     for key in listings_dict:
         listing = listings_dict.get(key)
@@ -2871,26 +2842,25 @@ def dashboardlistingssearch(keyword):
 
 @app.route('/operatorviewlisting/<int:id>',)
 def operatorviewlisting(id):
-    db1 = shelve.open('customer.db','c')
-    db2 = shelve.open('listing.db','c') #RMBR THIS
+    dbmain = shelve.open('main.db','c')
     listings_dict = {}
     customers_dict = {}
     try:
-        if "Listings" in db2:
-            listings_dict = db2["Listings"] #sync local with db2
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
         else:
-            db2['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening listings.db")
+            print("Error in opening main.db")
     
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
     
     listing = listings_dict.get(id)
     for key in customers_dict:
@@ -2902,24 +2872,24 @@ def operatorviewlisting(id):
     
 @app.route('/dashboard/reports',methods=['GET', 'POST'])
 def dashboardreports():
-    db4 =shelve.open('reports.db','c')
+    dbmain =shelve.open('main.db','c')
     reports_dict = {}
     report_search_field = SearchReportField(request.form)
     #sync report dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Reports" in db4:
-            reports_dict = db4["Reports"] #sync local with db2
+        if "Reports" in dbmain:
+            reports_dict = dbmain["Reports"] #sync local with db2
         else:
-            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+            dbmain['Reports'] = reports_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening reports.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db4 = shelve.open('reports.db','c')    
-        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+        dbmain = shelve.open('reports.db','c')    
+        Report.Report.count_ID = dbmain["ReportsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB4 Report count or count is at 0")
+        print("Error in retrieving data from DB main Report count or count is at 0")
 
     reports_list = []
     for key in reports_dict:
@@ -2934,24 +2904,24 @@ def dashboardreports():
 
 @app.route('/dashboard/reports/search=<keyword>',methods=['GET', 'POST'])
 def dashboardreportssearch(keyword):
-    db4 =shelve.open('reports.db','c')
+    dbmain =shelve.open('main.db','c')
     reports_dict = {}
     report_search_field = SearchReportField(request.form)
     #sync report dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
-        if "Reports" in db4:
-            reports_dict = db4["Reports"] #sync local with db2
+        if "Reports" in dbmain:
+            reports_dict = dbmain["Reports"] #sync local with db2
         else:
-            db4['Reports'] = reports_dict #sync db2 with local (basically null)
+            dbmain['Reports'] = reports_dict #sync db2 with local (basically null)
     except:
-            print("Error in opening reports.db")
+            print("Error in opening main.db")
     #sync listing IDs
     try:
-        db4 = shelve.open('reports.db','c')    
-        Report.Report.count_ID = db4["ReportsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        Report.Report.count_ID = dbmain["ReportsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB4 Report count or count is at 0")
+        print("Error in retrieving data from DB main Report count or count is at 0")
 
     reports_list = []
     for key in reports_dict:
@@ -2968,24 +2938,24 @@ def dashboardreportssearch(keyword):
 
 @app.route('/dashboard/operatoractions',methods=['GET', 'POST'])
 def dashboardoperatoractions():
-    db5 = shelve.open('operatoractions.db','c')
+    dbmain = shelve.open('main.db','c')
     operatoractions_dict = {}
     operatoraction_search_field = SearchOperatorActionField(request.form)
     #sync db5
     try:
-        if "operatoractions" in db5:
-            operatoractions_dict = db5["operatoractions"] #sync local with db1
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"] #sync local with db1
         else:
-            db5['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+            dbmain['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening operatoractions.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db5 = shelve.open('operatoractions.db','c')    
-        operatoractions.Operatoractions.count_ID = db5["operatoractionsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"] #sync count between local and db1
     except:
-        print("Error in retrieving data from DB5 operatoractions count or count is at 0")
+        print("Error in retrieving data from DB main operatoractions count or count is at 0")
     operator_actions_list = []
     for key in operatoractions_dict:
         operatoraction = operatoractions_dict.get(key)
@@ -2999,22 +2969,22 @@ def dashboardoperatoractions():
 
 @app.route('/dashboard/operatoractions/search=<keyword>',methods=['GET', 'POST'])
 def dashboardoperatoractionssearch(keyword):
-    db5 = shelve.open('operatoractions.db','c')
+    dbmain = shelve.open('main.db','c')
     operatoractions_dict = {}
     operatoraction_search_field = SearchOperatorActionField(request.form)
     #sync db5
     try:
-        if "operatoractions" in db5:
-            operatoractions_dict = db5["operatoractions"] #sync local with db1
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"] #sync local with db1
         else:
-            db5['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+            dbmain['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening operatoractions.db")
+        print("Error in opening main.db")
         
     #sync IDs
     try:
-        db5 = shelve.open('operatoractions.db','c')    
-        operatoractions.Operatoractions.count_ID = db5["operatoractionsCount"] #sync count between local and db1
+        dbmain = shelve.open('main.db','c')    
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"] #sync count between local and db1
     except:
         print("Error in retrieving data from DB5 operatoractions count or count is at 0")
 
@@ -3034,14 +3004,14 @@ def dashboardoperatoractionssearch(keyword):
 @app.route('/dashboard/feedbacks')
 def dashboardfeedbacks():
     feedbacks_dict = {}
-    db7 = shelve.open('feedback.db','c')
+    dbmain = shelve.open('main.db','c')
     try:
-        if "Feedback" in db7:
-            feedbacks_dict = db7["Feedback"] #sync local with db1
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"] #sync local with db1
         else:
-            db7['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
+            dbmain['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening feedback.db")
+        print("Error in opening fmain.db")
     feedbacks_list=[]
     for key in feedbacks_dict:
         feedback = feedbacks_dict.get(key)

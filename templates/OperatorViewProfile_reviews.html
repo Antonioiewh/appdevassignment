@@ -58,9 +58,10 @@
 </div>
 
 
-<div class=" w-25 p-3 d-flex align-items-center"> <!--still a wip-->
+<div class=" w-50 p-3 d-flex align-items-center"> <!--still a wip-->
     <a href="/operatorviewprofile/{{customer.get_id()}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Listings</a>
     <a href="/operatorviewprofilereviews/{{customer.get_id()}}" style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Reviews</a>
+    <a href = "/operatorviewprofilefeedback/{{customer.get_id()}}"style="text-decoration:none; color:black; font-size:2rem;" class="m-auto">Feedback</a>
 </div>
 
 {% if number_of_reviews == 0 %}

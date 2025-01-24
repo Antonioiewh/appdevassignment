@@ -2263,6 +2263,7 @@ def update_feedback(feedback_id):
     global session_ID
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
+    
     # Get the feedback dictionary
     try:
         if "Feedback" in dbmain:
@@ -2278,30 +2279,6 @@ def update_feedback(feedback_id):
         Feedback.Feedback.count_ID = dbmain["FeedbackCount"]  # sync count between local and db1
     except:
         print("Error in retrieving data from DB main Feedback count or count is at 0")
-    # Check if the feedback ID exists
-    if feedback_id not in feedbacks_dict:
-        dbmain.close()
-        return "Feedback not found", 404
-
-
-    update_feedback_form = UpdateFeedback(request.form)
-    print(f"Feedback id:{feedback_id}")
-    feedback = feedbacks_dict.get(feedback_id)  # Retrieve the feedback obj
-    if request.method == 'POST' and update_feedback_form.validate():
-        # Update feedback details
-        feedback.set_rating(update_feedback_form.rating.data)
-        feedback.set_remark(update_feedback_form.feedback.data)
-        dbmain['Feedback'] = feedbacks_dict  # Update the database
-
-        return redirect(url_for('Customerprofilefeedback', id = session_ID))  # Redirect to the feedback dashboard
-    feedbacks_list = []
-    #idk what this part below does anyways
-    for key in feedbacks_dict:
-        feedback = feedbacks_dict.get(key)
-        feedbacks_list.append(feedback) #get all feedback obj
-    dbmain.close()
-
-    # make sure local and db1 are the same state
     # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in dbmain:
@@ -2312,7 +2289,28 @@ def update_feedback(feedback_id):
         print("Error in opening main.db")
 
 
+    # Check if the feedback ID exists
+    if feedback_id not in feedbacks_dict:
+        return "Feedback not found", 404
+    feedback = feedbacks_dict.get(feedback_id)
+    update_feedback_form = UpdateFeedback(request.form,rating = feedback.get_rating(),feedback = feedback.get_remark())
+    
+    print(f"Feedback id:{feedback_id}")  # Retrieve the feedback obj
+    if request.method == 'POST' and update_feedback_form.validate():
+        # Update feedback details
+        feedback.set_rating(update_feedback_form.rating.data)
+        feedback.set_remark(update_feedback_form.feedback.data)
+        dbmain['Feedback'] = feedbacks_dict  # Update the database
 
+        return redirect(url_for('Customerprofilefeedback', id = session_ID))  # Redirect to the feedback dashboard
+    
+    feedbacks_list = []
+    #idk what this part below does anyways
+    for key in feedbacks_dict:
+        feedback = feedbacks_dict.get(key)
+        feedbacks_list.append(feedback) #get all feedback obj
+    # make sure local and db1 are the same state
+    
     # search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -2339,7 +2337,7 @@ def update_feedback(feedback_id):
     except:
         pass
 
-    return render_template("CustomerUpdatefeedback.html",current_sessionID = session_ID,feedback=feedback,feedbacks_list=feedbacks_list,update_feedback_form=update_feedback_form,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer)
+    return render_template("CustomerUpdatefeedback.html",current_sessionID = session_ID,feedback=feedback,feedbacks_list=feedbacks_list,update_feedback_form=update_feedback_form,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
 
 @app.route('/delete_feedback/<int:feedback_id>', methods=['POST','GET'])
 def delete_feedback(feedback_id):
@@ -2387,7 +2385,7 @@ def loginoperator():
     global session_ID
     search_field = SearchBar(request.form)
     operator_login_form = OperatorLoginForm(request.form)
-    OTP = True #set it to false if you dont want to use the OTP feature
+    OTP = False #set it to false if you dont want to use the OTP feature
     if request.method == 'POST' and operator_login_form.validate():
         session['Email'] = operator_login_form.email.data #stores the data
         if operator_login_form.operator_username.data == "sysadmin1":
@@ -2790,6 +2788,133 @@ def operatorviewprofilereviews(id):
     
 
     return render_template("OperatorViewProfile_reviews.html",customer = customer ,number_of_reviews = len(customer_reviews_list),list_reviews = customer_reviews_list,terminate_user_form = terminate_user, suspend_user_form = suspend_user, restore_user_form = restore_user)
+
+@app.route('/operatorviewprofilefeedback/<int:id>',methods=['GET', 'POST'])
+def operatorviewprofilefeedback(id):
+    dbmain = shelve.open('main.db', 'c')
+    feedbacks_dict = {}
+    customers_dict = {}  # local one
+    operatoractions_dict = {}
+    terminate_user = OperatorTerminateUser(request.form, typeofaction='terminate user')
+    suspend_user = OperatorSuspendUser(request.form, typeofaction='suspend user')
+    restore_user = OperatorRestoreUser(request.form, typeofaction='restore user')
+
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"]  # sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening customer.db")
+
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Customer.Customer.count_id = dbmain["CustomerCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+
+    try:
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"] #sync local with db1
+        else:
+            dbmain['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Feedback.Feedback.count_ID = dbmain["FeedbackCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Feedback count or count is at 0")
+    # sync db5
+    try:
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"]  # sync local with db1
+        else:
+            dbmain['operatoractions'] = operatoractions_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main operatoractions count or count is at 0")
+
+    #get current customer
+    customer = customers_dict.get(id)
+    customer_feedbacks_list = customer.get_feedbacks()
+    feedbacks_list = []
+    for key in feedbacks_dict:
+        if key in customer_feedbacks_list: #ensure is own customer
+            feedback = feedbacks_dict.get(key)
+            feedbacks_list.append(feedback)
+
+            
+    numberfeedbacks = len(feedbacks_list)
+    # suspend user func
+    if request.method == 'POST' and suspend_user.validate():
+        if suspend_user.password.data == "sysadmin1":
+            # create operator action object
+            operator_action = operatoractions.Operatoractions(id, suspend_user.typeofaction.data,
+                                                                  suspend_user.category.data,
+                                                                  suspend_user.suspend_text.data)
+            operatoractions_dict[operator_action.get_ID()] = operator_action  # store into local
+
+            # syncs db5 with local dict
+            # syncs db5 count with local count (aka customer class)
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+            
+
+            # make changes to affected user
+            customer = customers_dict.get(id)
+            customer.set_status("suspended")
+            dbmain['Customers'] = customers_dict
+            return (redirect(url_for('operatorviewprofile', id=id)))
+
+    if request.method == 'POST' and terminate_user.validate():
+        if terminate_user.password.data == "sysadmin1":
+            # create operator action object
+            operator_action = operatoractions.Operatoractions(id, terminate_user.typeofaction.data,
+                                                              terminate_user.category.data,
+                                                              terminate_user.terminate_text.data)
+            operatoractions_dict[operator_action.get_ID()] = operator_action  # store into local
+
+            # syncs db5 with local dict
+            # syncs db5 count with local count (aka customer class)
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
+            # make changes to affected user
+            customer = customers_dict.get(id)
+            customer.set_status("terminated")
+            dbmain['Customers'] = customers_dict
+            return (redirect(url_for('operatorviewprofile', id=id)))
+
+    # restore user func
+    if request.method == 'POST' and restore_user.validate():
+        if restore_user.password.data == "sysadmin1":
+            # create operator action object
+            operator_action = operatoractions.Operatoractions(id, restore_user.typeofaction.data, "nil", "nil")
+            operatoractions_dict[operator_action.get_ID()] = operator_action  # store into local
+
+            # syncs db5 with local dict
+            # syncs db5 count with local count (aka customer class)
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+        
+
+            # make changes to affected user
+            customer = customers_dict.get(id)
+            customer.set_status("active")
+            dbmain['Customers'] = customers_dict
+            return (redirect(url_for('operatorviewprofile', id=id)))
+
+    return render_template("OperatorViewProfileFeedback.html",number_of_feedbacks =numberfeedbacks, customer=customer,feedbacks_list=feedbacks_list,terminate_user_form=terminate_user, suspend_user_form=suspend_user,restore_user_form=restore_user)
 
 @app.route('/dashboard/listings',methods=['GET', 'POST'])
 def dashboardlistings():

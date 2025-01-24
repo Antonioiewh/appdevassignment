@@ -16,15 +16,15 @@ def search_keyword(obj,keyword,outputlist): #enter keyword,obj and outputlist
 
 def check_listing(obj): #check if creator is suspended,terminated and if listing is disabled/deleted
     #check creator
-    db1 = shelve.open('customer.db','c')
+    dbmain = shelve.open('main.db','c')
     customers_dict = {}
     try:
-        if "Customers" in db1:
-            customers_dict = db1["Customers"] #sync local with db1
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
         else:
-            db1['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening customer.db")
+        print("Error in opening main.db")
         
     customer = customers_dict.get(obj.get_creatorID())
     if customer.get_status() == "active":

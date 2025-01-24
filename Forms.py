@@ -16,14 +16,10 @@ class CustomerUpdateForm(Form): #can change profile pic,email,username and passw
     confirmpassword = StringField('Confirm Password', [validators.Length(min=6, max=35),validators.DataRequired()])
 
 class ListingForm(Form):
-    category = SelectField('Category',[validators.DataRequired()], choices=[('Category 1','Category 1'),('Category 2','Category 2'),('Category 3','Category 3'),('Category 4','Category 4'),('Category 5','Category 5')])
+    category = SelectField('Category',[validators.DataRequired()], choices=[('Category 1','Electronics'),('Category 2','Books'),('Category 3','Fashion'),('Category 4','Entertainment'),('Category 5','Misc')])
     condition = RadioField('Condition', [validators.DataRequired()], choices=[('Barely used', "Barely used"), ('Frequently used', 'Frequently used'), ('Used daily', 'Used daily')])
     title = StringField('Title',[validators.Length(min=4, max=25),validators.DataRequired()])
     description = StringField('Description',[validators.Length(min=4, max=300),validators.DataRequired()])
-    meetup = BooleanField('Meetup', false_values=None) 
-    meetupinfo = StringField('Meetup location',[validators.Length(min=4, max=25),validators.DataRequired()])
-    delivery = BooleanField('Delivery', false_values=None)
-    deliveryinfo = StringField('Delivery info',[validators.Length(min=4, max=25),validators.DataRequired()])
 
 #class uploadListingimg(Form): 
     #listingimg = FileField('image')
@@ -70,14 +66,14 @@ class OperatorRestoreUser(Form):
     typeofaction = HiddenField()
 
 class OperatorDisableListing(Form):
-    id = HiddenField()
+    listingid = HiddenField()
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     disable_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
     typeofaction = HiddenField()
 
 class OperatorRestoreListing(Form):
-    id = StringField('ID of post', [validators.Length(min=1, max=35),validators.DataRequired()])
+    listingid = HiddenField()
     password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
     typeofaction = HiddenField()
 

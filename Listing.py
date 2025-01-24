@@ -1,6 +1,6 @@
 class Listing:
     count_ID = 0
-    def __init__(self,creatorID,creatorusername,title,description,condition,category,deal_method,deal_methodinfo): #dealmethod info as an
+    def __init__(self,creatorID,creatorusername,title,description,condition,category): #dealmethod info as an
         Listing.count_ID+=1
         self.__ID = Listing.count_ID
         self.__creatorID = creatorID #same as current_sessionID
@@ -9,16 +9,8 @@ class Listing:
         self.__description = description
         self.__condition = condition
         self.__category = category
-        self.__deal_method = deal_method
         self.__likes = 0
         self.__status = "available" #or "disabled"
-        if deal_method == "meetup":
-            self.__deal_meetupinfo = deal_methodinfo[0]
-        if deal_method == "delivery":
-            self.__deal_deliveryinfo = deal_methodinfo[0]
-        if deal_method =="meetupdelivery":
-            self.__deal_meetupinfo = deal_methodinfo[0]
-            self.__deal_deliveryinfo = deal_methodinfo[1]
         #self.__deal_delivery = deal_delivery
 
     

@@ -57,26 +57,23 @@
                     <h1 style="margin-top:3%; margin-bottom:3%; margin-left:3%; font-size:5rem; font-weight:bolder;">{{listing.get_title()}}</h1>
                         
                 </div>
-                <div style="margin-left:3%;"> <!--How you're getting this-->
-                    <h2 style="font-weight:bold">How you're getting this:</h2>
-                    {% if listing.get_deal_method() == "meetup"%}
-                    <p style="font-weight:bold;">Meetup</p>
-                    <p>{{listing.get_deal_meetupinfo()}}</p>
-                    {%endif%}
-                    {% if listing.get_deal_method() == "delivery"%}
-                    <p style="font-weight:bold;">Delivery</p>
-                    <p>{{listing.get_deal_deliveryinfo()}}</p>
-                    {%endif%}
-                    {% if listing.get_deal_method() == "meetupdelivery"%}
-                    <p style="font-weight:bold;">Meetup</p>
-                    <p>{{listing.get_deal_meetupinfo()}}</p>
-                    <p style="font-weight:bold;">Delivery</p>
-                    <p>{{listing.get_deal_deliveryinfo()}}</p>
-                    {%endif%}
-                </div>
                 <div style=" margin-left:3%;">
                     <h2 style="font-weight:bold;">Category</h2>
-                    <p>{{listing.get_category()}}</p>
+                    {% if listing.get_category == "Category 1" %}
+                    <p>Electronics</p>
+                    {%endif%}
+                    {% if listing.get_category == "Category 2" %}
+                    <p>Books</p>
+                    {%endif%}
+                    {% if listing.get_category == "Category 3" %}
+                    <p>Fashion</p>
+                    {%endif%}
+                    {% if listing.get_category == "Category 4" %}
+                    <p>Entertainment</p>
+                    {%endif%}
+                    {% if listing.get_category == "Category 5" %}
+                    <p>Misc</p>
+                    {%endif%}
                 </div>
                 <div style="margin-left:3%">
                     <h2 style="font-weight:bold;">Description</h2>

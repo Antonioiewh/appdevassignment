@@ -65,6 +65,7 @@
                     {%endif%}
                     {% if listing.get_deal_method() == "delivery"%}
                     <p style="font-weight:bold;">Delivery</p>
+                    <p>{{listing.get_deal_deliveryinfo()}}</p>
                     {%endif%}
                     {% if listing.get_deal_method() == "meetupdelivery"%}
                     <p style="font-weight:bold;">Meetup</p>

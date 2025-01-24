@@ -49,7 +49,8 @@
             <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
         </button>
         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
-            <li><a class="dropdown-item" href="/createReview/{{customer.get_id()}}" class="align-items-center">Leave review<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
+
+            <li><a class="dropdown-item" href="/feedback/{{customer.get_id()}}" class="align-items-center">Leave feedback<i class="bi bi-pen" style="color: black; margin-left:7%;"></i></a></li>
             {%if current_sessionID != customer.get_id()%}
             <li><a class="dropdown-item" href="" class="align-items-center" data-bs-toggle="modal" data-bs-target="#myModal1" style="color:red;">Report user<i class="bi bi-exclamation-triangle" style="color: red; margin-left:7%;"></i></a></li>
             {% endif %}
@@ -73,23 +74,27 @@
 {% else %}
 <div id="feedback_section" class="d-flex flex-column align-items-center">
     {% for feedback in list_feedback %}
-    <div class="feedback-container">
+    <div class="feedback-container w-100 d-flex justify-content-between align-items-center mb-3">
         <!-- Feedback Header -->
-        <div class="feedback-header">
-            Feedback rating {{ feedback.get_rating() }}
+        <div class="feedback-header text-center">
+             Rating {{ feedback.get_rating() }}
         </div>
 
         <!-- Feedback Body -->
-        <div class="feedback-body">
+        <div class="feedback-body text-center w-100 mb-4">
+            <strong>Remark:</strong><br>
             "{{ feedback.get_remark() }}"
         </div>
-        <a href="/update_feedback/{{feedback.get_ID()}}" class="btn btn-primary" >
-                    </a>
+        <a href="/update_feedback/{{feedback.get_ID()}}" class="btn btn-primary me-3" >
+            <input type="submit" value="Update" class="btn btn-primary">
+        </a>
+
         <a href="/delete_feedback/{{feedback.get_ID()}}" class="btn btn-danger" onclick="confirmDelete('{{ feedback.get_ID() }}')">
-                        <input type="submit" value="Delete" class="btn btn-danger">
+            <input type="submit" value="Delete" class="btn btn-danger">
                     </a>
 
     </div>
+
     {% endfor %}
 </div>
 {% endif %}

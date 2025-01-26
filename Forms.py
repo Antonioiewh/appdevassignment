@@ -92,11 +92,11 @@ class FeedbackForm(Form):
     feedback = TextAreaField('Have you encountered any issues so far? If so, please describe it', [validators.InputRequired(), validators.Length(max=500)])
 
 class FilterForm(Form):
-    category1 = BooleanField('Category 1')
-    category2 = BooleanField('Category 2', false_values=None)
-    category3 = BooleanField('Category 3', false_values=None)
-    category4 = BooleanField('Category 4', false_values=None)
-    category5 = BooleanField('Category 5', false_values=None)
+    category1 = BooleanField('Electronics')
+    category2 = BooleanField('Books', false_values=None)
+    category3 = BooleanField('Fashion', false_values=None)
+    category4 = BooleanField('Entertainment', false_values=None)
+    category5 = BooleanField('Misc', false_values=None)
     condition_barelyused = BooleanField('Barely used', false_values=None)
     condition_frequentlyused = BooleanField('Frequently used', false_values=None)
     condition_useddaily = BooleanField('Used daily', false_values=None)

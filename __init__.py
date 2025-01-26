@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for,request,redirect,session,jsonify
+from flask import Flask, render_template, url_for,request,redirect,session,jsonify, send_file
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
@@ -12,6 +12,7 @@ import string
 import random
 from datetime import datetime
 import Filters
+import openpyxl
 app = Flask(__name__)
 
 
@@ -3143,6 +3144,32 @@ def dashboardfeedbacks():
         feedbacks_list.append(feedback)
     
     return render_template("Operatordashboard_feedback.html",feedbacks_list=feedbacks_list)
+
+@app.route('/operator-dashboard', methods=['POST'])
+def operator_dashboard():
+    if request.method == 'POST':
+        selected_options = request.form.getlist('options[]')
+        user_id = request.form.get('user_id')
+        print(f"ID: {user_id}, {selected_options}")
+
+        # add selected options to an Excel file
+        file_path = save_to_excel(selected_options, user_id)
+        return send_file(file_path, as_attachment=True, download_name=f'User {user_id} account details.xlsx')
+    return render_template('Operatordashboard_users.html')
+
+def save_to_excel(selected_options, user_id):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"User ID {user_id} account details"
+    # header
+    ws.append([f"User ID: {user_id}", "Selected Options"])
+    for option in selected_options:
+        ws.append([option])
+    file_path = "selected_options.xlsx"
+    wb.save(file_path)
+    return file_path
+
+
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'

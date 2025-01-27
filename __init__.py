@@ -13,6 +13,7 @@ import random
 from datetime import datetime
 import Filters
 import openpyxl
+from openpyxl.styles import Alignment
 app = Flask(__name__)
 
 
@@ -3245,17 +3246,150 @@ def operator_dashboard():
         return send_file(file_path, as_attachment=True, download_name=f'User {user_id} account details.xlsx')
     return render_template('Operatordashboard_users.html')
 
+
+import openpyxl
+
+
 def save_to_excel(selected_options, user_id):
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = f"User ID {user_id} account details"
-    # header
-    ws.append([f"User ID: {user_id}", "Selected Options"])
-    for option in selected_options:
-        ws.append([option])
-    file_path = "selected_options.xlsx"
-    wb.save(file_path)
-    return file_path
+    try:
+        dbmain = shelve.open('main.db', 'r')  # Open the database in read-only mode
+        customers_dict = dbmain.get("Customers", {})
+        if int(user_id) not in customers_dict:
+            print("User not found.")
+
+        customer = customers_dict[int(user_id)]  # Fetch the customer by user_id
+
+        # Retrieve the customer's data
+        email_data = customer.get_email()
+        username_data = customer.get_username()
+        reports_dict = dbmain.get("Reports", {})
+        reports_data = [report for report in reports_dict.values() if report.get_offender_ID() == int(user_id)]
+        listings_dict = dbmain.get("Listings", {})
+        listings_data = [listing for listing in listings_dict.values() if listing.get_creatorID() == int(user_id)]
+        review_dict = dbmain.get("Reviews", {})
+        customer_reviews = customer.get_reviews()  # Return list of review IDs
+        customer_reviews_list = []  # List to store filtered reviews
+        for key in review_dict:
+            if key in customer_reviews:  # Check if the review ID matches the customer's reviews
+                review = review_dict.get(key)  # Fetch the review object
+                customer_reviews_list.append(review)  # Append to the filtered list
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"User ID {user_id} Account Details"
+        email_list = []
+        username_list = []
+        # Start with User ID header and data
+        headers = [f"User ID: {user_id}"]
+
+        if 'Email' in selected_options:
+            headers.append("Email")
+            email_list.append(email_data)  # Replace with actual email retrieval logic
+
+        if 'Username' in selected_options:
+            headers.append("Username")
+            username_list.append(username_data)  # Replace with actual username retrieval logic
+
+        if 'Report details' in selected_options:
+            report_ws = wb.create_sheet("Report Details")  # Create a new sheet for reports
+            report_ws.append(["Reporter ID", "Report category", "Report comments"])
+            if reports_data:
+                for report in reports_data:
+                    report_ws.append([
+                        report.get_creator_ID(),
+                        report.get_category(),
+                        report.get_comment()
+                    ])
+            else:
+                report_ws.append([
+                    "No reports available",
+                    "No reports available",
+                    "No reports available"
+                ])
+        if 'Listings information' in selected_options:
+            listings_ws = wb.create_sheet("Listings information")
+            listings_ws.append(["Listing ID", "Creator ID", "Name", "Description", "Condition", "Category", "Status"])
+            if listings_data:
+                for listing in listings_data:
+                    listings_ws.append([
+                        listing.get_ID(),
+                        listing.get_creatorID(),
+                        listing.get_title(),
+                        listing.get_description(),
+                        listing.get_condition(),
+                        listing.get_category(),
+                        listing.get_status()
+                    ])
+            else:
+                listings_ws.append([
+                    "No reports available",
+                    "No reports available",
+                    "No reports available",
+                    "No reports available",
+                    "No reports available",
+                    "No reports available",
+                    "No reports available"
+                ])
+
+        if 'Review information' in selected_options:
+            review_ws = wb.create_sheet("Review information")
+            review_ws.append(["Reviewer ID", "Rating", "Comment"])
+            if customer_reviews_list:
+                for review in customer_reviews_list:
+                    review_ws.append([
+                        review.get_creator_ID(),
+                        review.get_rating(),
+                        review.get_comment()
+                    ])
+            else:
+                review_ws.append([
+                    "No reports available",
+                    "No reports available",
+                    "No reports available"
+                ])
+        # Append the headers row to the worksheet (row 1)
+        ws.append(headers)
+
+        # Determine the maximum number of rows needed (to ensure all columns have the same number of rows)
+        max_rows = max(len(reports_data), 1)
+
+        # Now, we need to append the data rows for each column
+        for i in range(max_rows):
+            row_data = ['']  # Always add the user ID as the first column
+
+            if 'Email' in selected_options:
+                # Add email data or empty string if no data for this row
+                row_data.append(email_list[i] if i < len(email_list) else '')
+
+            if 'Username' in selected_options:
+                # Add username data or empty string if no data for this row
+                row_data.append(username_list[i] if i < len(username_list) else '')
+            # Append this row of data under the appropriate headers (starting from row 2)
+            ws.append(row_data)
+
+        # Adjust column widths based on the maximum content length (for headers and data)
+        for ws in wb.sheetnames:
+            sheet = wb[ws]
+
+            # Iterate over all cells in the worksheet
+            for row in sheet.iter_rows():
+                for cell in row:
+                    if cell.value:
+                        # Apply text wrapping
+                        cell.alignment = Alignment(wrap_text=True)
+
+            # Set the fixed column width for all columns in the sheet
+            for col_num in range(1, sheet.max_column + 1):
+                column_letter = openpyxl.utils.get_column_letter(col_num)  # Convert column number to letter
+                sheet.column_dimensions[column_letter].width = 20  # Set the column width to a fixed size
+        # Save the file
+        file_path = "selected_options.xlsx"
+        wb.save(file_path)
+        return file_path
+    except Exception as e:
+        print(f"Error accessing the database: {e}")
+    finally:
+        dbmain.close()
+
 
 
 

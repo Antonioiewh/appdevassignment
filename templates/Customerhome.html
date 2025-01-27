@@ -8,12 +8,7 @@
     <div class="personalized-section" style="background-color: #eef6ff; padding: 20px; border: 1px solid #cce0ff;">
         <h2>Welcome back, <strong>{{ customer.get_username() }}</strong>!</h2>
         <p>Your account status: 
-            {%if customer.get_status == "suspended"%}
             <span style="font-weight: bold; color:red;">{{ customer.get_status() }}</span>
-            {%endif%}
-            {%if customer.get_status == "active"%}
-            <span style="font-weight: bold;">{{ customer.get_status() }}</span>
-            {%endif%}
         </p>
     </div>
     <!-- Suggested Quick Links -->

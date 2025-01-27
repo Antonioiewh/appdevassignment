@@ -2,8 +2,8 @@ from flask import Flask, render_template, url_for,request,redirect,session,jsoni
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
-from Forms import CustomerSignupForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,ReportForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
-from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback
+from Forms import CustomerSignupForm,ReportForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback
 import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
@@ -1989,6 +1989,8 @@ def feedback():
     search_field = SearchBar(request.form)
     feedback_form = FeedbackForm(request.form)
     filterform = FilterForm(request.form)
+    reply_feedback_form = ReplyFeedback(request.form)
+    reply = reply_feedback_form.reply.data if reply_feedback_form.validate() else None
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in dbmain:
@@ -2027,7 +2029,8 @@ def feedback():
 
     if request.method == 'POST' and feedback_form.validate():
         #add the feedback into feedback db
-        feedback = Feedback.Feedback(feedback_form.rating.data,feedback_form.feedback.data)
+        reply = reply_feedback_form.reply.data if reply_feedback_form.validate() else None
+        feedback = Feedback.Feedback(feedback_form.rating.data,feedback_form.feedback.data,reply)
         feedbacks_dict[feedback.get_ID()] = feedback #store obj in dict
         dbmain['Feedback'] = feedbacks_dict
         dbmain['FeedbackCount'] = Feedback.Feedback.count_ID
@@ -2035,9 +2038,10 @@ def feedback():
         
         #add feedback ID to customer
         customer = customers_dict.get(session_ID)
-        customer.add_feedback(feedback.get_ID())
-        dbmain['Customers'] = customers_dict
-        dbmain.close()
+        if customer:
+            customer.add_feedback(feedback.get_ID())
+            dbmain['Customers'] = customers_dict
+
 
         return redirect(url_for('Customerhome'))
 
@@ -2142,6 +2146,7 @@ def Customerprofilefeedback(id):#id not needed for now
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     updatefeedbackform = UpdateFeedback(request.form)
+    reply_feedback_form = ReplyFeedback(request.form)
     try:
         if "Feedback" in dbmain:
             feedbacks_dict = dbmain["Feedback"]  # sync local with db1
@@ -2202,7 +2207,7 @@ def Customerprofilefeedback(id):#id not needed for now
     
     print(feedbacks_list)
     return render_template('Customerprofile_feedback.html',number_of_feedbacks = numberfeedbacks,list_feedback = feedbacks_list, current_sessionID=session_ID,searchform=search_field
-                           ,customer_notifications=customer_notifications, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform)
+                           ,customer_notifications=customer_notifications,reply_feedback_form=reply_feedback_form, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform)
 
 @app.route('/update_feedback/<int:feedback_id>', methods=['POST', 'GET'])
 def update_feedback(feedback_id):
@@ -2328,7 +2333,96 @@ def delete_feedback(feedback_id):
     dbmain.close()
     
     return redirect(url_for('Customerprofilefeedback',id=session_ID))
-      
+@app.route('/reply_feedback/<int:feedback_id>', methods=['POST', 'GET'])
+def reply_feedback(feedback_id):
+    feedbacks_dict = {}
+
+    dbmain = shelve.open('main.db', 'c')
+    customers_dict = {}  # local one
+    global session_ID
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    feedback = feedbacks_dict.get(feedback_id)
+    reply = request.form.get('reply')
+    reply_feedback_form = ReplyFeedback(request.form)
+    # Get the feedback dictionary
+
+
+    try:
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"]  # sync local with db1
+        else:
+            dbmain['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Feedback.Feedback.count_ID = dbmain["FeedbackCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Feedback count or count is at 0")
+    # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"]  # sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    # Check if the feedback ID exists
+    if feedback_id not in feedbacks_dict:
+        return "Feedback not found", 404
+
+
+
+    print(f"Feedback id:{feedback_id}")  # Retrieve the feedback obj
+    if request.method == 'POST' and reply_feedback_form.validate():
+        # Update feedback details
+        feedback = feedbacks_dict.get(feedback_id)
+        feedback.set_reply(reply)
+        dbmain['Feedback'] = feedbacks_dict  # Update the database
+
+        return redirect(url_for('dashboardfeedbacks'))  # Redirect to the feedback dashboard
+
+    feedbacks_list = []
+    # idk what this part below does anyways
+    for key in feedbacks_dict:
+        feedback = feedbacks_dict.get(key)
+        feedbacks_list.append(feedback)  # get all feedback obj
+    # make sure local and db1 are the same state
+
+    # search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(
+                url_for('searchresults', keyword=search_field.searchfield.data))  # get the word from the search field
+    except:
+        pass
+    # get notifs
+    if session_ID != 0:
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0
+    # filter
+    try:
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data, searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
+    except:
+        pass
+
+    return render_template("Operatordashboard_feedback_reply.html", current_sessionID=session_ID, feedback=feedback,
+                           feedbacks_list=feedbacks_list, reply_feedback_form=reply_feedback_form,
+                           searchform=search_field, customer_notifications=customer_notifications,
+                           filterform=filterform)
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID
@@ -3138,6 +3232,7 @@ def dashboardfeedbacks():
     
     return render_template("Operatordashboard_feedback.html",feedbacks_list=feedbacks_list)
 
+
 @app.route('/operator-dashboard', methods=['POST'])
 def operator_dashboard():
     if request.method == 'POST':
@@ -3162,6 +3257,26 @@ def save_to_excel(selected_options, user_id):
     wb.save(file_path)
     return file_path
 
+
+
+@app.route('/dashboard_feedback_reply/<int:feedback_id>', methods=['GET', 'POST'])
+def dashboard_feedback_reply(feedback_id):
+    dbmain = shelve.open('main.db', 'c')
+    feedbacks_dict = dbmain.get('Feedback', {})
+    feedback = feedbacks_dict.get(feedback_id)
+
+    if not feedback:
+        return render_template('error_page.html', message="Feedback not found.")
+
+    if request.method == 'POST':
+        reply = request.form.get('reply')  # Get reply text from the form
+        feedback.set_reply(reply)  # Assume `set_reply` is a method in your Feedback class
+        dbmain['Feedback'] = feedbacks_dict  # Save the updated feedback back to the database
+        dbmain.close()
+        return redirect(url_for('some_dashboard_page'))  # Redirect to the relevant dashboard
+
+    dbmain.close()
+    return render_template('feedback_reply.html', feedback=feedback)
 
 if __name__ == "__main__":
     app.secret_key = 'super secret key'

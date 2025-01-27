@@ -1,5 +1,5 @@
 {% extends "Operatorbase.html"%}
-{% block title %}Profile - feedback{% endblock %}
+{% block title %}Profile feedback{% endblock %}
 {% from "includes/_formHelper.html" import render_field %}
 {% block content %}
 <style>
@@ -86,11 +86,14 @@
 {% else %}
 <div>
     <table class="table table-striped">
-        <thead><tr><th>Feedback ID</th><th>Rating</th><th>Remarks</th>
+        <thead><tr><th>Feedback ID</th><th>Rating</th><th>Remarks</th><th>Reply</th><th>Action</th>
         </tr></thead>
         <tbody>
             {% for feedback in feedbacks_list%}
-            <tr><td>{{feedback.get_ID()}}</td><td>{{feedback.get_rating()}}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i></td><td>{{feedback.get_remark()}}</td>
+            <tr><td>{{feedback.get_ID()}}</td><td>{{feedback.get_rating()}}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i></td><td>{{feedback.get_remark()}}</td><td>{{feedback.get_reply()}}</td><td>
+                <a href="{{ url_for('reply_feedback', feedback_id=feedback.get_ID()) }}" class="btn btn-primary">Reply</a>
+            </td>
+
             </tr>
             {% endfor %}
         </tbody>
@@ -100,3 +103,4 @@
 {% endif %}
 {% endblock %}
 {% from "includes/_formHelper.html" import render_field %}
+

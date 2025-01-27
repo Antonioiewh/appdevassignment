@@ -85,6 +85,12 @@
             <strong>Remark:</strong><br>
             "{{ feedback.get_remark() }}"
         </div>
+
+        <!-- Feedback Reply -->
+        <div class="feedback-body text-center w-100 mb-4">
+            <strong>Reply:</strong><br>
+            "{{ feedback.get_reply() }}"
+        </div>
         <a href="/update_feedback/{{feedback.get_ID()}}" class="btn btn-primary me-3" >
             <input type="submit" value="Update" class="btn btn-primary">
         </a>

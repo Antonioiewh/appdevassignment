@@ -95,6 +95,8 @@ class FeedbackForm(Form):
     rating = RadioField('Rate your experience', [validators.DataRequired()],choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])
     feedback = TextAreaField('Have you encountered any issues so far? If so, please describe it', [validators.InputRequired(), validators.Length(max=500)])
 
+class ReplyFeedback(Form):
+    reply = TextAreaField('Anything you want to declare with the customer? If so, please describe it',[validators.InputRequired(), validators.Length(max=500)])
 class FilterForm(Form):
     category1 = BooleanField('Category 1')
     category2 = BooleanField('Category 2', false_values=None)

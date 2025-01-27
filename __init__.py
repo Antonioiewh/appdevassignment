@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for,request,redirect,session,jsonify
+from flask import Flask, render_template, url_for,request,redirect,session,jsonify, send_file
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
@@ -12,6 +12,7 @@ import string
 import random
 from datetime import datetime
 import Filters
+import openpyxl
 app = Flask(__name__)
 
 
@@ -169,7 +170,10 @@ def ID_to_obj(inputlistID,outputlistobj):
             print("Error in opening main.db")
     for ID in inputlistID:
         listing = listings_dict.get(ID)
-        outputlistobj.append(listing)#for now it will be to ID, easier during testing
+        if Search.check_listing(listing):
+            outputlistobj.append(listing)#for now it will be to ID, easier during testing
+        else:
+            pass
     return outputlistobj
 
 def filterdict(dict):
@@ -838,6 +842,7 @@ def createlisting():
             dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
             print("Error in opening main.db")
+
     #sync listing IDs
     try:
         dbmain = shelve.open('main.db','c')    
@@ -864,29 +869,11 @@ def createlisting():
 
 
     #retrieve data from form
+    print("code reached here")
     if request.method == 'POST' and create_listing_form.validate():
-
-        paymentmethod = ""
-        paymentinfo =[]
-        print(create_listing_form.meetup.data,create_listing_form.delivery.data)
-        #payment method etc
-        if create_listing_form.meetup.data == True:
-            paymentmethod += "meetup"
-            paymentinfo.append(create_listing_form.meetupinfo.data)
-
-        else:
-            pass
-        if create_listing_form.delivery.data == True:
-            paymentmethod += "delivery"
-            paymentinfo.append(create_listing_form.deliveryinfo.data)
-        else:
-            pass
+        
         customer = customers_dict.get(session_ID)
-        print(paymentmethod,paymentinfo)
-        listing = Listing.Listing(session_ID,customer.get_username(),create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data,paymentmethod,paymentinfo)
-                
-        #print(f"Listing count:{Listing.Listing.count_ID}\nListing ID: {listing.get_ID()} \nListing creator ID:{listing.get_creatorID()}\nListing title: {listing.get_title()}\nListing Desc: {listing.get_description()}\nListing condition: {listing.get_condition()}\nListing category: {listing.get_category()}\nListing payment method: {listing.get_deal_method()}")
-        #stores into db2
+        listing = Listing.Listing(session_ID,customer.get_username(),create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data)
         listings_dict[listing.get_ID()] = listing
         dbmain['Listings'] = listings_dict
         dbmain['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
@@ -903,6 +890,7 @@ def createlisting():
                 dbmain['Customers'] = customers_dict #syncs with db1
                 break #stop the for loop if this fulfills
         return redirect(url_for('Customerprofile', id=session_ID))# returns to YOUR profile
+    
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -948,18 +936,7 @@ def updateListing(id):
     except:
             print("Error in opening main.db")
     listing = listings_dict.get(id)
-    print(listing.get_deal_method())
-    if listing.get_deal_method() == "meetup":
-        print("meetup")
-        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),meetupinfo=listing.get_deal_meetupinfo())
-    elif listing.get_deal_method() == "delivery":
-        print("delivery")
-        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),deliveryinfo=listing.get_deal_deliveryinfo())
-    elif listing.get_deal_method() == "meetupdelivery":
-        print("meetupdelivery")
-        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description(),meetupinfo=listing.get_deal_meetupinfo(),deliveryinfo=listing.get_deal_deliveryinfo())
-    else:
-        update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description())
+    update_listing_form = ListingForm(request.form,category = listing.get_category(),condition = listing.get_condition(),title = listing.get_title(),description = listing.get_description())
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -970,26 +947,8 @@ def updateListing(id):
     except:
         print("Error in opening main.db")
         
-    print(update_listing_form.data)
-    paymentmethod = ""
-    paymentinfo =[]
-    print(update_listing_form.meetup.data,update_listing_form.delivery.data)
-    #payment method etc
-    if update_listing_form.meetup.data == True:
-        paymentmethod += "meetup"
-        paymentinfo.append(update_listing_form.meetupinfo.data)
-
-    else:
-        pass
-    if update_listing_form.delivery.data == True:
-        paymentmethod += "delivery"
-        paymentinfo.append(update_listing_form.deliveryinfo.data)
-    else:
-        pass
     
     if request.method == 'POST' and update_listing_form.validate():
-        print(paymentinfo,paymentmethod)
-
         #upload img
         file = request.files['file']
         check_upload_file_type(file,"listing",listing.get_ID())
@@ -997,16 +956,6 @@ def updateListing(id):
         listing.set_category(update_listing_form.category.data)
         listing.set_description(update_listing_form.description.data)
         listing.set_condition(update_listing_form.condition.data)
-        listing.set_deal_method(paymentmethod)
-        if paymentmethod == 'meetup':
-            listing.set_deal_meetupinfo(paymentinfo[0])
-        if paymentmethod =='delivery':
-            listing.set_deal_deliveryinfo(paymentinfo[0])
-        if paymentmethod == 'meetupdelivery':
-            listing.set_deal_meetupinfo(paymentinfo[0])
-            listing.set_deal_deliveryinfo(paymentinfo[1])
-
-        
         dbmain['Listings'] = listings_dict #sync local to db2
         dbmain.close() 
         return redirect(url_for('Customerprofile', id = session_ID)) #go back to profile page after submit
@@ -2027,7 +1976,7 @@ def filterresults():
     get_matchinglistingID(session['filters'],outputlistID)
     outputlistID = deduper(outputlistID)
     ID_to_obj(outputlistID,listings_to_display)
-    print(listings_to_display)
+    
     
     return render_template('Customerfilterresults.html',listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
@@ -2590,7 +2539,6 @@ def operatorviewprofile(id): #id of profile they are viewing
     terminate_user = OperatorTerminateUser(request.form,typeofaction='terminate user')
     suspend_user = OperatorSuspendUser(request.form,typeofaction='suspend user')
     restore_user = OperatorRestoreUser(request.form,typeofaction='restore user')
-    disable_listing = OperatorDisableListing(request.form,typeofaction='disable listing')
     restore_listing = OperatorRestoreListing(request.form,typeofaction='restore listing')
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
@@ -2654,44 +2602,6 @@ def operatorviewprofile(id): #id of profile they are viewing
                 listing = listings_dict.get(key)
                 listing_list.append(listing)
 
-    #disable listing
-    if request.method == 'POST' and disable_listing.validate():
-        if disable_listing.password.data == "sysadmin1":
-            #create operator action object)
-            operator_action = operatoractions.Operatoractions(id,disable_listing.typeofaction.data,disable_listing.category.data,disable_listing.disable_text.data)
-            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
-            
-            #syncs db5 with local dict
-            #syncs db5 count with local count (aka customer class)
-            dbmain['operatoractions'] = operatoractions_dict
-            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-
-
-            #make changes to affected listing
-            listing = listings_dict.get(int(disable_listing.id.data))
-            listing.set_status("disabled")
-            print(listing.get_status())
-            dbmain['Listings'] = listings_dict
-            return(redirect(url_for('operatorviewprofile', id=id)))
-
-    #restore listing
-    if request.method == 'POST' and restore_listing.validate():
-        if restore_listing.password.data == "sysadmin1":
-            #create operator action object
-            operator_action = operatoractions.Operatoractions(id,restore_listing.typeofaction.data,"nil","nil")
-            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
-            
-            #syncs db5 with local dict
-            #syncs db5 count with local count (aka customer class)
-            dbmain['operatoractions'] = operatoractions_dict
-            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-
-            #make changes to affected listing
-            listing = listings_dict.get(int(restore_listing.id.data))
-            listing.set_status("available")
-            print(listing.get_status())
-            dbmain['Listings'] = listings_dict
-            return(redirect(url_for('operatorviewprofile', id=id)))   
     #suspend user func
     if request.method == 'POST' and suspend_user.validate():
         if suspend_user.password.data == "sysadmin1":
@@ -2747,7 +2657,7 @@ def operatorviewprofile(id): #id of profile they are viewing
             return(redirect(url_for('operatorviewprofile', id=id)))
     
     return render_template('OperatorViewProfile.html', customer=customer,
-                            listings_list = listing_list,terminate_user_form = terminate_user, suspend_user_form = suspend_user, restore_user_form = restore_user,disable_listing_form = disable_listing,restore_listing_form=restore_listing)
+                            listings_list = listing_list,terminate_user_form = terminate_user, suspend_user_form = suspend_user, restore_user_form = restore_user,)
 
 @app.route('/operatorviewprofilereviews/<int:id>',methods=['GET', 'POST'])
 def operatorviewprofilereviews(id):
@@ -3010,6 +2920,90 @@ def operatorviewprofilefeedback(id):
 
     return render_template("OperatorViewProfileFeedback.html",number_of_feedbacks =numberfeedbacks, customer=customer,feedbacks_list=feedbacks_list,terminate_user_form=terminate_user, suspend_user_form=suspend_user,restore_user_form=restore_user)
 
+@app.route('/operatordisablelisting/<int:customerid>/<int:listingid>',methods=['GET', 'POST'])
+def operatordisablelisting(listingid,customerid):
+    dbmain = shelve.open('main.db','c')
+    operatoractions_dict = {}
+    listings_dict = {}
+    disable_listing = OperatorDisableListing(request.form,typeofaction='disable listing',listingid=listingid)
+    #sync listing dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    #sync listing IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main count or count is at 0")
+
+    #sync db5
+    try:
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"] #sync local with db1
+        else:
+            dbmain['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main count or count is at 0")
+
+    if request.method == 'POST' and disable_listing.validate():
+        if disable_listing.password.data == "sysadmin1":
+            #create operator action object)
+            operator_action = operatoractions.Operatoractions(id,disable_listing.typeofaction.data,disable_listing.category.data,disable_listing.disable_text.data)
+            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+            
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
+
+            #make changes to affected listing
+            listing = listings_dict.get(int(disable_listing.listingid.data))
+            listing.set_status("disabled")
+            print(listing.get_status())
+            dbmain['Listings'] = listings_dict
+            return(redirect(url_for('operatorviewprofile', id=customerid)))
+    return render_template('OperatorDisableListing.html',form = disable_listing,customerID = customerid)
+    
+@app.route('/operatorrestorelisting/<int:customerid>/<int:listingid>',methods=['GET','POST'])
+def operatorrestorelisting(listingid,customerid):
+    dbmain = shelve.open('main.db','c')
+    operatoractions_dict = {}
+    listings_dict = {}
+    restore_listing = OperatorRestoreListing(request.form,typeofaction='restore user',listingid = listingid)
+    #restore listing
+    if request.method == 'POST' and restore_listing.validate():
+        if restore_listing.password.data == "sysadmin1":
+            #create operator action object
+            operator_action = operatoractions.Operatoractions(id,restore_listing.typeofaction.data,"nil","nil")
+            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+            
+            #syncs db5 with local dict
+            #syncs db5 count with local count (aka customer class)
+            dbmain['operatoractions'] = operatoractions_dict
+            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
+            #make changes to affected listing
+            listing = listings_dict.get(int(restore_listing.listingid.data))
+            listing.set_status("available")
+            print(listing.get_status())
+            dbmain['Listings'] = listings_dict
+            return(redirect(url_for('operatorviewprofile', id=customerid)))
+    return render_template('OperatorDisableListing.html',form = restore_listing,customerID = customerid)
+
 @app.route('/dashboard/listings',methods=['GET', 'POST'])
 def dashboardlistings():
     listing_search_field = SearchListingField(request.form)
@@ -3238,6 +3232,33 @@ def dashboardfeedbacks():
     
     return render_template("Operatordashboard_feedback.html",feedbacks_list=feedbacks_list)
 
+
+@app.route('/operator-dashboard', methods=['POST'])
+def operator_dashboard():
+    if request.method == 'POST':
+        selected_options = request.form.getlist('options[]')
+        user_id = request.form.get('user_id')
+        print(f"ID: {user_id}, {selected_options}")
+
+        # add selected options to an Excel file
+        file_path = save_to_excel(selected_options, user_id)
+        return send_file(file_path, as_attachment=True, download_name=f'User {user_id} account details.xlsx')
+    return render_template('Operatordashboard_users.html')
+
+def save_to_excel(selected_options, user_id):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = f"User ID {user_id} account details"
+    # header
+    ws.append([f"User ID: {user_id}", "Selected Options"])
+    for option in selected_options:
+        ws.append([option])
+    file_path = "selected_options.xlsx"
+    wb.save(file_path)
+    return file_path
+
+
+
 @app.route('/dashboard_feedback_reply/<int:feedback_id>', methods=['GET', 'POST'])
 def dashboard_feedback_reply(feedback_id):
     dbmain = shelve.open('main.db', 'c')
@@ -3256,6 +3277,7 @@ def dashboard_feedback_reply(feedback_id):
 
     dbmain.close()
     return render_template('feedback_reply.html', feedback=feedback)
+
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'

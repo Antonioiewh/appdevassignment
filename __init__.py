@@ -2483,8 +2483,8 @@ def dashboarduserssearch(keyword):
     
     if request.method == 'POST' and user_search_field.validate():
         return redirect(url_for('dashboarduserssearch',keyword = user_search_field.searchfield.data))
-    
-    
+
+
     return render_template('Operatordashboard_users_search.html',form = user_search_field,customers_list = customers_list)
 
 @app.route('/operatorviewprofile/<int:id>',methods=['GET', 'POST'])

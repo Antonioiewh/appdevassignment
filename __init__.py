@@ -3,7 +3,7 @@ import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
 from Forms import CustomerSignupForm,ReportForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
-from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback,SearchUserStatus
 import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
@@ -921,7 +921,6 @@ def createlisting():
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
-    print('nil')
     global session_ID
     filterform = FilterForm(request.form)
     search_field = SearchBar(request.form)
@@ -2334,6 +2333,7 @@ def delete_feedback(feedback_id):
     dbmain.close()
     
     return redirect(url_for('Customerprofilefeedback',id=session_ID))
+
 @app.route('/reply_feedback/<int:feedback_id>', methods=['POST', 'GET'])
 def reply_feedback(feedback_id):
     feedbacks_dict = {}
@@ -2424,6 +2424,7 @@ def reply_feedback(feedback_id):
                            feedbacks_list=feedbacks_list, reply_feedback_form=reply_feedback_form,
                            searchform=search_field, customer_notifications=customer_notifications,
                            filterform=filterform)
+
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID
@@ -2465,9 +2466,14 @@ def verifyoperator(email):
     
     return render_template('OperatorLoginVerify.html', searchform =search_field,form = operator_OTP)
 
+@app.route('/operatorcontrolcenter')
+def operatorcontrolcenter():
+    return render_template('OperatorControlCenter.html')
+
 @app.route('/dashboard/users',methods=['GET', 'POST'])
 def dashboardusers():
     user_search_field = SearchUserField(request.form)
+    user_status_field = SearchUserStatus(request.form)
     dbmain = shelve.open('main.db','c')
     customers_dict = {}
     try:
@@ -2490,15 +2496,31 @@ def dashboardusers():
     for key in customers_dict:
         customer = customers_dict.get(key)
         customers_list.append(customer)
+
+
+    try:
+
+        if request.method == 'POST' and user_search_field.validate():
+            return redirect(url_for('dashboarduser_usernamesearch',keyword = user_search_field.searchfield.data))
+    except:
+        pass
     
-    if request.method == 'POST' and user_search_field.validate():
-        return redirect(url_for('dashboarduserssearch',keyword = user_search_field.searchfield.data))
+
+    try:
+
+        if request.method == 'POST' and user_status_field.validate():
+            return redirect(url_for('dashboarduser_categorysearch',keyword = user_status_field.category.data))
+    except:
+        pass
     
-    return render_template('Operatordashboard_users.html',form = user_search_field,customers_list = customers_list)
+    
+    
+    return render_template('Operatordashboard_users.html',form = user_search_field,customers_list = customers_list,form2 = user_status_field)
 
 @app.route('/dashboard/users/search=<keyword>',methods=['GET', 'POST'])
-def dashboarduserssearch(keyword):
+def dashboarduser_usernamesearch(keyword):
     user_search_field = SearchUserField(request.form)
+    user_status_field = SearchUserStatus(request.form)
     dbmain = shelve.open('main.db','c')
     customers_dict = {}
     try:
@@ -2523,12 +2545,75 @@ def dashboarduserssearch(keyword):
             customers_list.append(customer)
         else:
             pass
+
+    #search by name
+    try:
+        if request.method == 'POST' and user_search_field.validate():
+            return redirect(url_for('dashboarduser_usernamesearch',keyword = user_search_field.searchfield.data))
+    except:
+        pass
+
+    #search by status
+    try:
+
+        if request.method == 'POST' and user_status_field.validate():
+            return redirect(url_for('dashboarduser_categorysearch',keyword = user_status_field.category.data))
+    except:
+        pass
     
-    if request.method == 'POST' and user_search_field.validate():
-        return redirect(url_for('dashboarduserssearch',keyword = user_search_field.searchfield.data))
+
     
     
-    return render_template('Operatordashboard_users_search.html',form = user_search_field,customers_list = customers_list)
+    
+    return render_template('Operatordashboard_users_search.html',form = user_search_field,customers_list = customers_list,form2 = user_status_field,searchcondition = keyword)
+    
+@app.route('/dashboard/users/category=<keyword>',methods = ['GET','POST'])
+def dashboarduser_categorysearch(keyword):
+    user_search_field = SearchUserField(request.form)
+    user_status_field = SearchUserStatus(request.form)
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {}
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+    pass
+
+    customers_list = []
+    for key in customers_dict:
+        customer = customers_dict.get(key)
+        if keyword == customer.get_status():
+            customers_list.append(customer)
+        else:
+            pass
+
+    #search by name
+    try:
+        if request.method == 'POST' and user_search_field.validate():
+            return redirect(url_for('dashboarduser_usernamesearch',keyword = user_search_field.searchfield.data))
+    except:
+        pass
+
+    #search by status
+    try:
+
+        if request.method == 'POST' and user_status_field.validate():
+            return redirect(url_for('dashboarduser_categorysearch',keyword = user_status_field.category.data))
+    except:
+        pass
+    
+    return render_template('Operatordashboard_users_category.html',form = user_search_field,customers_list = customers_list,form2 = user_status_field,searchcondition = keyword)
+
 
 @app.route('/operatorviewprofile/<int:id>',methods=['GET', 'POST'])
 def operatorviewprofile(id): #id of profile they are viewing
@@ -3247,9 +3332,6 @@ def operator_dashboard():
     return render_template('Operatordashboard_users.html')
 
 
-import openpyxl
-
-
 def save_to_excel(selected_options, user_id):
     try:
         dbmain = shelve.open('main.db', 'r')  # Open the database in read-only mode
@@ -3389,8 +3471,6 @@ def save_to_excel(selected_options, user_id):
         print(f"Error accessing the database: {e}")
     finally:
         dbmain.close()
-
-
 
 
 @app.route('/dashboard_feedback_reply/<int:feedback_id>', methods=['GET', 'POST'])

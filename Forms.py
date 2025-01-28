@@ -44,9 +44,11 @@ class OperatorLoginForm(Form):
 class OperatorLoginVerifyForm(Form):
     OTP = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
 
+#for user dashboard
 class SearchUserField(Form):
-    searchfield = StringField("Enter Username")
-
+    searchfield = StringField("Enter username to sort by",[validators.Length(min=1, max=35),validators.DataRequired()])
+class SearchUserStatus(Form):
+    category = SelectField('Category', [validators.DataRequired()],choices=[('active','Active'),('suspended','Suspended'),('terminated','Terminated')])
 
 
 class OperatorSuspendUser(Form):

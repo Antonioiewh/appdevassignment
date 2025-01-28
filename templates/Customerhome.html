@@ -5,17 +5,16 @@
 <!-- Main Content -->
 <style>
   .table {
-    width: 80%;
+    width: 100%;
     margin: 0;
     font-size: 0.9rem;
     margin-top: -10%;
   }
 
   #categoryChart {
-    max-width: 60%;
-    height: 350px;
-    width: 120%;
-    margin-left: -10%;
+    max-width: 70%;
+    height: 400px;
+    margin-left: 5%;
   }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -58,19 +57,21 @@
     <table class="table">
       <thead>
         <tr>
-          <th>Placing</th>
-          <th>Username</th>
-          <th>User ID</th>
-          <th>Products Sold</th>
+            <th>Placing</th>
+            <th>Username</th>
+            <th>User ID</th>
+            <th>Products Sold</th>
+            <th>User rating</th>
         </tr>
       </thead>
       <tbody>
         {% for user, sold_count in top10_seller_dic.items() %}
         <tr>
-          <td>{{ loop.index }}</td>
-          <td>{{ name_dic[user] }}</td>
-          <td>{{ user }}</td>
-          <td>{{ sold_count }}</td>
+            <td>{{ loop.index }}</td>
+            <td>{{ name_dic[user] }}</td>
+            <td>{{ user }}</td>
+            <td>{{ sold_count }}</td>
+            <td>{{ rating_dic[user] }}</td>
         </tr>
         {% endfor %}
       </tbody>

@@ -288,10 +288,14 @@
                                 {% if message.status == "deleted" %}
                                     <pre><i style="color: lightgray;">This message has been deleted</i></pre>
                                     <div class="time"><small>{{ message.timestamp }}</small></div>
+                                {% elif message.status == "edited" %}
+                                <pre>{{ message.content }}</pre>
+                                <div class="time"><small>{{ message.timestamp }}</small></div>
+                                <div class="time" style="margin-left: 94%;" id="editcheck"><small>Edited</small></div>
                                 {% else %}
                                 <pre>{{ message.content }}</pre>
                                 <div class="time"><small>{{ message.timestamp }}</small></div>
-
+                                {% endif %}
                                 <!-- Ellipsis Icon (Three dots) and Dropdown -->
                                 <div class="ellipsis-container">
                                     <div class="ellipsis"></div>
@@ -301,13 +305,13 @@
                                 <div class="dropdown-menu2">
                                     <ul>
                                         {% if message.type == 'sent' %}
-                                            <li><a href="#" class="edit-option">Edit</a></li>
+                                            <li><a href="#" class="edit-option" data-message-id="{{ message.message_id }}" data-message-content="{{ message.content }}">Edit</a></li>
                                             <li><a href="#" class="delete-option" data-message-id="{{ message.message_id }}">Delete</a></li>
                                         {% endif %}
                                         <li><a href="#" class="reply-option">Reply</a></li>
                                     </ul>
                                 </div>
-                                {% endif %}
+
                             </div>
                         {% endfor %}
                     </div>
@@ -410,6 +414,26 @@
         </div>
     </div>
 </div>
+    <!-- Edit modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="newChatModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Edit message</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editmessage222">
+                    <div class="mb-3">
+                        <label for="editInput" class="form-label">Enter new message:</label>
+                        <input type="text" class="form-control" id="editInput" name="editInput" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="confirmedit">Confirm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    </div>
     <script>
         // Function to toggle the visibility of the dropdown menu
         document.querySelectorAll('.ellipsis-container').forEach((ellipsisContainer) => {
@@ -587,6 +611,95 @@
             }
             input.value = input.value.replace(/\D/g, "");
         }
+
+        let latestMessageContent = "";
+        document.querySelectorAll('.edit-option').forEach(option => {
+            option.addEventListener('click', function(event) {
+                event.preventDefault();
+                const modal = new bootstrap.Modal(document.getElementById('editModal'));
+                modal.show();
+
+                const messageId = this.getAttribute('data-message-id');
+                let messageContent = this.getAttribute('data-message-content');
+                const messageInput = document.getElementById('editInput');
+                const confirmEditButton = document.getElementById('confirmedit');
+
+                messageInput.value = latestMessageContent || messageContent.trim();
+
+                confirmEditButton.replaceWith(confirmEditButton.cloneNode(true));
+                const newConfirmEditButton = document.getElementById('confirmedit');
+
+                // Update the button state based on the input field
+                const updateButtonState = function() {
+                    const inputValue = messageInput.value.trim();  // Get the trimmed value of the input field
+                    if (inputValue === messageContent.trim()) {
+                        newConfirmEditButton.disabled = true;  // Disable button if input is same as original content
+                        console.log("New and old message are the same");
+                    } else if (inputValue) {
+                        newConfirmEditButton.disabled = false;  // Enable the button if there's input
+                        console.log("New message is new");
+                    } else {
+                        newConfirmEditButton.disabled = true;  // Disable button if input is empty
+                        console.log("Empty message");
+                    }
+                };
+                updateButtonState();
+                messageInput.addEventListener('input', function() {
+                    updateButtonState();
+                });
+
+                const newClickHandler = function(e) {
+                    e.preventDefault();
+                    const messageInputValue = messageInput.value.trim();
+                    if (messageInputValue === "") {
+                        return;
+                    }
+                    console.log("Message Input Value:", messageInput.value);
+                    latestMessageContent = messageInputValue;
+                    fetch('/edit_message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            messageId: messageId,
+                            message: messageInput.value.trim()
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Response:', data);
+
+                        // Update the DOM to show the new message content
+                        const messageDiv = document.getElementById(messageId); // Find the message by its ID
+                        if (messageDiv) {
+                            const preTag = messageDiv.querySelector('pre'); // Find the <pre> tag inside the message div
+                            if (preTag) {
+                                preTag.textContent = messageInput.value.trim(); // Update the message content
+                            }
+                            const editCheckTag = messageDiv.querySelector('#editcheck');
+                            // Add the "Edited" tag
+                            if (!editCheckTag) {
+                                const editedTag = document.createElement('div');
+                                editedTag.classList.add('time', 'editTag');
+                                editedTag.style.marginLeft = '94%';
+                                editedTag.innerHTML = '<small>Edited</small>';
+                                messageDiv.appendChild(editedTag); // Append the Edited tag
+                            }
+                        }
+
+                        modal.hide(); // Close the modal
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                };
+
+                // Re-attach the event listener to the new button
+                newConfirmEditButton.addEventListener('click', newClickHandler);
+            });
+        });
+
 
 
     </script>

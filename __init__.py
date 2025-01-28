@@ -288,16 +288,22 @@ def Customerhome():
     seller_sales_count = {}
     listing_days = []
     top10_seller_dic = {}
-    name_dic ={}
+    name_dic = {}
+    rating_dic = {}
+
     for listing in listings_list:
         listing.set_status("sold") #FOR TESTING REMOVE LATER, also make sure that listing status gets changed to sold when purchased, and also allow user to change listing to disabled/available/sold AND ALSO make sure that when users check out/edit the page, the SOLD TIME in listing.py is also updated
-        listing.set_creation_date("10/12/24")
-        current_date = datetime.now()
-        formatted_date = current_date.strftime('%d/%m/%y')
-        listing.set_soldDate(formatted_date)
+        listing.set_creation_date("10/12/24") #REMOVE LATER
+        current_date = datetime.now() #THIS SHOULD ALREADY BE STORED
+        formatted_date = current_date.strftime('%d/%m/%y') #REMOVE LATER
+        listing.set_soldDate(formatted_date) #REMOVE LATER
         category = listing.get_category()
         creatorID = listing.get_creatorID()
         username = listing.get_creator_username()
+        customer11 = customers_dict.get(creatorID)
+        rating = 0
+        if customer11:
+            rating = customer11.get_rating()
         #most sold categories
         if listing.get_status() == "sold":
             if category == "Category 1":
@@ -318,11 +324,11 @@ def Customerhome():
                 seller_sales_count[creatorID] = 1
         sorted_sellers = sorted(seller_sales_count.items(), key=lambda x: x[1], reverse=True)
         top_10_sellers_with_counts = sorted_sellers[:10]
-        print(top_10_sellers_with_counts)
         for seller_id, sold_count in top_10_sellers_with_counts:
             top10_seller_dic[seller_id] = sold_count
             if seller_id not in name_dic:
                 name_dic[seller_id] = username
+                rating_dic[seller_id] = rating
 
         #average number of days for listing to be sold
         if listing.get_status() == "sold":
@@ -344,7 +350,7 @@ def Customerhome():
     print(day_avg)#amount of time for products to be sold
 
 
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic)
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic, rating_dic = rating_dic)
 
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
@@ -1579,10 +1585,6 @@ def messages():
                 'receiver_id': receiver_id,
                 'messages': message
             }
-        
-        
-        
-
         return render_template(
             'CustomerMessages.html',
             received_messages=received_messages,
@@ -1651,6 +1653,37 @@ def delete_message():
     # dropdown menu: option to delete chat/hyperlink to user's profile/block profile,
     # option to send pictures in chat, message delivered/read/notifications(red number icon),
     # message previews, make date appear like whatsapp
+@app.route('/edit_message', methods=['GET', 'POST'])
+def edit_message():
+    data = request.get_json()  # Safely parse the JSON data
+    messageId = data.get('messageId')
+    newMessage = data.get('message')
+
+    print(f"Received messageId: {messageId}, new message: {newMessage}")
+    db = shelve.open('messages.db', 'c')
+    try:
+        messages_list = db.get("Messages", [])  # Retrieve the list of messages
+        message_found = False
+        for message in messages_list:
+            if message.message_id == messageId:  # Match the message ID
+                message.content = newMessage
+                message.status = "edited"
+                message_found = True
+                break
+
+        if not message_found:
+            return jsonify({"error": "Message not found"}), 404
+
+        # Save the updated messages list back to the database
+        db["Messages"] = messages_list
+
+        return jsonify({
+            "message": "Message updated successfully",
+            "messageId": messageId,
+            "newContent": newMessage
+        }), 200
+    finally:
+        db.close()
 
 @app.route('/searchresults/<keyword>', methods=['GET', 'POST'])
 def searchresults(keyword):

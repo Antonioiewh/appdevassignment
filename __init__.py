@@ -232,6 +232,7 @@ session_ID = 0
 @app.route('/', methods = ['GET', 'POST']) #shld be the same as href for buttons,links,navbar, etc...
 def Customerhome():
     dbmain = shelve.open('main.db','c')
+    listings_dict = {}
     customers_dict = {} #local one
     global session_ID
     search_field = SearchBar(request.form)
@@ -261,7 +262,6 @@ def Customerhome():
         customer_notifications = 0  
     #filter
     try:
-
         if request.method == "POST" and filterform.validate():
             searchconditionlist = []
             get_searchquery(filterform.data,searchconditionlist)
@@ -269,10 +269,82 @@ def Customerhome():
             return redirect(url_for('filterresults'))
     except:
         pass
+
+    #data analytics for users
     customer = customers_dict.get(session_ID)
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"]
+        else:
+            dbmain["Listings"] = listings_dict
+    except:
+        print("Error in opening Listings data.")
+    cat_electronics = 0
+    cat_books = 0
+    cat_fashion = 0
+    cat_entertainment = 0
+    cat_misc = 0
+    listings_list = list(listings_dict.values())
+    seller_sales_count = {}
+    listing_days = []
+    top10_seller_dic = {}
+    name_dic ={}
+    for listing in listings_list:
+        listing.set_status("sold") #FOR TESTING REMOVE LATER, also make sure that listing status gets changed to sold when purchased, and also allow user to change listing to disabled/available/sold AND ALSO make sure that when users check out/edit the page, the SOLD TIME in listing.py is also updated
+        listing.set_creation_date("10/12/24")
+        current_date = datetime.now()
+        formatted_date = current_date.strftime('%d/%m/%y')
+        listing.set_soldDate(formatted_date)
+        category = listing.get_category()
+        creatorID = listing.get_creatorID()
+        username = listing.get_creator_username()
+        #most sold categories
+        if listing.get_status() == "sold":
+            if category == "Category 1":
+                cat_electronics += 1
+            elif category == "Category 2":
+                cat_books += 1
+            elif category == "Category 3":
+                cat_fashion += 1
+            elif category == "Category 4":
+                cat_entertainment += 1
+            elif category == "Category 5":
+                cat_misc += 1
+        #top sellers
+        if listing.get_status() == "sold":
+            if creatorID in seller_sales_count:
+                seller_sales_count[creatorID] += 1
+            else:
+                seller_sales_count[creatorID] = 1
+        sorted_sellers = sorted(seller_sales_count.items(), key=lambda x: x[1], reverse=True)
+        top_10_sellers_with_counts = sorted_sellers[:10]
+        print(top_10_sellers_with_counts)
+        for seller_id, sold_count in top_10_sellers_with_counts:
+            top10_seller_dic[seller_id] = sold_count
+            if seller_id not in name_dic:
+                name_dic[seller_id] = username
+
+        #average number of days for listing to be sold
+        if listing.get_status() == "sold":
+            creationdate = listing.get_creation_date()
+            solddate = listing.get_soldDate()
+            date_format = "%d/%m/%y"
+            creation_date = datetime.strptime(creationdate, date_format)
+            sold_date = datetime.strptime(solddate, date_format)
+            days_to_sell = (sold_date - creation_date).days
+            listing_days.append(days_to_sell)
+
+    sorted_top10_seller = sorted(top10_seller_dic.items(), key=lambda x: x[1], reverse=True)
+    sorted_top10_seller = sorted_top10_seller[:10]
+    sorted_top10_seller_dic = dict(sorted_top10_seller)
+    print(f"{cat_electronics} + {cat_books} + {cat_fashion} + {cat_entertainment} + {cat_misc}")
+    print(sorted_top10_seller_dic) # formatted as { id: listings sold, id2: listings sold }
+    print(name_dic)
+    day_avg = sum(listing_days) / len(listing_days)
+    print(day_avg)#amount of time for products to be sold
 
 
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer)
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic)
 
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
@@ -872,9 +944,10 @@ def createlisting():
     #retrieve data from form
     print("code reached here")
     if request.method == 'POST' and create_listing_form.validate():
-        
+        current_date = datetime.now()
+        formatted_date = current_date.strftime('%d/%m/%y')
         customer = customers_dict.get(session_ID)
-        listing = Listing.Listing(session_ID,customer.get_username(),create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data)
+        listing = Listing.Listing(session_ID,customer.get_username(),create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data, formatted_date)
         listings_dict[listing.get_ID()] = listing
         dbmain['Listings'] = listings_dict
         dbmain['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
@@ -3321,13 +3394,13 @@ def save_to_excel(selected_options, user_id):
                     ])
             else:
                 listings_ws.append([
-                    "No reports available",
-                    "No reports available",
-                    "No reports available",
-                    "No reports available",
-                    "No reports available",
-                    "No reports available",
-                    "No reports available"
+                    "No listings available",
+                    "No listings available",
+                    "No listings available",
+                    "No listings available",
+                    "No listings available",
+                    "No listings available",
+                    "No listings available"
                 ])
 
         if 'Review information' in selected_options:
@@ -3342,9 +3415,9 @@ def save_to_excel(selected_options, user_id):
                     ])
             else:
                 review_ws.append([
-                    "No reports available",
-                    "No reports available",
-                    "No reports available"
+                    "No reviews available",
+                    "No reviews available",
+                    "No reviews available"
                 ])
         # Append the headers row to the worksheet (row 1)
         ws.append(headers)

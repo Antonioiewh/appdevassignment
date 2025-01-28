@@ -921,7 +921,6 @@ def createlisting():
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
-    print('nil')
     global session_ID
     filterform = FilterForm(request.form)
     search_field = SearchBar(request.form)
@@ -2334,6 +2333,7 @@ def delete_feedback(feedback_id):
     dbmain.close()
     
     return redirect(url_for('Customerprofilefeedback',id=session_ID))
+
 @app.route('/reply_feedback/<int:feedback_id>', methods=['POST', 'GET'])
 def reply_feedback(feedback_id):
     feedbacks_dict = {}
@@ -2424,6 +2424,7 @@ def reply_feedback(feedback_id):
                            feedbacks_list=feedbacks_list, reply_feedback_form=reply_feedback_form,
                            searchform=search_field, customer_notifications=customer_notifications,
                            filterform=filterform)
+
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID
@@ -2464,6 +2465,10 @@ def verifyoperator(email):
     
     
     return render_template('OperatorLoginVerify.html', searchform =search_field,form = operator_OTP)
+
+@app.route('/operatorcontrolcenter')
+def operatorcontrolcenter():
+    return render_template('OperatorControlCenter.html')
 
 @app.route('/dashboard/users',methods=['GET', 'POST'])
 def dashboardusers():
@@ -3247,9 +3252,6 @@ def operator_dashboard():
     return render_template('Operatordashboard_users.html')
 
 
-import openpyxl
-
-
 def save_to_excel(selected_options, user_id):
     try:
         dbmain = shelve.open('main.db', 'r')  # Open the database in read-only mode
@@ -3389,8 +3391,6 @@ def save_to_excel(selected_options, user_id):
         print(f"Error accessing the database: {e}")
     finally:
         dbmain.close()
-
-
 
 
 @app.route('/dashboard_feedback_reply/<int:feedback_id>', methods=['GET', 'POST'])

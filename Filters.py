@@ -33,5 +33,6 @@ def condition(listingobject,selectedcondition,outputlist,flag):
             outputlist.append(listingobject.get_ID())
         else:
             outputlist.remove(listingobject.get_ID())
+        return outputlist
 
 

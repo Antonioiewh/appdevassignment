@@ -16,14 +16,10 @@ class CustomerUpdateForm(Form): #can change profile pic,email,username and passw
     confirmpassword = StringField('Confirm Password', [validators.Length(min=6, max=35),validators.DataRequired()])
 
 class ListingForm(Form):
-    category = SelectField('Category',[validators.DataRequired()], choices=[('Category 1','Category 1'),('Category 2','Category 2'),('Category 3','Category 3'),('Category 4','Category 4'),('Category 5','Category 5')])
+    category = SelectField('Category',[validators.DataRequired()], choices=[('Category 1','Electronics'),('Category 2','Books'),('Category 3','Fashion'),('Category 4','Entertainment'),('Category 5','Misc')])
     condition = RadioField('Condition', [validators.DataRequired()], choices=[('Barely used', "Barely used"), ('Frequently used', 'Frequently used'), ('Used daily', 'Used daily')])
     title = StringField('Title',[validators.Length(min=4, max=25),validators.DataRequired()])
     description = StringField('Description',[validators.Length(min=4, max=300),validators.DataRequired()])
-    meetup = BooleanField('Meetup', false_values=None) 
-    meetupinfo = StringField('Meetup location',[validators.Length(min=4, max=25),validators.DataRequired()])
-    delivery = BooleanField('Delivery', false_values=None)
-    deliveryinfo = StringField('Delivery info',[validators.Length(min=4, max=25),validators.DataRequired()])
 
 #class uploadListingimg(Form): 
     #listingimg = FileField('image')
@@ -52,9 +48,11 @@ class OperatorLoginForm(Form):
 class OperatorLoginVerifyForm(Form):
     OTP = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
 
+#for user dashboard
 class SearchUserField(Form):
-    searchfield = StringField("Enter Username")
-
+    searchfield = StringField("Enter username to sort by",[validators.Length(min=1, max=35),validators.DataRequired()])
+class SearchUserStatus(Form):
+    category = SelectField('Category', [validators.DataRequired()],choices=[('active','Active'),('suspended','Suspended'),('terminated','Terminated')])
 
 
 class OperatorSuspendUser(Form):
@@ -74,14 +72,14 @@ class OperatorRestoreUser(Form):
     typeofaction = HiddenField()
 
 class OperatorDisableListing(Form):
-    id = HiddenField()
+    listingid = HiddenField()
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     disable_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
     typeofaction = HiddenField()
 
 class OperatorRestoreListing(Form):
-    id = StringField('ID of post', [validators.Length(min=1, max=35),validators.DataRequired()])
+    listingid = HiddenField()
     password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
     typeofaction = HiddenField()
 
@@ -102,11 +100,11 @@ class FeedbackForm(Form):
 class ReplyFeedback(Form):
     reply = TextAreaField('Anything you want to declare with the customer? If so, please describe it',[validators.InputRequired(), validators.Length(max=500)])
 class FilterForm(Form):
-    category1 = BooleanField('Category 1')
-    category2 = BooleanField('Category 2', false_values=None)
-    category3 = BooleanField('Category 3', false_values=None)
-    category4 = BooleanField('Category 4', false_values=None)
-    category5 = BooleanField('Category 5', false_values=None)
+    category1 = BooleanField('Electronics')
+    category2 = BooleanField('Books', false_values=None)
+    category3 = BooleanField('Fashion', false_values=None)
+    category4 = BooleanField('Entertainment', false_values=None)
+    category5 = BooleanField('Misc', false_values=None)
     condition_barelyused = BooleanField('Barely used', false_values=None)
     condition_frequentlyused = BooleanField('Frequently used', false_values=None)
     condition_useddaily = BooleanField('Used daily', false_values=None)

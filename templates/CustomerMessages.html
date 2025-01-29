@@ -343,7 +343,7 @@
                 <form action="/messages" method="POST" id="receiveridform222">
                     <div class="mb-3">
                         <label for="receiver_id" class="form-label">Enter User ID:</label>
-                        <input type="text" class="form-control" id="receiver_id" name="receiver_id" required maxlength="20">
+                        <input type="text" class="form-control" id="receiver_id" name="receiver_id" oninput="limitDigits()" required>
                     </div>
                     <button type="submit" class="btn btn-primary" id="startChatButton">Start Chat</button>
                 </form>
@@ -556,7 +556,6 @@
             userProfileModal.show();
         });
 
-        // Example handling for the buttons in the modal (Go to Profile, Block User)
         document.getElementById('goToProfileButton').addEventListener('click', function() {
             window.location.href = `/profile/{{ selected_chat['receiver_id'] }}`;
         });
@@ -581,8 +580,13 @@
             window.location.href = "/messages";
         });
 
-
-
+        function limitDigits() {
+            const input = document.getElementById("receiver_id");
+            if (input.value.length > 15) {
+                input.value = input.value.slice(0, 15);
+            }
+            input.value = input.value.replace(/\D/g, "");
+        }
 
 
     </script>

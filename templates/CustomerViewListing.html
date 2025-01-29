@@ -13,29 +13,33 @@
                     <img src="../../../static/listingpics/listing{{listing.get_ID()}}.jpg" style="width:500px; height:350px; margin-top:7%;margin-bottom:15%" >
                 </div>
                 <div  class="d-flex flex-row  justify-content-evenly " style="margin:3%;">
-                    <div style="width:30%" class="align-items-center">
-                        <a href="/messages" class="btn btn-info align-items-center" role="button" style="background:white; height:6vh; border:none; padding:5%; width:100%"><p style="justify-self:center; color:black; font-weight:bold">Chat with dealer<i class="bi bi-chat" style="font-size:1.3rem"></i></p></a>
+                    <div style="width:35%" class="align-items-center">
+                        <a href="#" class="btn btn-info align-items-center" role="button" style="background:white; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Chat with dealer<i class="bi bi-chat" style="font-size:1.3rem"></i></p></a>
                     </div>
-                    <div style="width:30%" class="align-items-center">
+                    {% if current_sessionID != listing.get_creatorID()%}
+                    <div style="width:35%" class="align-items-center">
                         <a href="#" class="btn btn-info" role="button" style="background:red; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Add to cart<i class="bi bi-cart2" style="font-size:1.3rem"></i></p></a>
                     </div>
-                
-                {%if user_liked_post == 'False'%} 
-                <div>
-                    <a href="/createLikedListing/{{listing.get_ID()}}">
-                        <i class="bi bi-heart" style="color:black; font-size: 2rem;"></i>
-                    </a>
+                    {%else%}
+                    <div style="width:35%" class="align-items-center">
+                        <a href="#" class="btn btn-info" role="button" style="background:purple; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Marked as reserved</p></a>
+                    </div>
+                    {%endif%}
+    
+                    {%if user_liked_post == 'False'%} 
+                        <a href="/createLikedListing/{{listing.get_ID()}}">
+                            <i class="bi bi-heart" style="color:black; font-size: 2rem;"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                    {%  if user_liked_post == 'True'%}
+                    <div>
+                        <a href="/createUnlikedListing/{{listing.get_ID()}}">
+                            <i class="bi bi-heart-fill" style="color:red; font-size: 2rem;"></i>
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-                {%  if user_liked_post == 'True'%}
-                <div>
-                    <a href="/createUnlikedListing/{{listing.get_ID()}}">
-                        <i class="bi bi-heart-fill" style="color:red; font-size: 2rem;"></i>
-                    </a>
-                </div>
-                {% endif %}
-                </div>
-            </div>
 
         </div>
     </div>
@@ -57,26 +61,23 @@
                     <h1 style="margin-top:3%; margin-bottom:3%; margin-left:3%; font-size:5rem; font-weight:bolder;">{{listing.get_title()}}</h1>
                         
                 </div>
-                <div style="margin-left:3%;"> <!--How you're getting this-->
-                    <h2 style="font-weight:bold">How you're getting this:</h2>
-                    {% if listing.get_deal_method() == "meetup"%}
-                    <p style="font-weight:bold;">Meetup</p>
-                    <p>{{listing.get_deal_meetupinfo()}}</p>
-                    {%endif%}
-                    {% if listing.get_deal_method() == "delivery"%}
-                    <p style="font-weight:bold;">Delivery</p>
-                    <p>{{listing.get_deal_deliveryinfo()}}</p>
-                    {%endif%}
-                    {% if listing.get_deal_method() == "meetupdelivery"%}
-                    <p style="font-weight:bold;">Meetup</p>
-                    <p>{{listing.get_deal_meetupinfo()}}</p>
-                    <p style="font-weight:bold;">Delivery</p>
-                    <p>{{listing.get_deal_deliveryinfo()}}</p>
-                    {%endif%}
-                </div>
                 <div style=" margin-left:3%;">
                     <h2 style="font-weight:bold;">Category</h2>
-                    <p>{{listing.get_category()}}</p>
+                    {% if listing.get_category() == "Category 1" %}
+                    <p>Electronics</p>
+                    {%endif%}
+                    {% if listing.get_category() == "Category 2" %}
+                    <p>Books</p>
+                    {%endif%}
+                    {% if listing.get_category() == "Category 3" %}
+                    <p>Fashion</p>
+                    {%endif%}
+                    {% if listing.get_category() == "Category 4" %}
+                    <p>Entertainment</p>
+                    {%endif%}
+                    {% if listing.get_category() == "Category 5" %}
+                    <p>Misc</p>
+                    {%endif%}
                 </div>
                 <div style="margin-left:3%">
                     <h2 style="font-weight:bold;">Description</h2>
@@ -87,7 +88,7 @@
                     {% if listing.get_condition() == "Barely used"%}
                     <a class="btn btn-dark" href="#" role="button" style="border-radius:50px; border:green 5px solid;margin-left:3%;margin-right:5%">Barely used</a>
                     {%else%}
-                    <a class="btn btn-success" href="#" role="button" style="border-radius:50px; margin-left:3%; margin-right:5%">Barely used</a>
+                    <a class="btn btn-dark" href="#" role="button" style="border-radius:50px; margin-left:3%; margin-right:5%">Barely used</a>
                     {%endif%}
                     {% if listing.get_condition() == "Frequently used"%}
                     <a class="btn btn-dark" href="#" role="button" style="border-radius:50px; border:green 5px solid; margin-right:5%">Frequently used</a>
@@ -103,60 +104,6 @@
                 
                 
             </div>
-            <!--
-
-                <p style="font-weight:bold; font-size:2.5em;">Category</p>
-                <p>{{listing.get_category()}}</p>
-            </div>
-            <div class="d-flex flex-column" style="margin:3%;">
-                <p style="font-weight:bold; font-size:2.5em;">Condition</p>
-                <p>{{listing.get_condition()}}</p>
-            </div>
-            <div class="d-flex flex-column" style="margin:3%;">
-                <p style="font-weight:bold; font-size:2.5em;">Description</p>
-                <p>{{listing.get_description()}}</p>
-            </div>
-            
-            <div class="d-flex flex-column"style="margin:3%;">
-                {% if listing.get_deal_method() == "meetup"%}
-                <p style="font-weight:bold; font-size:2.5em;">Meetup</p>
-                {{listing.get_deal_meetupinfo()}}
-                {%endif%}
-                {% if listing.get_deal_method() == "delivery"%}
-                <p style="font-weight:bold; font-size:2.5em;">Delivery</p>
-                {{listing.get_deal_deliveryinfo()}}
-                {%endif%}
-                {% if listing.get_deal_method() == "meetupdelivery"%}
-                <p style="font-weight:bold; font-size:2.5em;">Meetup</p>
-                {{listing.get_deal_meetupinfo()}}
-                <p style="font-weight:bold; font-size:2.5em;">Delivery</p>
-                {{listing.get_deal_deliveryinfo()}}
-                {%endif%}
-            </div>
-            <div  class="d-flex flex-row  justify-content-evenly " style="margin:3%;">
-                <div style="width:30%" class="align-items-center">
-                    <a href="#" class="btn btn-info align-items-center" role="button" style="background:white; height:6vh; border:none; padding:5%; width:100%"><p style="justify-self:center; color:black; font-weight:bold">Chat with dealer<i class="bi bi-chat" style="font-size:1.3rem"></i></p></a>
-                </div>
-                <div style="width:30%" class="align-items-center">
-                    <a href="#" class="btn btn-info" role="button" style="background:red; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Add to cart<i class="bi bi-cart2" style="font-size:1.3rem"></i></p></a>
-                </div>
-                
-
-                {%if user_liked_post == 'False'%} 
-                    <a href="/createLikedListing/{{listing.get_ID()}}">
-                        <i class="bi bi-heart" style="color:black; font-size: 2rem;"></i>
-                    </a>
-                </div>
-                {% endif %}
-                {%  if user_liked_post == 'True'%}
-                <div>
-                    <a href="/createUnlikedListing/{{listing.get_ID()}}">
-                        <i class="bi bi-heart-fill" style="color:red; font-size: 2rem;"></i>
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-            -->
         </div>
     </div>
 </div>

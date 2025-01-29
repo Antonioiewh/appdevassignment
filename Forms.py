@@ -83,9 +83,13 @@ class OperatorRestoreListing(Form):
     password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
     typeofaction = HiddenField()
 
-
+#listing dashboard
 class SearchListingField(Form):
     searchfield = StringField("Enter listing name")
+class SearchListingIDField(Form):
+    searchidfield = StringField("Enter ID of listing")
+class SearchListingStatusField(Form):
+    searchstatusfield = SelectField('Choose status', [validators.DataRequired()],choices=[('available','Available'),('disabled','Disabled'),('sold','Sold')])
 
 class SearchReportField(Form):
     searchfield = StringField("Enter offender username")

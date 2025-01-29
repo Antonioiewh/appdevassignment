@@ -5,8 +5,8 @@ import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
 from Delivery import Delivery
 from Forms import CustomerSignupForm, ReportForm, CustomerLoginForm, ListingForm, ReviewForm, CustomerUpdateForm, \
     SearchBar, OperatorLoginForm, OperatorLoginVerifyForm, SearchUserField, OperatorSuspendUser, OperatorTerminateUser, \
-    OperatorRestoreUser, DeliveryForm  # our forms
-from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback
+    OperatorRestoreUser, DeliveryForm, SearchListingIDField,SearchListingStatusField  # our forms
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback,SearchUserStatus
 
 import Email,Search,Notifications
 import shelve, Customer
@@ -350,7 +350,11 @@ def Customerhome():
     print(f"{cat_electronics} + {cat_books} + {cat_fashion} + {cat_entertainment} + {cat_misc}")
     print(sorted_top10_seller_dic) # formatted as { id: listings sold, id2: listings sold }
     print(name_dic)
-    day_avg = sum(listing_days) / len(listing_days)
+    try:
+        
+        day_avg = sum(listing_days) / len(listing_days)
+    except:
+        day_avg = "nil"
     print(day_avg)#amount of time for products to be sold
 
 
@@ -1602,6 +1606,7 @@ def delivery_status():
     return render_template('CustomerListingDelivery.html',delivery=delivery,form=form,deliveries_list=deliveries_list,customer=customer, listings_to_display=listings_to_display,
                            current_sessionID=session_ID, searchform=search_field,
                            customer_notifications=customer_notifications, filterform=filterform)
+
 @app.route('/trackDelivery/<int:delivery_id>', methods=['GET', 'POST'])
 def delivery_track(delivery_id):
     global session_ID
@@ -1716,6 +1721,7 @@ def delivery_track(delivery_id):
                            customer=customer,deliveries_list=[delivery for delivery in deliveries_dict.values() if delivery.get_customer_id() == session_ID],
                            current_sessionID=session_ID, searchform=search_field,
                            customer_notifications=customer_notifications, filterform=filterform)
+
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
 
@@ -1897,6 +1903,7 @@ def delete_message():
     # dropdown menu: option to delete chat/hyperlink to user's profile/block profile,
     # option to send pictures in chat, message delivered/read/notifications(red number icon),
     # message previews, make date appear like whatsapp
+
 @app.route('/edit_message', methods=['GET', 'POST'])
 def edit_message():
     data = request.get_json()  # Safely parse the JSON data
@@ -2821,6 +2828,7 @@ def verifyoperator(email):
 def operatorcontrolcenter():
     return render_template('OperatorControlCenter.html')
 
+#dashboard users
 @app.route('/dashboard/users',methods=['GET', 'POST'])
 def dashboardusers():
     user_search_field = SearchUserField(request.form)
@@ -2918,7 +2926,7 @@ def dashboarduser_usernamesearch(keyword):
     
     return render_template('Operatordashboard_users_search.html',form = user_search_field,customers_list = customers_list,form2 = user_status_field,searchcondition = keyword)
     
-@app.route('/dashboard/users/category=<keyword>',methods = ['GET','POST'])
+@app.route('/dashboard/users/status=<keyword>',methods = ['GET','POST'])
 def dashboarduser_categorysearch(keyword):
     user_search_field = SearchUserField(request.form)
     user_status_field = SearchUserStatus(request.form)
@@ -3444,6 +3452,8 @@ def operatorrestorelisting(listingid,customerid):
 @app.route('/dashboard/listings',methods=['GET', 'POST'])
 def dashboardlistings():
     listing_search_field = SearchListingField(request.form)
+    listing_searchstatus_field = SearchListingStatusField(request.form)
+    listing_searchid_field = SearchListingIDField(request.form)
     dbmain = shelve.open('main.db','c')
     listings_dict = {}
 
@@ -3459,14 +3469,32 @@ def dashboardlistings():
         listing = listings_dict.get(key)
         listings_list.append(listing)
 
-    if request.method == 'POST' and listing_search_field.validate():
-        return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
+    try:
+        if request.method == 'POST' and listing_search_field.validate():
+            return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
+    except:
+        pass
+
+    try:
+        if request.method == 'POST' and listing_searchid_field.validate():
+            return redirect(url_for('dashboardlistingssearchid',id = listing_searchid_field.searchidfield.data))
+        print("e")
+    except:
+        pass
+
+    try:
+        if request.method == 'POST' and listing_searchstatus_field.validate():
+            return redirect(url_for('dashboardlistingssearchstatus',status = listing_searchstatus_field.searchstatusfield.data))
+    except:
+        pass
     
-    return render_template('Operatordashboard_listings.html',form = listing_search_field,listings_list = listings_list)
+    return render_template('Operatordashboard_listings.html',form = listing_search_field, form2 = listing_searchid_field,form3 = listing_searchstatus_field,listings_list = listings_list)
 
 @app.route('/dashboard/listings/search=<keyword>',methods=['GET', 'POST'])
 def dashboardlistingssearch(keyword):
     listing_search_field = SearchListingField(request.form)
+    listing_searchstatus_field = SearchListingStatusField(request.form)
+    listing_searchid_field = SearchListingIDField(request.form)
     dbmain = shelve.open('main.db','c')
     listings_dict = {}
 
@@ -3485,11 +3513,106 @@ def dashboardlistingssearch(keyword):
         else:
             pass
 
-    if request.method == 'POST' and listing_search_field.validate():
-        return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
-    
-    return render_template('Operatordashboard_listings_search.html',form = listing_search_field,listings_list = listings_list)
+    try:
+        if request.method == 'POST' and listing_search_field.validate():
+            return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
+    except:
+        pass
 
+    try:
+        if request.method == 'POST' and listing_searchid_field.validate():
+            return redirect(url_for('dashboardlistingssearchid',id = listing_searchid_field.searchidfield.data))
+    except:
+        pass
+
+    try:
+        if request.method == 'POST' and listing_searchstatus_field.validate():
+            return redirect(url_for('dashboardlistingssearchstatus',status = listing_searchstatus_field.searchstatusfield.data))
+    except:
+        pass
+    
+    return render_template('Operatordashboard_listings_search.html',form = listing_search_field, form2 = listing_searchid_field,form3 = listing_searchstatus_field,listings_list = listings_list,searchcondition=keyword)
+
+
+@app.route('/dashboard/listings/id=<id>',methods = ['GET','POST'])
+def dashboardlistingssearchid(id):
+    listing_search_field = SearchListingField(request.form)
+    listing_searchstatus_field = SearchListingStatusField(request.form)
+    listing_searchid_field = SearchListingIDField(request.form)
+    dbmain = shelve.open('main.db','c')
+    listings_dict = {}
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    listings_list = []        
+    for key in listings_dict:
+        if key == id:
+            listing = listings_list.get(key)
+            listings_list.append(listing)
+            break
+    try:
+        if request.method == 'POST' and listing_search_field.validate():
+            return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
+    except:
+        pass
+
+    try:
+        if request.method == 'POST' and listing_searchid_field.validate():
+            return redirect(url_for('dashboardlistingssearchid',id = listing_searchid_field.searchidfield.data))
+    except:
+        pass
+
+    try:
+        if request.method == 'POST' and listing_searchstatus_field.validate():
+            return redirect(url_for('dashboardlistingssearchstatus',status = listing_searchstatus_field.searchstatusfield.data))
+    except:
+        pass
+    
+    return render_template('Operatordashboard_listings_searchid.html',form = listing_search_field, form2 = listing_searchid_field,form3 = listing_searchstatus_field,listings_list = listings_list,searchcondition = id)
+
+@app.route('/dashboard/listings/status=<status>',methods = ['GET','POST'])
+def dashboardlistingssearchstatus(status):
+    listing_search_field = SearchListingField(request.form)
+    listing_searchstatus_field = SearchListingStatusField(request.form)
+    listing_searchid_field = SearchListingIDField(request.form)
+    dbmain = shelve.open('main.db','c')
+    listings_dict = {}
+
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    listings_list = []        
+    for key in listings_dict:
+        listing = listings_dict.get(key)
+        if listing.get_status() == status:
+            listings_list.append(listing)
+    try:
+        if request.method == 'POST' and listing_search_field.validate():
+            return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
+    except:
+        pass
+
+    try:
+        if request.method == 'POST' and listing_searchid_field.validate():
+            return redirect(url_for('dashboardlistingssearchid',id = listing_searchid_field.searchidfield.data))
+    except:
+        pass
+
+    try:
+        if request.method == 'POST' and listing_searchstatus_field.validate():
+            return redirect(url_for('dashboardlistingssearchstatus',status = listing_searchstatus_field.searchstatusfield.data))
+    except:
+        pass
+    
+    return render_template('Operatordashboard_listings_searchstatus.html',form = listing_search_field, form2 = listing_searchid_field,form3 = listing_searchstatus_field,listings_list = listings_list,searchcondition=status)
 @app.route('/operatorviewlisting/<int:id>',)
 def operatorviewlisting(id):
     dbmain = shelve.open('main.db','c')
@@ -3661,7 +3784,7 @@ def dashboardfeedbacks():
         else:
             dbmain['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening fmain.db")
+        print("Error in opening main.db")
     feedbacks_list=[]
     for key in feedbacks_dict:
         feedback = feedbacks_dict.get(key)

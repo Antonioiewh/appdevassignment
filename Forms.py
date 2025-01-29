@@ -1,5 +1,5 @@
 
-from wtforms import Form, BooleanField, StringField, validators, PasswordField, SelectField, RadioField, SelectMultipleField, FileField,HiddenField,TextAreaField #import the fields u need
+from wtforms import Form, BooleanField, StringField, validators, PasswordField, SelectField, RadioField, SelectMultipleField, FileField,HiddenField,TextAreaField,SubmitField #import the fields u need
 class CustomerSignupForm(Form): #Form for CustomerSignup.html
     username = StringField('Username',[validators.Length(min=4, max=25),validators.DataRequired()])
     email        = StringField('Email Address', [validators.Length(min=6, max=35),validators.DataRequired()]) #we will add validator to this later
@@ -27,7 +27,10 @@ class ListingForm(Form):
 
 #class uploadListingimg(Form): 
     #listingimg = FileField('image')
-
+class DeliveryForm(Form):
+    delivery_id = StringField('Delivery ID', [validators.DataRequired()])
+    submit = SubmitField('Check Status')
+    address = StringField('Delivery Address', [validators.DataRequired()])
 
 class ReviewForm(Form):
     rating = RadioField('Rating', [validators.DataRequired()],choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])

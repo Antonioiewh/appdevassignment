@@ -1,6 +1,7 @@
 class Listing:
     count_ID = 0
-    def __init__(self,creatorID,creatorusername,title,description,condition,category): #dealmethod info as an
+
+    def __init__(self,creatorID,creatorusername,title,description,condition,category,creationDate): #dealmethod info as an
         Listing.count_ID+=1
         self.__ID = Listing.count_ID
         self.__creatorID = creatorID #same as current_sessionID
@@ -10,7 +11,10 @@ class Listing:
         self.__condition = condition
         self.__category = category
         self.__likes = 0
-        self.__status = "available" #or "disabled"
+        self.__status = "available" #or "disabled" or "sold"
+        self.__buyerID = None #by default, change to buyer ID when purchased
+        self.__creationDate = creationDate
+        self.__soldDate = None
         #self.__deal_delivery = deal_delivery
 
     
@@ -85,12 +89,24 @@ class Listing:
     
     def set_deal_meetupdelivery(self,info):
         self.__deal_deliveryinfo = info
-
-    def set_deal_meetupinfo(self,info):
-        self.__deal_deliveryinfo = info
     
     def set_deal_deliveryinfo(self,info):
         self.__deal_meetupinfo = info
 
-    
+    def set_buyerID(self, buyerid):
+        self.__buyerID = buyerid
 
+    def get_buyerID(self):
+        return self.__buyerID
+
+    def set_soldDate(self, date): #formatted as (dd-mm-yyyy)
+        self.__soldDate = date
+
+    def get_soldDate(self):
+        return self.__soldDate
+
+    def set_creation_date(self, creationDate):
+        self.__creationDate = creationDate
+
+    def get_creation_date(self):
+        return self.__creationDate

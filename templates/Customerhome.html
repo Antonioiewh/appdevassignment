@@ -3,6 +3,21 @@
 {% from "includes/_formHelper.html" import render_field %}
 {% block content%}
 <!-- Main Content -->
+<style>
+  .table {
+    width: 100%;
+    margin: 0;
+    font-size: 0.9rem;
+    margin-top: -10%;
+  }
+
+  #categoryChart {
+    max-width: 70%;
+    height: 400px;
+    margin-left: 5%;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% if customer %}
     <!-- Personalized Section (after login) -->
     <div class="personalized-section" style="background-color: #eef6ff; padding: 20px; border: 1px solid #cce0ff;">
@@ -32,5 +47,80 @@
         <p>Welcome, Guest! Please <a href="/login">log in</a> to access personalized features.</p>
     </div>
 {% endif %}
+<div>
+</div>
+<br><h2>Useful buying information</h2><br>
+<div style="display: flex; align-items: flex-start; gap: 20px;">
+  <!-- Table Container -->
+  <div style="flex: 1; max-width: 40%;">
+      <h3 style="margin-left: -50%;">Top 10 Sellers</h3>
+    <table class="table">
+      <thead>
+        <tr>
+            <th>Placing</th>
+            <th>Username</th>
+            <th>User ID</th>
+            <th>Products Sold</th>
+            <th>User rating</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user, sold_count in top10_seller_dic.items() %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ name_dic[user] }}</td>
+            <td>{{ user }}</td>
+            <td>{{ sold_count }}</td>
+            <td>{{ rating_dic[user] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+    <!-- Chart Container -->
+  <div style="flex: 1;">
+    <canvas id="categoryChart"></canvas>
+  </div>
+</div>
+<br><p><strong>Average days for a listing to sell:</strong> {{ avg_days_to_sell }} days</p>
+<script>
+    const categories = ["Electronics", "Books", "Fashion", "Entertainment", "Misc"];
+    const soldCounts = [{{ cat_electronics }}, {{ cat_books }}, {{ cat_fashion }}, {{ cat_entertainment }}, {{ cat_misc }}];
+    const ctx = document.getElementById('categoryChart').getContext('2d');
+    const categoryChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: categories,
+        datasets: [{
+          label: '', // Keep this empty to avoid the orange legend
+          data: soldCounts,
+          backgroundColor: ['#3357FF', '#33FF57', '#3357FF', '#57FF33', '#5733FF'],
+          borderColor: ['#3357FF', '#33FF57', '#3357FF', '#57FF33', '#5733FF'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false // Hide the orange legend
+          },
+          title: {
+            display: true, // Enable a title for the chart
+            text: 'Products Sold by Category', // The title text
+            font: {
+              size: 18 // Customize the font size for the title
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+</script>
 {% endblock %}
 {% from "includes/_formHelper.html" import render_field %}

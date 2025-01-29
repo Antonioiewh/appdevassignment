@@ -9,7 +9,7 @@ class Message:
         self.content = content
         self.timestamp = datetime.now()
         self.message_id = str(uuid.uuid4())
-        self.status = "active"  # status of message: "active" or "deleted"
+        self.status = "active"  # status of message: "active" or "deleted" or "edited"
 
     def to_dict(self):
         """Return a dictionary representation of the message."""

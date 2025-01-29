@@ -27,6 +27,7 @@ class DeliveryForm(Form):
     delivery_id = StringField('Delivery ID', [validators.DataRequired()])
     submit = SubmitField('Check Status')
     address = StringField('Delivery Address', [validators.DataRequired()])
+    deliveryinfo = StringField('Delivery Information', [validators.DataRequired()])
 
 class ReviewForm(Form):
     rating = RadioField('Rating', [validators.DataRequired()],choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])

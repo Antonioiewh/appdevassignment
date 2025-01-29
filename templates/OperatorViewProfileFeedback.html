@@ -90,7 +90,7 @@
         </tr></thead>
         <tbody>
             {% for feedback in feedbacks_list%}
-            <tr><td>{{feedback.get_ID()}}</td><td>{{feedback.get_rating()}}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i></td><td>{{feedback.get_remark()}}</td><td>{{feedback.get_reply()}}</td><td>
+            <tr><td>{{feedback.get_ID()}}</td><td>{{feedback.get_rating()}}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i></td><td>{{feedback.get_remark()}}</td><td>Reply:{{feedback.get_reply()}}</td><td>
                 <a href="{{ url_for('reply_feedback', feedback_id=feedback.get_ID()) }}" class="btn btn-primary">Reply</a>
             </td>
 

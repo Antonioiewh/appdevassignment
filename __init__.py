@@ -2,8 +2,12 @@ from flask import Flask, render_template, url_for,request,redirect,session,jsoni
 import os,sys,stat
 from werkzeug.utils import secure_filename
 import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
-from Forms import CustomerSignupForm,ReportForm, CustomerLoginForm, ListingForm,ReviewForm,CustomerUpdateForm,SearchBar,OperatorLoginForm,OperatorLoginVerifyForm,SearchUserField,OperatorSuspendUser,OperatorTerminateUser,OperatorRestoreUser #our forms
-from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback,SearchUserStatus
+from Delivery import Delivery
+from Forms import CustomerSignupForm, ReportForm, CustomerLoginForm, ListingForm, ReviewForm, CustomerUpdateForm, \
+    SearchBar, OperatorLoginForm, OperatorLoginVerifyForm, SearchUserField, OperatorSuspendUser, OperatorTerminateUser, \
+    OperatorRestoreUser, DeliveryForm  # our forms
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback
+
 import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
@@ -1391,7 +1395,254 @@ def viewLikedListings(id): #retrieve current session_ID
     except:
         pass
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+@app.route('/delivery_status', methods=['GET', 'POST'])
+def delivery_status():
+    global session_ID
+    dbmain = shelve.open('main.db', 'c')
+    listings_dict = {}
+    customers_dict = {}
+    deliveries_dict = {}
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    form = DeliveryForm(request.form)
 
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"]  # sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict  # sync db2 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"]  # sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    try:
+        if "delivery" in dbmain:
+            deliveries_dict = dbmain["delivery"]
+        else:
+            dbmain['delivery'] = deliveries_dict
+    except:
+        print("Error in opening main.db")
+
+    customer = customers_dict.get(session_ID, None)
+    deliveries_list = [
+        delivery for delivery in deliveries_dict.values()
+        if delivery.get_customer_id() == session_ID]
+    liked_listings_ids = customer.get_liked_listings() if customer else []
+
+    listings_to_display = []
+    global_delivery_count = len(deliveries_dict)
+    delivery = None
+
+
+
+
+    for listing_id in liked_listings_ids:
+        listing = listings_dict.get(listing_id)
+        if listing:
+            # Check if the delivery for this item already exists
+            existing_delivery = next((d for d in deliveries_dict.values() if
+                                      d.get_item_title() == listing.get_title() and d.get_customer_id() == session_ID),
+                                     None)
+
+            if not existing_delivery:
+                if customer:
+                    expected_date = customer.get_date_joined()
+                    # Add 5 days manually
+                    month, day, year = map(int, expected_date.split('/'))
+
+
+                    if year < 100:
+                        year+= 2000
+                    day += 5
+                    # Handle month-end overflow
+                    if month in [1, 3, 5, 7, 8, 10, 12] and day > 31:
+                        day -= 31
+                        month += 1
+                    elif month in [4, 6, 9, 11] and day > 30:
+                        day -= 30
+                        month += 1
+                    elif month == 2:  # Handle February (leap year check is skipped)
+                        if day > 28:
+                            day -= 28
+                            month += 1
+
+                    # Handle year-end overflow
+                    if month > 12:
+                        month = 1
+                        year += 1
+
+                    expected_date =f"{month:02d}/{day:02d}/{year%100:02d}"  # Format it back to 'YYYY-MM-DD'
+                else:
+                    expected_date = "TBD1"
+
+                delivery = Delivery(
+                    item_title=listing.get_title(),
+                    status='Pending',  # Set status as 'Pending'
+                    expected_date=expected_date,  # You can set an expected date or leave it as "TBD"
+                    customer_id=session_ID,
+                )
+
+                deliveries_dict[delivery.get_ID()] = delivery
+
+    dbmain["delivery"] = deliveries_dict
+    dbmain.close()
+
+    # search function
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword=search_field.searchfield.data))
+    except:
+        pass
+
+    # get notifs
+    if session_ID != 0:
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0
+        # filter
+    try:
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data, searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
+    except:
+        pass
+    return render_template('CustomerListingDelivery.html',delivery=delivery,form=form,deliveries_list=deliveries_list,customer=customer, listings_to_display=listings_to_display,
+                           current_sessionID=session_ID, searchform=search_field,
+                           customer_notifications=customer_notifications, filterform=filterform)
+@app.route('/trackDelivery/<int:delivery_id>', methods=['GET', 'POST'])
+def delivery_track(delivery_id):
+    global session_ID
+    dbmain = shelve.open('main.db', 'c')
+    listings_dict = {}
+    customers_dict = {}
+    deliveries_dict = {}
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    form = DeliveryForm(request.form)
+
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"]  # sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict  # sync db2 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"]  # sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    try:
+        if "delivery" in dbmain:
+            deliveries_dict = dbmain["delivery"]
+        else:
+            dbmain['delivery'] = deliveries_dict
+    except:
+        print("Error in opening main.db")
+
+    customer = customers_dict.get(session_ID, None)
+    delivery = deliveries_dict.get(delivery_id)
+    if delivery.get_customer_id() != session_ID:
+        return render_template('error.html', message="Access denied."), 40
+    delivery = deliveries_dict.get(delivery_id)
+    if not delivery:
+        return render_template('error.html', message="Delivery not found."), 404
+
+    deliveries_list = [
+        delivery for delivery in deliveries_dict.values()
+        if delivery.get_customer_id() == session_ID
+    ]
+    listing = listings_dict.get(delivery.get_item_title())
+    if customer:
+        expected_date = customer.get_date_joined()
+        # Add 5 days manually
+        month, day, year = map(int, expected_date.split('/'))  # Assuming format is 'YYYY-MM-DD'
+
+        if year < 100:
+            year += 2000
+        day += 5
+        # Handle month-end overflow
+        if month in [1, 3, 5, 7, 8, 10, 12] and day > 31:
+            day -= 31
+            month += 1
+        elif month in [4, 6, 9, 11] and day > 30:
+            day -= 30
+            month += 1
+        elif month == 2:  # Handle February (leap year check is skipped)
+            if day > 28:
+                day -= 28
+                month += 1
+
+        # Handle year-end overflow
+        if month > 12:
+            month = 1
+            year += 1
+
+        expected_date = f"{month:02d}/{day:02d}/{year%100:02d}"
+
+    else:
+        expected_date = "TBD"
+    # Get the specific delivery by ID
+    selected_delivery = deliveries_dict.get(delivery_id)
+
+    if request.method == "POST" and form.validate():
+        delivery_address = form.deliveryinfo.data  # Get address from the form
+
+        # Update delivery details
+        delivery.set_address(delivery_address)
+        delivery.set_expected_date(expected_date)
+
+        deliveries_dict[delivery.get_ID()] = delivery
+        dbmain["delivery"] = deliveries_dict
+        dbmain.close()
+
+    # search function
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword=search_field.searchfield.data))
+    except:
+        pass
+
+    # get notifs
+    if session_ID != 0:
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0
+        # filter
+    try:
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data, searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
+    except:
+        pass
+    return render_template('Customerdeliverytrack.html', form=form, delivery=delivery,
+                           customer=customer,deliveries_list=deliveries_list,
+                           current_sessionID=session_ID, searchform=search_field,
+                           customer_notifications=customer_notifications, filterform=filterform)
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
 
@@ -3483,7 +3734,8 @@ def dashboard_feedback_reply(feedback_id):
         return render_template('error_page.html', message="Feedback not found.")
 
     if request.method == 'POST':
-        reply = request.form.get('reply')  # Get reply text from the form
+        reply1 = request.form.get('reply')
+        reply = f"Reply:{reply1}"# Get reply text from the form
         feedback.set_reply(reply)  # Assume `set_reply` is a method in your Feedback class
         dbmain['Feedback'] = feedbacks_dict  # Save the updated feedback back to the database
         dbmain.close()

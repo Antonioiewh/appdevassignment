@@ -5,9 +5,8 @@ import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
 from Delivery import Delivery
 from Forms import CustomerSignupForm, ReportForm, CustomerLoginForm, ListingForm, ReviewForm, CustomerUpdateForm, \
     SearchBar, OperatorLoginForm, OperatorLoginVerifyForm, SearchUserField, OperatorSuspendUser, OperatorTerminateUser, \
-    OperatorRestoreUser, DeliveryForm, SearchListingIDField,SearchListingStatusField  # our forms
+    OperatorRestoreUser, DeliveryForm, SearchListingIDField,SearchListingStatusField,SearchTransactionField   # our forms
 from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback,SearchUserStatus
-
 import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
@@ -3970,32 +3969,52 @@ def dashboard_feedback_reply(feedback_id):
 
 @app.route('/dashboard/transactions', methods=['GET', 'POST'])
 def dashboard_transactions():
-    global session_ID
-    form = DeliveryForm(request.form)
-    filterform = FilterForm(request.form)
-    search_field = SearchBar(request.form)
-
+    searchform = SearchTransactionField(request.form)
     dbmain = shelve.open('main.db', 'c')
+    deliveries_dict = {}
 
-    deliveries_dict = dbmain.get('Delivery', {})
-    listings_dict = dbmain.get('listing', {})
-
+    try:
+        if "Delivery" in dbmain:
+            deliveries_dict = dbmain["Delivery"]  # sync local with db2
+        else:
+            dbmain['Delivery'] = deliveries_dict  # sync db2 with local (basically null)
+    except:
+        print("Error in opening main.db")
     deliveries_list = []
-    listings_list = []
     for key in deliveries_dict:
         delivery = deliveries_dict.get(key)
         deliveries_list.append(delivery)
-
-    for key in listings_dict:
-        listing = listings_dict.get(key)
-        listings_list.append(listing)
-
-    dbmain.close()
+    if request.method == 'POST' and searchform.validate():
+        return redirect(url_for('dashboardtransactionssearch',keyword = searchform.searchfield.data))
+    return render_template('Operatordashboard_transaction.html',searchform=searchform , deliveries_list=deliveries_list)
 
 
-    return render_template("operatordashboard_transaction.html",current_sessionID=session_ID,listings_list=listings_list, deliveries_list=deliveries_list,form=form,filterform=filterform,searchform=search_field)
+@app.route('/dashboard/transactions/search=<keyword>', methods=['GET', 'POST'])
+def dashboardtransactionssearch(keyword):
+    searchform = SearchTransactionField(request.form)
+    dbmain = shelve.open('main.db', 'c')
+    deliveries_dict = {}
 
+    try:
+        if "Delivery" in dbmain:
+            deliveries_dict = dbmain["Delivery"]  # sync local with db2
+        else:
+            dbmain['Delivery'] = deliveries_dict  # sync db2 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    deliveries_list = []
+    for key in deliveries_dict:
+        delivery = deliveries_dict.get(key)
+        if keyword in delivery.get_title():
+            deliveries_list.append(delivery)
+        else:
+            pass
 
+    if request.method == 'POST' and searchform.validate():
+        return redirect(url_for('dashboardtransactionsssearch', keyword=searchform.searchfield.data))
+
+    return render_template('Operatordashboard_transaction_search.html', searchform = searchform,
+                           deliveries_list=deliveries_list)
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'

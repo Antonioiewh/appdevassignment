@@ -36,3 +36,6 @@ class Delivery:
 
     def set_ID(self,ID):
         self.__ID = ID
+
+    def set_customer_id(self,customer_id):
+        self.__customer_id = customer_id

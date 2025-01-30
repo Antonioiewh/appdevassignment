@@ -97,6 +97,8 @@ class SearchReportField(Form):
 class SearchOperatorActionField(Form):
     searchfield = SelectField('Category',[validators.DataRequired()], choices=[('suspend user','Suspend user'),('terminate user','Terminate user'),('restore user','restore user'),('restore listing','Restore listing'),('disable listing','Disable listing')])
 
+class SearchTransactionField(Form):
+    searchfield = StringField("Enter Listing title")
 class FeedbackForm(Form):
     rating = RadioField('Rate your experience', [validators.DataRequired()],choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])
     feedback = TextAreaField('Have you encountered any issues so far? If so, please describe it', [validators.InputRequired(), validators.Length(max=500)])

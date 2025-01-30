@@ -55,6 +55,66 @@ def send_message_notifcation_gmail(recipient_email, recipient_username,sender_us
         print(f"Notification sent to {recipient_email}!")
     except:
         print("Error in sending email")
+
+def send_user_wantmeetup(recipient_email,customer_username,product_name):
+    try:
+        msg = MIMEText(f"{customer_username} would like to meet up to collect {product_name}")
+        msg['From'] = sender
+        msg['To'] = recipient_email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
+            smtp_server.login(sender, password)
+            smtp_server.sendmail(sender, recipient_email, msg.as_string())
+        print(f"Notification sent to {recipient_email}!")  
+    except:
+        print("Error in sending email")
+    
+def send_user_requestdelivery(recipient_email,customer_username,product_name):
+    try:
+        msg = MIMEText(f"{customer_username} would like to request for delivery services to collect {product_name}")
+        msg['From'] = sender
+        msg['To'] = recipient_email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
+            smtp_server.login(sender, password)
+            smtp_server.sendmail(sender, recipient_email, msg.as_string())
+        print(f"Notification sent to {recipient_email}!")  
+    except:
+        print("Error in sending email")
+def send_productshipped_user(recipient_email,customer_username,product_name):
+    try:
+        msg = MIMEText(f"Your listing, {product_name}, has been successfully shipped to {customer_username}")
+        msg['From'] = sender
+        msg['To'] = recipient_email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
+            smtp_server.login(sender, password)
+            smtp_server.sendmail(sender, recipient_email, msg.as_string())
+        print(f"Notification sent to {recipient_email}!")  
+    except:
+        print("Error in sending email")
+
+def send_orderedproducts_arrivingsoon(recipient_email,product_names):
+    try:
+        msg = MIMEText(f"Your ordered products, {product_names}, will be arriving soon.")
+        msg['From'] = sender
+        msg['To'] = recipient_email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
+            smtp_server.login(sender, password)
+            smtp_server.sendmail(sender, recipient_email, msg.as_string())
+        print(f"Notification sent to {recipient_email}!")  
+    except:
+        print("Error in sending email")
+
+def send_productdelivery_started(recipient_email,product_names):
+    try:
+        msg = MIMEText(f"Delivery of {product_names} has started being shipped to you")
+        msg['From'] = sender
+        msg['To'] = recipient_email
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
+            smtp_server.login(sender, password)
+            smtp_server.sendmail(sender, recipient_email, msg.as_string())
+        print(f"Notification sent to {recipient_email}!")  
+    except:
+        print("Error in sending email")
+
 def send_message_operator_OTP(recipient_email,OTP):
     try:
         msg = MIMEText(f"your one time password is {OTP}")

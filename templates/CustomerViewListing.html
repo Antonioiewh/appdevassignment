@@ -27,13 +27,14 @@
                     {%endif%}
     
                     {%if user_liked_post == 'False'%} 
+
                         <a href="/createLikedListing/{{listing.get_ID()}}">
                             <i class="bi bi-heart" style="color:black; font-size: 2rem;"></i>
                         </a>
                     </div>
                     {% endif %}
                     {%  if user_liked_post == 'True'%}
-                    <div>
+
                         <a href="/createUnlikedListing/{{listing.get_ID()}}">
                             <i class="bi bi-heart-fill" style="color:red; font-size: 2rem;"></i>
                         </a>

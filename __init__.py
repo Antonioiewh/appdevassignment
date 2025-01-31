@@ -3045,24 +3045,6 @@ def operatorviewprofile(id): #id of profile they are viewing
             if key in customer_listings:
                 listing = listings_dict.get(key)
                 listing_list.append(listing)
-
-    #suspend user func
-    if request.method == 'POST' and suspend_user.validate():
-        if suspend_user.password.data == "sysadmin1":
-            #create operator action object
-            operator_action = operatoractions.Operatoractions(id,suspend_user.typeofaction.data,suspend_user.category.data,suspend_user.suspend_text.data)
-            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
-
-            #syncs db5 with local dict
-            #syncs db5 count with local count (aka customer class)
-            dbmain['operatoractions'] = operatoractions_dict
-            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-
-            #make changes to affected user
-            customer = customers_dict.get(id)
-            customer.set_status("suspended")
-            dbmain['Customers'] = customers_dict
-            return(redirect(url_for('operatorviewprofile', id=id)))
     
     #terminate user func
     if request.method == 'POST' and terminate_user.validate():
@@ -3364,6 +3346,8 @@ def operatorviewprofilefeedback(id):
 
     return render_template("OperatorViewProfileFeedback.html",number_of_feedbacks =numberfeedbacks, customer=customer,feedbacks_list=feedbacks_list,terminate_user_form=terminate_user, suspend_user_form=suspend_user,restore_user_form=restore_user)
 
+
+#operator actions
 @app.route('/operatordisablelisting/<int:customerid>/<int:listingid>',methods=['GET', 'POST'])
 def operatordisablelisting(listingid,customerid):
     dbmain = shelve.open('main.db','c')
@@ -3447,7 +3431,121 @@ def operatorrestorelisting(listingid,customerid):
             dbmain['Listings'] = listings_dict
             return(redirect(url_for('operatorviewprofile', id=customerid)))
     return render_template('OperatorDisableListing.html',form = restore_listing,customerID = customerid)
+#invalid user page
+@app.route('/invaliduser')
+def invaliduser():
+    return render_template('Operatorinvaliduser.html')
 
+#suspend user
+@app.route('/operatorsuspenduser/<int:customerid>',methods=['GET','POST']) #page to enter details
+def operatorsuspenduser(customerid):
+    customers_dict = {}
+    suspend_user = OperatorSuspendUser(request.form,typeofaction='suspend user',affectedid=customerid)
+    dbmain = shelve.open('main.db','c')
+    #prevent data being outdated
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    if request.method == 'POST' and suspend_user.validate():
+        if suspend_user.password.data == "sysadmin1":
+            #check if ID exists
+            flag = False
+            for key in customers_dict:
+                if key == int(suspend_user.affectedid.data):
+                    flag = True
+                    break
+                else:
+                    flag = False
+            
+            if flag == True:
+                session['typeofaction'] = suspend_user.typeofaction.data
+                session['category'] = suspend_user.category.data
+                session['suspend_text'] = suspend_user.suspend_text.data
+                return(redirect(url_for('confirmsuspenduser',customerid=int(suspend_user.affectedid.data))))
+            else:
+                return(redirect(url_for('invaliduser')))
+    else:
+        pass
+            
+    return render_template('Operatorsuspenduser.html',form=suspend_user,customerID = customerid)
+
+#measure in place prevent accidentally suspending
+@app.route('/confirmsuspenduser/<int:customerid>',methods=['GET','POST'])#displays 2 options, confirm or go back
+def confirmsuspenduser(customerid):
+    customers_dict = {}
+    dbmain = shelve.open('main.db','c')
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    
+    #retrive customer obj
+    customer = customers_dict.get(customerid)
+
+    return render_template('Operatorconfirmsuspenduser.html',customer=customer)
+
+#actual code
+@app.route('/suspenduser/<int:customerid>')
+def suspenduser(customerid):
+    dbmain = shelve.open('main.db','c')
+    operatoractions_dict = {}
+    customers_dict = {}
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+    try:
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"] #sync local with db1
+        else:
+            dbmain['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main count or count is at 0")
+    #create operator action object
+    operator_action = operatoractions.Operatoractions(customerid,session['typeofaction'],session['category'],session['suspend_text'])
+    operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+
+    #syncs db5 with local dict
+    #syncs db5 count with local count (aka customer class)
+    dbmain['operatoractions'] = operatoractions_dict
+    dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
+    #make changes to affected user
+    customer = customers_dict.get(customerid)
+    customer.set_status("suspended")
+    dbmain['Customers'] = customers_dict
+    return(redirect(url_for('operatorviewprofile', id=customerid)))
+
+
+
+@app.route('/operatorterminateuser/<int:customerid>',methods=['GET','POST'])
+def operatorrestoreuser(customerid):
+    pass
+    
 @app.route('/dashboard/listings',methods=['GET', 'POST'])
 def dashboardlistings():
     listing_search_field = SearchListingField(request.form)
@@ -3532,7 +3630,6 @@ def dashboardlistingssearch(keyword):
     
     return render_template('Operatordashboard_listings_search.html',form = listing_search_field, form2 = listing_searchid_field,form3 = listing_searchstatus_field,listings_list = listings_list,searchcondition=keyword)
 
-
 @app.route('/dashboard/listings/id=<id>',methods = ['GET','POST'])
 def dashboardlistingssearchid(id):
     listing_search_field = SearchListingField(request.form)
@@ -3612,6 +3709,7 @@ def dashboardlistingssearchstatus(status):
         pass
     
     return render_template('Operatordashboard_listings_searchstatus.html',form = listing_search_field, form2 = listing_searchid_field,form3 = listing_searchstatus_field,listings_list = listings_list,searchcondition=status)
+
 @app.route('/operatorviewlisting/<int:id>',)
 def operatorviewlisting(id):
     dbmain = shelve.open('main.db','c')

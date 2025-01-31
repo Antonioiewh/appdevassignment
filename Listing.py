@@ -15,7 +15,10 @@ class Listing:
         self.__buyerID = None #by default, change to buyer ID when purchased
         self.__creationDate = creationDate
         self.__soldDate = None
-        #self.__deal_delivery = deal_delivery
+        #for deal method
+        self.__deal_method = None
+        self.__deliveryinfo = None
+        self.__meetupinfo = None
 
     
     def get_creatorID(self):
@@ -42,6 +45,9 @@ class Listing:
     def get_likes(self):
         return self.__likes
     
+    def get_creator_username(self):
+        return self.__creatorusername
+    
     def get_status(self):
         return self.__status
     
@@ -51,8 +57,9 @@ class Listing:
     def get_deal_deliveryinfo(self):
         return self.__deal_deliveryinfo
     
-    def get_creator_username(self):
-        return self.__creatorusername
+    def get_deal_method(self):
+        return self.__deal_method
+    
 
     def set_creatorID(self,creatorID):
         self.__creatorID = creatorID
@@ -84,17 +91,21 @@ class Listing:
     def set_status(self,status):
         self.__status = status
 
+
+    #deal method
     def set_deal_meetupinfo(self,info):
         self.__deal_meetupinfo = info
     
-    def set_deal_meetupdelivery(self,info):
-        self.__deal_deliveryinfo = info
+    def set_deal_method(self,method):
+        self.__deal_method = method
     
     def set_deal_deliveryinfo(self,info):
         self.__deal_meetupinfo = info
 
+
     def set_buyerID(self, buyerid):
         self.__buyerID = buyerid
+
 
     def get_buyerID(self):
         return self.__buyerID

@@ -3548,8 +3548,107 @@ def suspenduser(customerid):
     return(redirect(url_for('operatorviewprofile', id=customerid)))
 
 
-
+#terminate user
 @app.route('/operatorterminateuser/<int:customerid>',methods=['GET','POST'])
+def operatorterminateuser(customerid):
+    customers_dict = {}
+    terminate_user = OperatorTerminateUser(request.form,typeofaction='terminate user',affectedid=customerid)
+    dbmain = shelve.open('main.db','c')
+    #prevent data being outdated
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    if request.method == 'POST' and terminate_user.validate():
+        if terminate_user.password.data == "sysadmin1":
+            #check if ID exists
+            flag = False
+            for key in customers_dict:
+                if key == int(terminate_user.affectedid.data):
+                    flag = True
+                    break
+                else:
+                    flag = False
+            
+            if flag == True:
+                session['typeofaction'] = terminate_user.typeofaction.data
+                session['category'] = terminate_user.category.data
+                session['terminate_text'] = terminate_user.terminate_text.data
+                return(redirect(url_for('confirmterminateuser',customerid=int(terminate_user.affectedid.data))))
+            else:
+                return(redirect(url_for('invaliduser')))
+    else:
+        pass
+            
+    return render_template('Operatorterminateuser.html',form=terminate_user,customerID = customerid)
+
+@app.route('/confirmterminateuser/<int:customerid>',methods=['GET','POST'])
+def confirmterminateuser(customerid):
+    customers_dict = {}
+    dbmain = shelve.open('main.db','c')
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    
+    #retrive customer obj
+    customer = customers_dict.get(customerid)
+    return render_template('Operatorconfirmterminateuser.html',customer=customer)
+
+@app.route('/terminateuser/<int:customerid>',methods=['GET','POST'])
+def terminateuser(customerid):
+    dbmain = shelve.open('main.db','c')
+    operatoractions_dict = {}
+    customers_dict = {}
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+    try:
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"] #sync local with db1
+        else:
+            dbmain['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main count or count is at 0")
+    #create operator action object
+    operator_action = operatoractions.Operatoractions(customerid,session['typeofaction'],session['category'],session['terminate_text'])
+    operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+
+    #syncs db5 with local dict
+    #syncs db5 count with local count (aka customer class)
+    dbmain['operatoractions'] = operatoractions_dict
+    dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
+    #make changes to affected user
+    customer = customers_dict.get(customerid)
+    customer.set_status("terminated")
+    dbmain['Customers'] = customers_dict
+    return(redirect(url_for('operatorviewprofile', id=customerid)))
+
 def operatorrestoreuser(customerid):
     pass
     

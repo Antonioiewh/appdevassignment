@@ -43,7 +43,7 @@
                 <td>{{ delivery.get_ID() }}</td>
                 <td>{{ delivery.get_item_title() }}</td>
                 <td>{% for listing in listings_list %}
-                        {% if listing.get_ID() == delivery.get_item_id() %}
+                        {% if listing.get_ID() == delivery.get_id() %}
                             {{ listing.get_category() }}
                         {% endif %}
                     {% endfor %}

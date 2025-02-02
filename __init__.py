@@ -894,7 +894,7 @@ def createlisting():
         dbmain['Listings'] = listings_dict
         dbmain['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
 
-        
+
         #upload img
         file = request.files['file']
         check_upload_file_type(file,"listing",listing.get_ID())
@@ -1339,6 +1339,7 @@ def createUnlikedListing(id):
     customers_dict = {} #local one
     listings_dict = {}
 
+
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -1445,6 +1446,7 @@ def viewLikedListings(id): #retrieve current session_ID
     except:
         pass
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
 @app.route('/delivery_status', methods=['GET', 'POST'])
 def delivery_status():
     global session_ID
@@ -1532,18 +1534,20 @@ def delivery_status():
                 else:
                     expected_date = "TBD1"
 
-                delivery = Delivery(
+                new_delivery = Delivery(
                     item_title=listing.get_title(),
                     status='Pending',  # Set status as 'Pending'
                     expected_date=expected_date,  # You can set an expected date or leave it as "TBD"
-                    customer_id=session_ID,
+                    listing_id=session_ID,
                     address=form.deliveryinfo.data
                 )
 
-                deliveries_dict[delivery.get_ID()] = delivery
+                deliveries_dict[new_delivery.get_ID()] = new_delivery
 
     dbmain["delivery"] = deliveries_dict
     dbmain.close()
+
+
 
     # search function
     try:
@@ -1573,6 +1577,7 @@ def delivery_status():
     return render_template('CustomerListingDelivery.html',delivery=delivery,form=form,deliveries_list=deliveries_list,customer=customer, listings_to_display=listings_to_display,
                            current_sessionID=session_ID, searchform=search_field,
                            customer_notifications=customer_notifications, filterform=filterform)
+
 @app.route('/trackDelivery/<int:delivery_id>', methods=['GET', 'POST'])
 def delivery_track(delivery_id):
     global session_ID
@@ -1583,7 +1588,10 @@ def delivery_track(delivery_id):
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     form = DeliveryForm(request.form)
-
+    if "count_ID" in dbmain:
+        count_ID = dbmain["count_ID"]
+    else:
+        count_ID = 0
     try:
         if "Listings" in dbmain:
             listings_dict = dbmain["Listings"]  # sync local with db2
@@ -1608,10 +1616,7 @@ def delivery_track(delivery_id):
             dbmain['delivery'] = deliveries_dict
     except:
         print("Error in opening main.db")
-    if "count_ID" in dbmain:
-        count_ID = dbmain["count_ID"]
-    else:
-        count_ID = 0
+
 
     customer = customers_dict.get(session_ID, None)
     delivery = deliveries_dict.get(delivery_id)
@@ -3505,51 +3510,73 @@ def dashboard_feedback_reply(feedback_id):
 @app.route('/dashboard/transactions', methods=['GET', 'POST'])
 def dashboard_transactions():
     searchform = SearchTransactionField(request.form)
+    delivery_id = request.form.get('Delivery_id')
+    new_status = request.form.get('new_status')
+
     dbmain = shelve.open('main.db', 'c')
-    deliveries_dict = {}
+    deliveries_dict = dbmain.get("delivery", {})
+
 
     try:
-        if "Delivery" in dbmain:
-            deliveries_dict = dbmain["Delivery"]  # sync local with db2
+        if "delivery" in dbmain:
+            deliveries_dict = dbmain["delivery"]  # sync local with db2
         else:
-            dbmain['Delivery'] = deliveries_dict  # sync db2 with local (basically null)
+            dbmain['delivery'] = deliveries_dict  # sync db2 with local (basically null)
     except:
         print("Error in opening main.db")
-    deliveries_list = []
-    for key in deliveries_dict:
-        delivery = deliveries_dict.get(key)
-        deliveries_list.append(delivery)
+
+    deliveries_list = list(deliveries_dict.values())
+
+    if delivery_id:
+        try:
+            delivery_id = int(delivery_id)
+        except ValueError:
+            print("Invalid delivery ID format")
+            delivery_id = None
+
+    if delivery_id and delivery_id in deliveries_dict:
+        delivery = deliveries_dict[delivery_id]
+        print(f"Updating Delivery ID {delivery_id} to status: {new_status}")
+        delivery.set_status(new_status)  # Assuming a setter method exists
+        dbmain['delivery'] = deliveries_dict
+    elif delivery_id:
+        print(f"Delivery ID {delivery_id} not found!")
+    dbmain.close()
+
+
     if request.method == 'POST' and searchform.validate():
-        return redirect(url_for('dashboardtransactionssearch',keyword = searchform.searchfield.data))
+        return redirect(url_for('dashboardtransactionssearch',  keyword=searchform.searchfield.data))
     return render_template('Operatordashboard_transaction.html',searchform=searchform , deliveries_list=deliveries_list)
 
 
-@app.route('/dashboard/transactions/search=<keyword>', methods=['GET', 'POST'])
+@app.route('/dashboard/transactions/search/', defaults={'keyword': ''}, methods=['GET', 'POST'])
 def dashboardtransactionssearch(keyword):
+    if not keyword:
+        return redirect(url_for('dashboard_transactions'))
     searchform = SearchTransactionField(request.form)
     dbmain = shelve.open('main.db', 'c')
     deliveries_dict = {}
 
     try:
-        if "Delivery" in dbmain:
-            deliveries_dict = dbmain["Delivery"]  # sync local with db2
+        if "delivery" in dbmain:
+            deliveries_dict = dbmain["delivery"]  # sync local with db2
         else:
-            dbmain['Delivery'] = deliveries_dict  # sync db2 with local (basically null)
+            dbmain['delivery'] = deliveries_dict  # sync db2 with local (basically null)
     except:
         print("Error in opening main.db")
     deliveries_list = []
     for key in deliveries_dict:
         delivery = deliveries_dict.get(key)
-        if keyword in delivery.get_title():
+        if keyword in delivery.get_item_title():  # Assuming you're checking by item title
             deliveries_list.append(delivery)
-        else:
-            pass
 
     if request.method == 'POST' and searchform.validate():
-        return redirect(url_for('dashboardtransactionsssearch', keyword=searchform.searchfield.data))
+        return redirect(url_for('dashboardtransactionssearch', keyword=searchform.searchfield.data))
+
 
     return render_template('Operatordashboard_transaction_search.html', searchform = searchform,
                            deliveries_list=deliveries_list)
+
 if __name__ == "__main__":
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'

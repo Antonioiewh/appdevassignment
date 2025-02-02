@@ -80,44 +80,52 @@
 <h1>View Liked Listings</h1>
 
 <div id="listingcontainer">
-    {% for listing in listings_to_display %}
-    <div id="listing">
-        <img src="../../../static/listingpics/listing{{listing.get_ID()}}.jpg" alt="Listing Image">
+    {% if listings_to_display %}
+        {% for listing in listings_to_display %}
+        <div id="listing">
+            <img src="../../../static/listingpics/listing{{listing.get_ID()}}.jpg" alt="Listing Image">
 
-        <div class="listing-info">
-            <div class="listing-title">
-                {{ listing.get_title() }}
-            </div>
+            <div class="listing-info">
+                <div class="listing-title">
+                    {{ listing.get_title() }}
+                </div>
 
-            <div class="action-buttons">
-                <a href="/messages" class="btn btn-outline-dark" me-3>
-                    Message Dealer <i class="bi bi-chat"></i>
-                </a>
-                <a href="#" class="btn btn-outline-danger" me-3>
-                    Add to Cart <i class="bi bi-cart2"></i>
-                </a>
-                <a href="/delivery_status" class="btn btn-outline-danger">
-                    Check Delivery Status <i class="bi bi-truck"></i>
-                </a>
-            </div>
-
-            <div class="dropdown-container">
-                <div class="btn-group dropup">
-                    <button type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i>
+                <div class="action-buttons">
+                    <a href="/messages" class="btn btn-outline-dark" me-3>
+                        Message Dealer <i class="bi bi-chat"></i>
+                    </a>
+                    <a href="#" class="btn btn-outline-danger" me-3>
+                        Add to Cart <i class="bi bi-cart2"></i>
+                    </a>
+                    <a href="/delivery_status" class="btn btn-outline-danger">
+                        Check Delivery Status <i class="bi bi-truck"></i>
+                    </a>
+                </div>
+                <form action="{{ url_for('createUnlikedListing', id=listing.get_ID()) }}" method="POST" style="display: flex; width: 100%;">
+                    <button type="submit" class="btn btn-outline-danger mt-2" style="flex: 1;">
+                        Cancel Delivery <i class="bi bi-x-circle"></i>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
-                        <li>
-                            <a class="dropdown-item" href="/viewListing/{{listing.get_ID()}}" class="align-items-center" style="color:black">
-                                View Listing <i class="bi bi-eye" style="color: black; margin-left:13%;"></i>
-                            </a>
-                        </li>
-                    </ul>
+                </form>
+                <div class="dropdown-container">
+                    <div class="btn-group dropup">
+                        <button type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton1">
+                            <li>
+                                <a class="dropdown-item" href="/viewListing/{{listing.get_ID()}}" class="align-items-center" style="color:black">
+                                    View Listing <i class="bi bi-eye" style="color: black; margin-left:13%;"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    {% endfor %}
+        {% endfor %}
+    {% else %}
+        <p>No liked listings available.</p>
+    {% endif %}
 </div>
 
 

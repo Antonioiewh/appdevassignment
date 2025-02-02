@@ -1,9 +1,9 @@
 class Delivery:
     count_ID = 0
-    def __init__(self,customer_id,item_title,status,expected_date,address):
+    def __init__(self,listing_id,item_title,status,expected_date,address):
         Delivery.count_ID+=1
         self.__ID = Delivery.count_ID
-        self.__customer_id = customer_id
+        self.__customer_id = listing_id
         self.__item_title = item_title
         self.__status = status
         self.__expected_date = expected_date
@@ -11,6 +11,7 @@ class Delivery:
 
     def get_ID(self):
         return self.__ID
+
 
     def get_customer_id(self):
         return self.__customer_id
@@ -37,5 +38,9 @@ class Delivery:
     def set_ID(self,ID):
         self.__ID = ID
 
-    def set_customer_id(self,customer_id):
-        self.__customer_id = customer_id
+    def set_customer_id(self,listing_id):
+        self.__customer_id = listing_id
+
+    def cancel_delivery(self):
+        if self.__status != 'Cancelled':
+            self.__status = 'Cancelled'

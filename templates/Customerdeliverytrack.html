@@ -35,7 +35,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for delivery in deliveries_list %}
+
             <tr>
                 <td>{{ delivery.get_item_title() }}</td>
                 <td>
@@ -54,11 +54,6 @@
                 <td>{{ '00000' + (delivery.get_ID() | string) }}</td>
 
             </tr>
-            {% else %}
-            <tr>
-                <td colspan="5">No deliveries found.</td>
-            </tr>
-            {% endfor %}
         </tbody>
     </table>
 </div>

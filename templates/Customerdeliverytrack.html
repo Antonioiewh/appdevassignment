@@ -45,7 +45,9 @@
                     <span class="badge bg-info text-dark">In Transit</span>
                     {% elif delivery.get_status() == 'Pending' %}
                     <span class="badge bg-warning text-dark">Pending</span>
-                    {% else %}
+                    {% elif delivery.get_status() == 'Pending' %}
+                    <span class="badge bg-danger">Deleted</span>
+                    {% elif delivery.get_status() == 'Deleted' %}
                     <span class="badge bg-danger">Unknown</span>
                     {% endif %}
                 </td>

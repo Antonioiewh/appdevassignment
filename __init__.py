@@ -1336,11 +1336,18 @@ def createLikedListing(id): #ID of listing
 def createUnlikedListing(id):
     global session_ID
     dbmain = shelve.open('main.db','c')
+
     customers_dict = {} #local one
     listings_dict = {}
+    deliveries_dict = {}
 
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Customer.Customer.count_id = dbmain["CustomerCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
 
-    #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in dbmain:
@@ -1349,15 +1356,8 @@ def createUnlikedListing(id):
             dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
         print("Error in opening main.db")
-        
-    #sync IDs
-    try:
-        dbmain = shelve.open('main.db','c')    
-        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
-    except:
-        print("Error in retrieving data from DB main Customer count or count is at 0")
 
-    #sync listing dbs
+
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Listings" in dbmain:
@@ -1366,6 +1366,16 @@ def createUnlikedListing(id):
             dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
     except:
             print("Error in opening main.db")
+
+            # Sync deliveries
+    try:
+        if "delivery" in dbmain:
+            deliveries_dict = dbmain["delivery"]
+        else:
+            dbmain['delivery'] = deliveries_dict
+    except:
+        print("Error in opening main.db")
+
     #sync listing IDs
     try:
         dbmain = shelve.open('main.db','c')    
@@ -1376,15 +1386,27 @@ def createUnlikedListing(id):
     customer = customers_dict.get(session_ID) #get current user obj
     listing = listings_dict.get(id) #id that was entered
 
-    #increment liked count of listing
-    listing.minus_likes() #minus
-    dbmain['Listings'] = listings_dict
-    print(f'Listing ID:{listing.get_ID()}, likes count is {listing.get_likes()}')
+    if not customer or not listing:
+        print("Error: Customer or listing not found.")
+        dbmain.close()
+        return redirect(url_for('viewListing', id=id))
 
+    if listing.get_likes() > 0:
+        listing.minus_likes()
+        print(f'Listing ID:{listing.get_ID()}, likes count is {listing.get_likes()}')
 
     customer.remove_liked_listings(id)
-    dbmain['Customers'] = customers_dict
-    print(f"Customer ID:{customer.get_id()} liked posts are {customer.get_liked_listings()}")
+
+    for delivery in deliveries_dict.values():
+        if delivery.get_item_title() == listing.get_title() and delivery.get_customer_id() == session_ID:
+            delivery.set_status("Cancelled")
+            print(f'Delivery ID:{delivery.get_ID()} for Listing {listing.get_title()} is now Cancelled.')
+
+    dbmain["Listings"] = listings_dict
+    dbmain["Customers"] = customers_dict
+    dbmain["delivery"] = deliveries_dict
+
+    dbmain.close()
 
     return redirect(url_for('viewListing', id = id))
 
@@ -1481,18 +1503,16 @@ def delivery_status():
             dbmain['delivery'] = deliveries_dict
     except:
         print("Error in opening main.db")
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Delivery.count_ID = dbmain["DeliveryCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Delivery count or count is at 0")
 
-    customer = customers_dict.get(session_ID, None)
-    deliveries_list = [
-        delivery for delivery in deliveries_dict.values()
-        if delivery.get_customer_id() == session_ID]
+    customer = customers_dict.get(session_ID)
+
     liked_listings_ids = customer.get_liked_listings() if customer else []
-
-    listings_to_display = []
-    global_delivery_count = len(deliveries_dict)
-    delivery = None
-
-
 
 
     for listing_id in liked_listings_ids:
@@ -1539,15 +1559,23 @@ def delivery_status():
                     status='Pending',  # Set status as 'Pending'
                     expected_date=expected_date,  # You can set an expected date or leave it as "TBD"
                     listing_id=session_ID,
-                    address=form.deliveryinfo.data
+                    address=listing.get_deal_deliveryinfo()
                 )
 
                 deliveries_dict[new_delivery.get_ID()] = new_delivery
 
     dbmain["delivery"] = deliveries_dict
-    dbmain.close()
+    dbmain['DeliveryCount'] = Delivery.count_ID
 
 
+    deliveries_list = [
+        delivery for delivery in deliveries_dict.values()
+        if delivery.get_customer_id() == session_ID]
+    print(deliveries_list)
+
+    listings_to_display = []
+    global_delivery_count = len(deliveries_dict)
+    delivery = None
 
     # search function
     try:
@@ -1588,10 +1616,17 @@ def delivery_track(delivery_id):
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     form = DeliveryForm(request.form)
-    if "count_ID" in dbmain:
-        count_ID = dbmain["count_ID"]
+
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Delivery.Delivery.count_id = dbmain["DeliveryCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Delivery count or count is at 0")
+    if "DeliveryCount" in dbmain:
+        Delivery.count_id = dbmain["DeliveryCount"]
     else:
-        count_ID = 0
+        Delivery.count_id = 0
     try:
         if "Listings" in dbmain:
             listings_dict = dbmain["Listings"]  # sync local with db2
@@ -1666,8 +1701,9 @@ def delivery_track(delivery_id):
         # Save the updated delivery to the dict
         deliveries_dict[delivery.get_ID()] = delivery
         dbmain["delivery"] = deliveries_dict
-        dbmain["count_ID"] = count_ID
+        dbmain["DeliveryCount"] = Delivery.count_id
     dbmain.close()
+
 
 
     # get notifs

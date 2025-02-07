@@ -33,6 +33,7 @@ class ReviewForm(Form):
     review_text = StringField('Add a comment', [validators.Length(min=4,max=1234),validators.DataRequired()])
 
 class ReportForm(Form):
+    affectedusername = StringField('Enter username of user you are reporting',[validators.Length(min=1,max=1234)])
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     report_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
 
@@ -69,7 +70,7 @@ class OperatorTerminateUser(Form):
     typeofaction = HiddenField()
 
 class OperatorRestoreUser(Form):
-
+    affectedid = StringField('Enter ID of user',[validators.DataRequired(),validators.Length(min=1,max=1234)])
     password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
     typeofaction = HiddenField()
 

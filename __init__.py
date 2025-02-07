@@ -233,6 +233,46 @@ def send_welcomenotifcation(id): #id of person to add notifactions to
 #MAKE SURE AN USER WITH ID "X" EXISTS!      
 session_ID = 0
 
+#makes creating customer page easier, PS:NOT ACTUAL PAGE!
+def template():
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    global session_ID
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    #search func
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    return render_template('template.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
+
+
 @app.route('/', methods = ['GET', 'POST']) #shld be the same as href for buttons,links,navbar, etc...
 def Customerhome():
     dbmain = shelve.open('main.db','c')
@@ -439,23 +479,6 @@ def Customerprofile(id):
             if key in customer_listings:
                 listing = listings_dict.get(key)
                 listing_list.append(listing)
-    #report function
-    if request.method == 'POST' and report_form.validate():
-        customer = customers_dict.get(id)
-
-        #create report obj and store it
-        print(report_form.category.data,report_form.report_text.data)
-        report = Report.Report(session_ID,id,customer.get_username(),report_form.category.data,report_form.report_text.data)
-        reports_dict[report.get_ID()] = report #store obj in dict
-        dbmain['Reports'] = reports_dict
-        dbmain['ReportsCount'] = Report.Report.count_ID
-
-        #store report in offender's report_listings
-        customer = customers_dict.get(id)
-        customer.add_reports(report.get_ID())
-        dbmain['Customers'] = customers_dict
-        dbmain.close()
-        redirect(url_for('Customerprofile', id=id))
 
     #search func
     try:
@@ -471,14 +494,16 @@ def Customerprofile(id):
         customer_notifications = 0  
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
-
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
 
@@ -560,11 +585,14 @@ def updateCustomerprofile(id):
 
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
 
@@ -677,14 +705,16 @@ def Customerprofile_reviews(id):
     
     #filter
     try:
-        if request.method == "POST" and filterform.validate():
-            searchconditionlist = []
-            get_searchquery(filterform.data,searchconditionlist)
-            session['filters'] = searchconditionlist
-            return redirect(url_for('filterresults'))
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
     except:
         pass
-
 
 
     return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
@@ -880,6 +910,15 @@ def loginoptions():
             dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
         print("Error in opening main.db")
+    #sync report dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reports" in dbmain:
+            reports_dict = dbmain["Reports"] #sync local with db2
+        else:
+            dbmain['Reports'] = reports_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -1478,6 +1517,7 @@ def viewLikedListings(id): #retrieve current session_ID
     except:
         pass
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
 @app.route('/delivery_status', methods=['GET', 'POST'])
 def delivery_status():
     global session_ID
@@ -2789,6 +2829,216 @@ def reply_feedback(feedback_id):
                            searchform=search_field, customer_notifications=customer_notifications,
                            filterform=filterform)
 
+#report user
+@app.route('/report/user/<int:id>', methods=['POST', 'GET'])
+def report_user(id):
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    global session_ID
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+
+    #logic to handle ID = 0
+    if id != 0:
+        customer = customers_dict.get(id)
+        customer_username = customer.get_username()
+        reportform = ReportForm(request.form,affectedusername = customer_username)
+    elif id == 0:
+        reportform = ReportForm(request.form)
+    
+    if request.method == 'POST' and reportform.validate():
+        
+        #check if useranem exists
+        flag = False
+        for key in customers_dict:
+            if (reportform.affectedusername.data) == ((customers_dict.get(key)).get_username()):
+                print("username true")
+                session['affectedid']  = ((customers_dict.get(key)).get_id())
+                flag = True
+                break
+            else:
+                flag = False
+            
+        if flag == True:
+            session['report_category'] = reportform.category.data
+            session['report_text'] = reportform.report_text.data
+            return(redirect(url_for('confirmreportuser',id=int(session['affectedid']))))
+        else:
+            return(redirect(url_for('cinvaliduser')))
+    else:
+        pass
+
+
+    #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
+    except:
+        pass
+    return render_template('Customerreport.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,reportform = reportform,customerID= id)
+
+@app.route('/confirmreport/user/<int:id>', methods=['POST', 'GET'])
+def confirmreportuser(id):
+    global session_ID
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    report_form = ReportForm(request.form)
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    
+
+    customer = customers_dict.get(id)
+
+    #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        owncustomer = customers_dict.get(session_ID)
+        customer_notifications = owncustomer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
+    except:
+        pass
+
+    return render_template('Customerconfirmreport.html',customer = customer,current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,customerid = id)
+
+@app.route('/reportuser/<int:id>', methods=['GET', 'POST'])
+def report(id):
+    print("reached report")
+    global session_ID
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    #sync report dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Reports" in dbmain:
+            reports_dict = dbmain["Reports"] #sync local with db2
+        else:
+            dbmain['Reports'] = reports_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    #sync listing IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Report.Report.count_ID = dbmain["ReportsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Report count or count is at 0")
+    customer = customers_dict.get(id)
+    report = Report.Report(session_ID,id,customer.get_username(),session['report_category'],session['report_text'])
+    reports_dict[report.get_ID()] = report #store obj in dict
+    dbmain['Reports'] = reports_dict
+    dbmain['ReportsCount'] = Report.Report.count_ID
+
+    #store report in offender's report_listings
+    customer = customers_dict.get(id)
+    customer.add_reports(report.get_ID())
+    dbmain['Customers'] = customers_dict
+    dbmain.close()
+
+    return redirect(url_for('Customerprofile', id=id))
+
+    
+@app.route('/c_invaliduser',methods=['GET','POST'])
+def cinvaliduser():
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    global session_ID
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    #search func
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    
+    return render_template('Customerinvaliduser.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID
@@ -2881,6 +3131,7 @@ def dashboardusers():
     
     
     return render_template('Operatordashboard_users.html',form = user_search_field,customers_list = customers_list,form2 = user_status_field)
+
 
 @app.route('/dashboard/users/search=<keyword>',methods=['GET', 'POST'])
 def dashboarduser_usernamesearch(keyword):
@@ -3649,9 +3900,107 @@ def terminateuser(customerid):
     dbmain['Customers'] = customers_dict
     return(redirect(url_for('operatorviewprofile', id=customerid)))
 
+#restore user
+@app.route('/operatorrestoreuser/<int:customerid>',methods=['GET','POST'])
 def operatorrestoreuser(customerid):
-    pass
+    customers_dict = {}
+    restore_user = OperatorRestoreUser(request.form,typeofaction='restore user',affectedid=customerid)
+    dbmain = shelve.open('main.db','c')
+    #prevent data being outdated
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    if request.method == 'POST' and restore_user.validate():
+        if restore_user.password.data == "sysadmin1":
+            #check if ID exists
+            flag = False
+            for key in customers_dict:
+                if key == int(restore_user.affectedid.data):
+                    flag = True
+                    break
+                else:
+                    flag = False
+            
+            if flag == True:
+                session['typeofaction'] = restore_user.typeofaction.data
+                session['category'] = "nil"
+                session['restore_text'] = "nil"
+                return(redirect(url_for('confirmrestoreuser',customerid=int(restore_user.affectedid.data))))
+            else:
+                return(redirect(url_for('invaliduser')))
+    else:
+        pass
+            
+    return render_template('Operatorrestoreuser.html',form=restore_user,customerID = customerid)
+
+@app.route('/confirmrestoreuser/<int:customerid>',methods=['GET','POST'])
+def confirmrestoreuser(customerid):
+    customers_dict = {}
+    dbmain = shelve.open('main.db','c')
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
     
+    #retrive customer obj
+    customer = customers_dict.get(customerid)
+    return render_template('Operatorconfirmrestoreuser.html',customer=customer)
+
+@app.route('/restoreuser/<int:customerid>',methods=['GET','POST'])
+def restoreuser(customerid):
+    dbmain = shelve.open('main.db','c')
+    operatoractions_dict = {}
+    customers_dict = {}
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+    try:
+        if "operatoractions" in dbmain:
+            operatoractions_dict = dbmain["operatoractions"] #sync local with db1
+        else:
+            dbmain['operatoractions'] = operatoractions_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        operatoractions.Operatoractions.count_ID = dbmain["operatoractionsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main count or count is at 0")
+    #create operator action object
+    operator_action = operatoractions.Operatoractions(customerid,session['typeofaction'],session['category'],session['restore_text'])
+    operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+
+    #syncs db5 with local dict
+    #syncs db5 count with local count (aka customer class)
+    dbmain['operatoractions'] = operatoractions_dict
+    dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
+    #make changes to affected user
+    customer = customers_dict.get(customerid)
+    customer.set_status("active")
+    dbmain['Customers'] = customers_dict
+    return(redirect(url_for('operatorviewprofile', id=customerid)))
+
 @app.route('/dashboard/listings',methods=['GET', 'POST'])
 def dashboardlistings():
     listing_search_field = SearchListingField(request.form)
@@ -3862,7 +4211,7 @@ def dashboardreports():
             print("Error in opening main.db")
     #sync listing IDs
     try:
-        dbmain = shelve.open('reports.db','c')    
+        dbmain = shelve.open('main.db','c')    
         Report.Report.count_ID = dbmain["ReportsCount"] #sync count between local and db1
     except:
         print("Error in retrieving data from DB main Report count or count is at 0")

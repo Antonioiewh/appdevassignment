@@ -3,14 +3,14 @@ from datetime import datetime
 import uuid
 
 class Message:
-    def __init__(self, sender_id, receiver_id, content):
+    def __init__(self, sender_id, receiver_id, content, type):
         self.sender_id = int(sender_id)
         self.receiver_id = int(receiver_id)
         self.content = content
         self.timestamp = datetime.now()
         self.message_id = str(uuid.uuid4())
         self.status = "active"  # status of message: "active" or "deleted" or "edited"
-
+        self.type = type # text or image or text+img
     def to_dict(self):
         """Return a dictionary representation of the message."""
         return {
@@ -18,16 +18,17 @@ class Message:
             "receiver_id": self.receiver_id,
             "content": self.content,
             "timestamp": self.timestamp.strftime("%Y-%m-%d %H:%M"),
-            "message_id": self.message_id
+            "message_id": self.message_id,
+            "type": self.type
         }
 
 class User:
     def __init__(self, user_id):
         self.user_id = user_id
 
-    def send_message(self, receiver_id, content, messages_db):
+    def send_message(self, receiver_id, content, messages_db, message_type):
         content = content.strip()
-        message = Message(self.user_id, receiver_id, content)
+        message = Message(self.user_id, receiver_id, content, message_type)
 
         # add message to database
         messages_list = messages_db.get("Messages", [])

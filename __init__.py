@@ -290,6 +290,11 @@ def Customerhome():
     top10_seller_dic = {}
     name_dic = {}
     rating_dic = {}
+    cat_electronics_avg_days = []
+    cat_books_avg_days = []
+    cat_fashion_avg_days = []
+    cat_entertainment_avg_days = []
+    cat_misc_avg_days = []
 
     for listing in listings_list:
         listing.set_status("sold") #FOR TESTING REMOVE LATER, also make sure that listing status gets changed to sold when purchased, and also allow user to change listing to disabled/available/sold AND ALSO make sure that when users check out/edit the page, the SOLD TIME in listing.py is also updated
@@ -339,6 +344,16 @@ def Customerhome():
             sold_date = datetime.strptime(solddate, date_format)
             days_to_sell = (sold_date - creation_date).days
             listing_days.append(days_to_sell)
+            if category == "Category 1":
+                cat_electronics_avg_days.append(days_to_sell)
+            elif category == "Category 2":
+                cat_books_avg_days.append(days_to_sell)
+            elif category == "Category 3":
+                cat_fashion_avg_days.append(days_to_sell)
+            elif category == "Category 4":
+                cat_entertainment_avg_days.append(days_to_sell)
+            elif category == "Category 5":
+                cat_misc_avg_days.append(days_to_sell)
 
     sorted_top10_seller = sorted(top10_seller_dic.items(), key=lambda x: x[1], reverse=True)
     sorted_top10_seller = sorted_top10_seller[:10]
@@ -346,11 +361,34 @@ def Customerhome():
     print(f"{cat_electronics} + {cat_books} + {cat_fashion} + {cat_entertainment} + {cat_misc}")
     print(sorted_top10_seller_dic) # formatted as { id: listings sold, id2: listings sold }
     print(name_dic)
-    day_avg = sum(listing_days) / len(listing_days)
-    print(day_avg)#amount of time for products to be sold
+    if sum(listing_days) != 0:
+        day_avg = sum(listing_days) / len(listing_days)
+        print(day_avg)  # amount of time for products to be sold
+    else:
+        day_avg = 0
+    if sum(cat_electronics_avg_days) != 0:
+        electronics_day_avg = sum(cat_electronics_avg_days) / len(cat_electronics_avg_days)# amount of time for products to be sold
+    else:
+        electronics_day_avg = 0
+    if sum(cat_books_avg_days) != 0:
+        books_day_avg = sum(cat_books_avg_days) / len(cat_books_avg_days)
+    else:
+        books_day_avg = 0
+    if sum(cat_fashion_avg_days) != 0:
+        fashion_day_avg = sum(cat_fashion_avg_days) / len(cat_fashion_avg_days)
+    else:
+        fashion_day_avg = 0
+    if sum(cat_entertainment_avg_days) != 0:
+        entertainment_day_avg = sum(cat_entertainment_avg_days) / len(cat_entertainment_avg_days)
+    else:
+        entertainment_day_avg = 0
+    if sum(cat_misc_avg_days) != 0:
+        misc_day_avg = sum(cat_misc_avg_days) / len(cat_misc_avg_days)
+    else:
+        misc_day_avg = 0
 
 
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic, rating_dic = rating_dic)
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic, rating_dic = rating_dic, electronics_day_avg = electronics_day_avg, books_day_avg = books_day_avg, fashion_day_avg = fashion_day_avg, entertainment_day_avg = entertainment_day_avg, misc_day_avg = misc_day_avg)
 
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
@@ -1474,7 +1512,6 @@ def viewLikedListings(id): #retrieve current session_ID
 
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
-
     global session_ID
     customers_dict = {}
     dbmain = shelve.open('main.db','c')
@@ -1526,6 +1563,7 @@ def messages():
             receiver_id = request.form.get('receiver_id', type=str)# searchbar refers to this code when used, causes crash
             content = request.form.get('content', '').strip()  # Strip leading/trailing spaces
             customers_dict = users_db.get('Customers', {})
+            image_file = request.form.get('image')
             if not receiver_id.isdigit() or int(receiver_id) == 0 or int(receiver_id) not in customers_dict:
                 return render_template(
                     'CustomerMessages.html',
@@ -1552,11 +1590,25 @@ def messages():
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
             # Handle Start New Chat (without content) logic
+            # Handle sending a message only if content is provided
+            if image_file and content:
+                message_type = "text+pic"
+            elif image_file and content == '':
+                #filename = secure_filename(image_file.filename)
+                #image_path = os.path.join('static/uploads', filename)
+                #image_file.save(image_path)
+
+                # Set message type to picture
+                message_type = "picture"
+                #content = image_path  # Save the path as the message content
+            else:
+                message_type = "text"
+            print(message_type)
             if receiver_id and content == '':  # Only receiver_id is provided, no content
                 return redirect(url_for('messages', receiver_id=receiver_id))  # Open the chat in the right column without changing recent chats order
-            # Handle sending a message only if content is provided
             if content:
-                user.send_message(receiver_id, content, db)  # This will update recent chats order
+                user.send_message(receiver_id, content, db, message_type)  # This will update recent chats order
+
             return redirect(url_for('messages', receiver_id=receiver_id))  # Reload to show the new message
         
         # Display messages and recent chats
@@ -1574,7 +1626,8 @@ def messages():
                     "receiver_id": message.receiver_id,
                     "sender_id": message.sender_id,
                     "message_id": message.message_id,
-                    "status": message.status
+                    "status": message.status,
+                    "type2": message.type
                 }
                 for message in db.get("Messages", [])
                 if (message.sender_id == session_ID and message.receiver_id == receiver_id) or
@@ -3340,21 +3393,166 @@ def dashboardfeedbacks():
     return render_template("Operatordashboard_feedback.html",feedbacks_list=feedbacks_list)
 
 
+@app.route('/dashboard/OperatorDashboard', methods=['GET', 'POST'])
+def dashboard_dashboard():
+    dbmain = shelve.open('main.db', 'c')
+    listings_dict = {}
+    customers_dict = {}
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"]  # sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Customer.Customer.count_id = dbmain["CustomerCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"]
+        else:
+            dbmain["Listings"] = listings_dict
+    except:
+        print("Error in opening Listings data.")
+    customers_list = []
+    for key in customers_dict:
+        customer = customers_dict.get(key)
+        customers_list.append(customer)
+    cat_electronics = 0
+    cat_books = 0
+    cat_fashion = 0
+    cat_entertainment = 0
+    cat_misc = 0
+    listings_list = list(listings_dict.values())
+    seller_sales_count = {}
+    listing_days = []
+    top10_seller_dic = {}
+    name_dic = {}
+    rating_dic = {}
+    cat_electronics_avg_days = []
+    cat_books_avg_days = []
+    cat_fashion_avg_days = []
+    cat_entertainment_avg_days = []
+    cat_misc_avg_days = []
+
+    for listing in listings_list:
+        listing.set_status(
+            "sold")  # FOR TESTING REMOVE LATER, also make sure that listing status gets changed to sold when purchased, and also allow user to change listing to disabled/available/sold AND ALSO make sure that when users check out/edit the page, the SOLD TIME in listing.py is also updated
+        listing.set_creation_date("10/12/24")  # REMOVE LATER
+        current_date = datetime.now()  # THIS SHOULD ALREADY BE STORED
+        formatted_date = current_date.strftime('%d/%m/%y')  # REMOVE LATER
+        listing.set_soldDate(formatted_date)  # REMOVE LATER
+        category = listing.get_category()
+        creatorID = listing.get_creatorID()
+        username = listing.get_creator_username()
+        customer11 = customers_dict.get(creatorID)
+        rating = 0
+        if customer11:
+            rating = customer11.get_rating()
+        # most sold categories
+        if listing.get_status() == "sold":
+            if category == "Category 1":
+                cat_electronics += 1
+            elif category == "Category 2":
+                cat_books += 1
+            elif category == "Category 3":
+                cat_fashion += 1
+            elif category == "Category 4":
+                cat_entertainment += 1
+            elif category == "Category 5":
+                cat_misc += 1
+        # top sellers
+        if listing.get_status() == "sold":
+            if creatorID in seller_sales_count:
+                seller_sales_count[creatorID] += 1
+            else:
+                seller_sales_count[creatorID] = 1
+        sorted_sellers = sorted(seller_sales_count.items(), key=lambda x: x[1], reverse=True)
+        top_10_sellers_with_counts = sorted_sellers[:10]
+        for seller_id, sold_count in top_10_sellers_with_counts:
+            top10_seller_dic[seller_id] = sold_count
+            if seller_id not in name_dic:
+                name_dic[seller_id] = username
+                rating_dic[seller_id] = rating
+
+        # average number of days for listing to be sold
+        if listing.get_status() == "sold":
+            creationdate = listing.get_creation_date()
+            solddate = listing.get_soldDate()
+            date_format = "%d/%m/%y"
+            creation_date = datetime.strptime(creationdate, date_format)
+            sold_date = datetime.strptime(solddate, date_format)
+            days_to_sell = (sold_date - creation_date).days
+            listing_days.append(days_to_sell)
+            if category == "Category 1":
+                cat_electronics_avg_days.append(days_to_sell)
+            elif category == "Category 2":
+                cat_books_avg_days.append(days_to_sell)
+            elif category == "Category 3":
+                cat_fashion_avg_days.append(days_to_sell)
+            elif category == "Category 4":
+                cat_entertainment_avg_days.append(days_to_sell)
+            elif category == "Category 5":
+                cat_misc_avg_days.append(days_to_sell)
+
+    sorted_top10_seller = sorted(top10_seller_dic.items(), key=lambda x: x[1], reverse=True)
+    sorted_top10_seller = sorted_top10_seller[:10]
+    sorted_top10_seller_dic = dict(sorted_top10_seller)
+    print(f"{cat_electronics} + {cat_books} + {cat_fashion} + {cat_entertainment} + {cat_misc}")
+    print(sorted_top10_seller_dic)  # formatted as { id: listings sold, id2: listings sold }
+    print(name_dic)
+    if sum(listing_days) != 0:
+        day_avg = sum(listing_days) / len(listing_days)
+        print(day_avg)  # amount of time for products to be sold
+    else:
+        day_avg = 0
+    if sum(cat_electronics_avg_days) != 0:
+        electronics_day_avg = sum(cat_electronics_avg_days) / len(
+            cat_electronics_avg_days)  # amount of time for products to be sold
+    else:
+        electronics_day_avg = 0
+    if sum(cat_books_avg_days) != 0:
+        books_day_avg = sum(cat_books_avg_days) / len(cat_books_avg_days)
+    else:
+        books_day_avg = 0
+    if sum(cat_fashion_avg_days) != 0:
+        fashion_day_avg = sum(cat_fashion_avg_days) / len(cat_fashion_avg_days)
+    else:
+        fashion_day_avg = 0
+    if sum(cat_entertainment_avg_days) != 0:
+        entertainment_day_avg = sum(cat_entertainment_avg_days) / len(cat_entertainment_avg_days)
+    else:
+        entertainment_day_avg = 0
+    if sum(cat_misc_avg_days) != 0:
+        misc_day_avg = sum(cat_misc_avg_days) / len(cat_misc_avg_days)
+    else:
+        misc_day_avg = 0
+
+    return render_template('OperatorDashboard.html', current_sessionID=session_ID, customer=customer,
+                           avg_days_to_sell=day_avg, top10_seller_dic=sorted_top10_seller_dic,
+                           cat_electronics=cat_electronics, cat_books=cat_books, cat_fashion=cat_fashion,
+                           cat_entertainment=cat_entertainment, cat_misc=cat_misc, name_dic=name_dic,
+                           rating_dic=rating_dic, electronics_day_avg=electronics_day_avg, books_day_avg=books_day_avg,
+                           fashion_day_avg=fashion_day_avg, entertainment_day_avg=entertainment_day_avg,
+                           misc_day_avg=misc_day_avg, customers_list=customers_list)
+
 @app.route('/operator-dashboard', methods=['POST'])
 def operator_dashboard():
     if request.method == 'POST':
         selected_options = request.form.getlist('options[]')
         user_id = request.form.get('user_id')
         print(f"ID: {user_id}, {selected_options}")
-
         # add selected options to an Excel file
         file_path = save_to_excel(selected_options, user_id)
+        print("Reached")
         return send_file(file_path, as_attachment=True, download_name=f'User {user_id} account details.xlsx')
     return render_template('Operatordashboard_users.html')
-
-
-import openpyxl
-
 
 def save_to_excel(selected_options, user_id):
     try:
@@ -3373,12 +3571,12 @@ def save_to_excel(selected_options, user_id):
         listings_dict = dbmain.get("Listings", {})
         listings_data = [listing for listing in listings_dict.values() if listing.get_creatorID() == int(user_id)]
         review_dict = dbmain.get("Reviews", {})
-        customer_reviews = customer.get_reviews()  # Return list of review IDs
-        customer_reviews_list = []  # List to store filtered reviews
+        customer_reviews = customer.get_reviews()  # list of review IDs
+        customer_reviews_list = []
         for key in review_dict:
-            if key in customer_reviews:  # Check if the review ID matches the customer's reviews
-                review = review_dict.get(key)  # Fetch the review object
-                customer_reviews_list.append(review)  # Append to the filtered list
+            if key in customer_reviews:  # check if review ID matches customer's reviews
+                review = review_dict.get(key)
+                customer_reviews_list.append(review)  # append to list
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = f"User ID {user_id} Account Details"
@@ -3495,9 +3693,6 @@ def save_to_excel(selected_options, user_id):
         print(f"Error accessing the database: {e}")
     finally:
         dbmain.close()
-
-
-
 
 @app.route('/dashboard_feedback_reply/<int:feedback_id>', methods=['GET', 'POST'])
 def dashboard_feedback_reply(feedback_id):

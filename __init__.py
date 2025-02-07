@@ -2850,7 +2850,7 @@ def report_user(id):
 
 
     #logic to handle ID = 0
-    if id != 0:
+    if id != 0 :
         customer = customers_dict.get(id)
         customer_username = customer.get_username()
         reportform = ReportForm(request.form,affectedusername = customer_username)

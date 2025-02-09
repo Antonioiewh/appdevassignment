@@ -1,6 +1,6 @@
 class Delivery:
     count_ID = 0
-    def __init__(self,customer_id,item_title,status,expected_date,address=None):
+    def __init__(self,customer_id,item_title,status,expected_date,address):
         Delivery.count_ID+=1
         self.__ID = Delivery.count_ID
         self.__customer_id = customer_id
@@ -34,3 +34,8 @@ class Delivery:
     def set_expected_date(self,expected_date):
         self.__expected_date = expected_date
 
+    def set_ID(self,ID):
+        self.__ID = ID
+
+    def set_customer_id(self,customer_id):
+        self.__customer_id = customer_id

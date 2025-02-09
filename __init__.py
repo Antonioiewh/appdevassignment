@@ -5,7 +5,7 @@ import Customer , Listing,Reviews,Report,operatoractions,Feedback #classes
 from Delivery import Delivery
 from Forms import CustomerSignupForm, ReportForm, CustomerLoginForm, ListingForm, ReviewForm, CustomerUpdateForm, \
     SearchBar, OperatorLoginForm, OperatorLoginVerifyForm, SearchUserField, OperatorSuspendUser, OperatorTerminateUser, \
-    OperatorRestoreUser, DeliveryForm, SearchListingIDField,SearchListingStatusField  # our forms
+    OperatorRestoreUser, DeliveryForm, SearchListingIDField,SearchListingStatusField,SearchTransactionField   # our forms
 from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback,SearchUserStatus
 import Operatorstats
 import Email,Search,Notifications
@@ -1643,7 +1643,7 @@ def delivery_status():
                         month = 1
                         year += 1
 
-                    expected_date =f"{month:02d}/{day:02d}/{year%100:02d}"  # Format it back to 'YYYY-MM-DD'
+                    expected_date =f"{day:02d}/{month:02d}/{year%100:02d}"
                 else:
                     expected_date = "TBD1"
 
@@ -1652,6 +1652,7 @@ def delivery_status():
                     status='Pending',  # Set status as 'Pending'
                     expected_date=expected_date,  # You can set an expected date or leave it as "TBD"
                     customer_id=session_ID,
+                    address=form.deliveryinfo.data
                 )
 
                 deliveries_dict[delivery.get_ID()] = delivery
@@ -1723,20 +1724,21 @@ def delivery_track(delivery_id):
             dbmain['delivery'] = deliveries_dict
     except:
         print("Error in opening main.db")
+    if "count_ID" in dbmain:
+        count_ID = dbmain["count_ID"]
+    else:
+        count_ID = 0
 
     customer = customers_dict.get(session_ID, None)
     delivery = deliveries_dict.get(delivery_id)
+
     if delivery.get_customer_id() != session_ID:
         return render_template('error.html', message="Access denied."), 40
     delivery = deliveries_dict.get(delivery_id)
     if not delivery:
         return render_template('error.html', message="Delivery not found."), 404
 
-    deliveries_list = [
-        delivery for delivery in deliveries_dict.values()
-        if delivery.get_customer_id() == session_ID
-    ]
-    listing = listings_dict.get(delivery.get_item_title())
+
     if customer:
         expected_date = customer.get_date_joined()
         # Add 5 days manually
@@ -1762,30 +1764,22 @@ def delivery_track(delivery_id):
             month = 1
             year += 1
 
-        expected_date = f"{month:02d}/{day:02d}/{year%100:02d}"
+        expected_date = f"{day:02d}/{month:02d}/{year%100:02d}"
 
     else:
         expected_date = "TBD"
-    # Get the specific delivery by ID
-    selected_delivery = deliveries_dict.get(delivery_id)
 
     if request.method == "POST" and form.validate():
-        delivery_address = form.deliveryinfo.data  # Get address from the form
+        # Update the delivery details
+        delivery.set_address(form.deliveryinfo.data)
+        delivery.set_expected_date(form.expected_date.data)
 
-        # Update delivery details
-        delivery.set_address(delivery_address)
-        delivery.set_expected_date(expected_date)
-
+        # Save the updated delivery to the dict
         deliveries_dict[delivery.get_ID()] = delivery
         dbmain["delivery"] = deliveries_dict
-        dbmain.close()
+        dbmain["count_ID"] = count_ID
+    dbmain.close()
 
-    # search function
-    try:
-        if request.method == 'POST' and search_field.validate():
-            return redirect(url_for('searchresults', keyword=search_field.searchfield.data))
-    except:
-        pass
 
     # get notifs
     if session_ID != 0:
@@ -1806,7 +1800,7 @@ def delivery_track(delivery_id):
     except:
         pass
     return render_template('Customerdeliverytrack.html', form=form, delivery=delivery,
-                           customer=customer,deliveries_list=deliveries_list,
+                           customer=customer,deliveries_list=[delivery for delivery in deliveries_dict.values() if delivery.get_customer_id() == session_ID],
                            current_sessionID=session_ID, searchform=search_field,
                            customer_notifications=customer_notifications, filterform=filterform)
 
@@ -4607,6 +4601,55 @@ def dashboard_feedback_reply(feedback_id):
     dbmain.close()
     return render_template('feedback_reply.html', feedback=feedback)
 
+
+@app.route('/dashboard/transactions', methods=['GET', 'POST'])
+def dashboard_transactions():
+    searchform = SearchTransactionField(request.form)
+    dbmain = shelve.open('main.db', 'c')
+    deliveries_dict = {}
+
+    try:
+        if "Delivery" in dbmain:
+            deliveries_dict = dbmain["Delivery"]  # sync local with db2
+        else:
+            dbmain['Delivery'] = deliveries_dict  # sync db2 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    deliveries_list = []
+    for key in deliveries_dict:
+        delivery = deliveries_dict.get(key)
+        deliveries_list.append(delivery)
+    if request.method == 'POST' and searchform.validate():
+        return redirect(url_for('dashboardtransactionssearch',keyword = searchform.searchfield.data))
+    return render_template('Operatordashboard_transaction.html',searchform=searchform , deliveries_list=deliveries_list)
+
+
+@app.route('/dashboard/transactions/search=<keyword>', methods=['GET', 'POST'])
+def dashboardtransactionssearch(keyword):
+    searchform = SearchTransactionField(request.form)
+    dbmain = shelve.open('main.db', 'c')
+    deliveries_dict = {}
+
+    try:
+        if "Delivery" in dbmain:
+            deliveries_dict = dbmain["Delivery"]  # sync local with db2
+        else:
+            dbmain['Delivery'] = deliveries_dict  # sync db2 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    deliveries_list = []
+    for key in deliveries_dict:
+        delivery = deliveries_dict.get(key)
+        if keyword in delivery.get_title():
+            deliveries_list.append(delivery)
+        else:
+            pass
+
+    if request.method == 'POST' and searchform.validate():
+        return redirect(url_for('dashboardtransactionsssearch', keyword=searchform.searchfield.data))
+
+    return render_template('Operatordashboard_transaction_search.html', searchform = searchform,
+                           deliveries_list=deliveries_list)
 if __name__ == "__main__":
     
     app.secret_key = 'super secret key'

@@ -36,7 +36,7 @@
                 <div class="d-flex align-items-center" style="margin-right:2%">
                     {%if current_sessionID != 0 %}
                     <li class="nav-item p-2">
-                        <a href="/viewLikedListings/{{current_sessionID}}">
+                        <a href="">
                             <i class="bi bi-heart" style="color:white; font-size: 2rem;"></i>
                         </a>
                         
@@ -79,6 +79,7 @@
                         <li><a class="dropdown-item" href="/feedback">Submit Feedback</a></li>
                         <li><a class="dropdown-item" href="/loginoptions">Logout</a></li>
                         <li><a class="dropdown-item" href="/createlisting">Create listing</a></li>
+                        <li><a class="dropdown-item" href="/report/user/0">Report a user</a></li>
                         {% else %}
                         <li><a class="dropdown-item" href="/signup">Login</a></li>
                         {% endif %}

@@ -42,11 +42,16 @@
                 <td>{{ '00000' + (delivery.get_ID() | string) }}</td>
                 <td>{{ delivery.get_ID() }}</td>
                 <td>{{ delivery.get_item_title() }}</td>
-                <td>{% for listing in listings_list %}
-                        {% if listing.get_ID() == delivery.get_item_id() %}
+                <td>
+                    {% set found = False %}
+                    {% for listing in listings_list %}
+                        {% if listing.get_ID() == delivery.get_id() %}
                             {{ listing.get_category() }}
                         {% endif %}
                     {% endfor %}
+                {% if not found %}
+                    <span class="text-danger">No Listing Found</span>
+                {% endif %}
                 </td>
                 <td>{{ delivery.get_address() }}</td>
                 <td>{{ delivery.get_expected_date() }}</td>
@@ -57,12 +62,24 @@
                     <span class="badge bg-info text-dark">In Transit</span>
                     {% elif delivery.get_status() == 'Pending' %}
                     <span class="badge bg-warning text-dark">Pending</span>
+                    {% elif delivery.get_status() == 'Cancelled' %}
+                    <span class="badge bg-secondary">Cancelled</span>
                     {% else %}
                     <span class="badge bg-danger">Unknown</span>
                     {% endif %}
                 </td>
                 <td>
+                        <form action="{{ url_for('dashboard_transactions') }}" method="POST">
+                            <input type="hidden" name="Delivery_id" value="{{ delivery.get_ID() }}"/>
 
+                        <select name="new_status" class="form-select">
+                            <option value="Pending" {% if delivery.get_status() == 'Pending' %} selected {% endif %}>Pending</option>
+                            <option value="In Transit" {% if delivery.get_status() == 'In Transit' %} selected {% endif %}>In Transit</option>
+                            <option value="Delivered" {% if delivery.get_status() == 'Delivered' %} selected {% endif %}>Delivered</option>
+                        </select>
+
+                        <button type="submit" class="btn btn-sm btn-primary mt-2">Update</button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}

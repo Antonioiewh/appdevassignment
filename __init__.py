@@ -7,7 +7,7 @@ from Forms import CustomerSignupForm, ReportForm, CustomerLoginForm, ListingForm
     SearchBar, OperatorLoginForm, OperatorLoginVerifyForm, SearchUserField, OperatorSuspendUser, OperatorTerminateUser, \
     OperatorRestoreUser, DeliveryForm, SearchListingIDField,SearchListingStatusField  # our forms
 from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback,SearchUserStatus
-
+import Operatorstats
 import Email,Search,Notifications
 import shelve, Customer
 from pathlib import Path
@@ -272,12 +272,13 @@ def template():
         pass
     return render_template('template.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
 
-
+#create op stats obj here
 @app.route('/', methods = ['GET', 'POST']) #shld be the same as href for buttons,links,navbar, etc...
 def Customerhome():
     dbmain = shelve.open('main.db','c')
     listings_dict = {}
     customers_dict = {} #local one
+    operatorstats_dict = {}
     global session_ID
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
@@ -297,7 +298,32 @@ def Customerhome():
             return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
     except:
         pass
-    
+
+    try:
+        if "Operatorstats" in dbmain:
+            operatorstats_dict = dbmain["Operatorstats"]  # sync local with db1
+        else:
+            dbmain['Operatorstats'] = operatorstats_dict # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+
+
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Operatorstats.Operatorstats.count_ID = dbmain["Operatorstatscount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Operatorstats count or count is at 0")
+    if Operatorstats.Operatorstats.count_ID == 0:
+        operatorstats = Operatorstats.Operatorstats()
+        operatorstats_dict[operatorstats.get_ID()] = operatorstats
+        dbmain['Operatorstats'] = operatorstats_dict
+        dbmain['Operatorstatscount'] = Operatorstats.Operatorstats.count_ID
+    else:
+        pass
+    print(operatorstats_dict)
+
+
     #get notifs
     if session_ID != 0:
         customer = customers_dict.get(session_ID)
@@ -719,6 +745,7 @@ def Customerprofile_reviews(id):
 
     return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
+#opstatshere
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     global session_ID
@@ -778,6 +805,8 @@ def signup():
 
             print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
             session_ID = Customer.Customer.count_id
+            Operatorstats.operatorstats_users("total","plus")
+            Operatorstats.operatorstats_users("active","plus")
             dbmain.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
             #notifs
             send_welcomenotifcation(customer.get_id())
@@ -946,6 +975,7 @@ def loginoptions():
 
     return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
+#opstatshere
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
     global session_ID
@@ -1005,6 +1035,8 @@ def createlisting():
         dbmain['Listings'] = listings_dict
         dbmain['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
 
+        Operatorstats.operatorstats_listings("total","plus")
+        Operatorstats.operatorstats_listings("available","plus")
         
         #upload img
         file = request.files['file']
@@ -1175,6 +1207,7 @@ def viewListing(id):
 
     return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
+#opstatshere
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
 def deleteListing(id):
     global session_ID
@@ -1197,7 +1230,16 @@ def deleteListing(id):
             dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
         print("Error in opening main.db")
-    
+    #get status of listing
+    listing = listings_dict.get(id)
+    if listing.get_status() == "available":
+        Operatorstats.operatorstats_listings("total","minus")
+        Operatorstats.operatorstats_listings("available","minus")
+    elif listing.get_status() == "disabled":
+        Operatorstats.operatorstats_listings("total","minus")
+        Operatorstats.operatorstats_listings("disabled","minus")
+    else:
+        pass
     del listings_dict[id]
     customer = customers_dict.get(session_ID)
     customer.remove_listings(id)
@@ -2384,6 +2426,7 @@ def filterresults():
     
     return render_template('Customerfilterresults.html',listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
+#opstatshere
 @app.route('/feedback', methods = ['GET', 'POST'])
 def feedback():
     global session_ID
@@ -2439,7 +2482,9 @@ def feedback():
         dbmain['Feedback'] = feedbacks_dict
         dbmain['FeedbackCount'] = Feedback.Feedback.count_ID
 
-        
+        Operatorstats.operatorstats_feedbacks("total","plus")
+        Operatorstats.operatorstats_feedbacks("unreplied","plus")
+
         #add feedback ID to customer
         customer = customers_dict.get(session_ID)
         if customer:
@@ -2697,6 +2742,7 @@ def update_feedback(feedback_id):
 
     return render_template("CustomerUpdatefeedback.html",current_sessionID = session_ID,feedback=feedback,feedbacks_list=feedbacks_list,update_feedback_form=update_feedback_form,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
 
+#opstatshere
 @app.route('/delete_feedback/<int:feedback_id>', methods=['POST','GET'])
 def delete_feedback(feedback_id):
     global session_ID
@@ -2726,6 +2772,13 @@ def delete_feedback(feedback_id):
         Feedback.Feedback.count_ID = dbmain["FeedbackCount"]  # sync count between local and db1
     except:
         print("Error in retrieving data from DB main Feedback count or count is at 0")
+    feedback = feedbacks_dict.get(feedback_id)
+    if feedback.get_reply() == None:
+        Operatorstats.operatorstats_feedbacks("total","minus")
+        Operatorstats.operatorstats_feedbacks("unreplied","minus")
+    else:
+        Operatorstats.operatorstats_feedbacks("total","minus")
+        Operatorstats.operatorstats_feedbacks("replied","minus")
     # Check if the feedback ID exists
     if feedback_id in feedbacks_dict:
         del feedbacks_dict[feedback_id]  # Remove the feedback
@@ -2734,10 +2787,12 @@ def delete_feedback(feedback_id):
     customer = customers_dict.get(session_ID)
     customer.remove_feedback(feedback_id)
     dbmain['Customers'] = customers_dict
+
     dbmain.close()
     
     return redirect(url_for('Customerprofilefeedback',id=session_ID))
 
+#opstatshere
 @app.route('/reply_feedback/<int:feedback_id>', methods=['POST', 'GET'])
 def reply_feedback(feedback_id):
     feedbacks_dict = {}
@@ -2780,8 +2835,8 @@ def reply_feedback(feedback_id):
     if feedback_id not in feedbacks_dict:
         return "Feedback not found", 404
 
-
-
+    Operatorstats.operatorstats_feedbacks("unreplied","minus")
+    Operatorstats.operatorstats_feedbacks("replied","plus")
     print(f"Feedback id:{feedback_id}")  # Retrieve the feedback obj
     if request.method == 'POST' and reply_feedback_form.validate():
         # Update feedback details
@@ -3039,6 +3094,7 @@ def cinvaliduser():
         pass
     
     return render_template('Customerinvaliduser.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
+
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID
@@ -3082,6 +3138,16 @@ def verifyoperator(email):
 
 @app.route('/operatorcontrolcenter')
 def operatorcontrolcenter():
+    dbmain = shelve.open('main.db', 'c')
+    operatorstats_dict = {}
+    try:
+        if "Operatorstats" in dbmain:
+            operatorstats_dict = dbmain["Operatorstats"]  # sync local with db1
+        else:
+            dbmain['Operatorstats'] = operatorstats_dict # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    userinfo=[]
     return render_template('OperatorControlCenter.html')
 
 #dashboard users
@@ -3689,10 +3755,21 @@ def operatorrestorelisting(listingid,customerid):
             dbmain['Listings'] = listings_dict
             return(redirect(url_for('operatorviewprofile', id=customerid)))
     return render_template('OperatorDisableListing.html',form = restore_listing,customerID = customerid)
+
 #invalid user page
 @app.route('/invaliduser')
 def invaliduser():
     return render_template('Operatorinvaliduser.html')
+
+#user already suspended
+@app.route('/useralreadysuspended')
+def useralreadysuspended():
+    return render_template('Useralreadysuspended.html')
+
+#user already terminated
+@app.route('/useralreadyterminated')
+def useralreadyterminated():
+    return render_template('Useralreadyterminated.html')
 
 #suspend user
 @app.route('/operatorsuspenduser/<int:customerid>',methods=['GET','POST']) #page to enter details
@@ -3718,12 +3795,18 @@ def operatorsuspenduser(customerid):
                     break
                 else:
                     flag = False
-            
+            customer = customers_dict.get(int(suspend_user.affectedid.data))
             if flag == True:
-                session['typeofaction'] = suspend_user.typeofaction.data
-                session['category'] = suspend_user.category.data
-                session['suspend_text'] = suspend_user.suspend_text.data
-                return(redirect(url_for('confirmsuspenduser',customerid=int(suspend_user.affectedid.data))))
+                if customer.get_status() == "active":
+
+                    session['typeofaction'] = suspend_user.typeofaction.data
+                    session['category'] = suspend_user.category.data
+                    session['suspend_text'] = suspend_user.suspend_text.data
+                    return(redirect(url_for('confirmsuspenduser',customerid=int(suspend_user.affectedid.data))))
+                elif customer.get_status() == "suspended":
+                    return(redirect(url_for('useralreadysuspended')))
+                elif customer.get_status() == "terminated":
+                    return(redirect(url_for('useralreadyterminated')))
             else:
                 return(redirect(url_for('invaliduser')))
     else:
@@ -3823,12 +3906,17 @@ def operatorterminateuser(customerid):
                     break
                 else:
                     flag = False
-            
+            customer = customers_dict.get(int(terminate_user.affectedid.data))
             if flag == True:
-                session['typeofaction'] = terminate_user.typeofaction.data
-                session['category'] = terminate_user.category.data
-                session['terminate_text'] = terminate_user.terminate_text.data
-                return(redirect(url_for('confirmterminateuser',customerid=int(terminate_user.affectedid.data))))
+                if customer.get_status() == "active":
+                    session['typeofaction'] = terminate_user.typeofaction.data
+                    session['category'] = terminate_user.category.data
+                    session['terminate_text'] = terminate_user.terminate_text.data
+                    return(redirect(url_for('confirmterminateuser',customerid=int(terminate_user.affectedid.data))))
+                elif customer.get_status() == "suspended":
+                    return(redirect(url_for('useralreadysuspended')))
+                elif customer.get_status() == "terminated":
+                    return(redirect(url_for('useralreadyterminated')))
             else:
                 return(redirect(url_for('invaliduser')))
     else:
@@ -4520,6 +4608,9 @@ def dashboard_feedback_reply(feedback_id):
     return render_template('feedback_reply.html', feedback=feedback)
 
 if __name__ == "__main__":
+    
     app.secret_key = 'super secret key'
     app.config['SESSION_TYPE'] = 'filesystem'
+    #determine the create the obj
     app.run(debug=True)
+    

@@ -18,7 +18,6 @@
                 <th>Delivery code</th>
                 <th>User ID</th>
                 <th>Listing title</th>
-                <th>Listing category</th>
                 <th>Address</th>
                 <th>Expected Delivery Date</th>
                 <th>Status</th>
@@ -42,17 +41,6 @@
                 <td>{{ '00000' + (delivery.get_ID() | string) }}</td>
                 <td>{{ delivery.get_ID() }}</td>
                 <td>{{ delivery.get_item_title() }}</td>
-                <td>
-                    {% set found = False %}
-                    {% for listing in listings_list %}
-                        {% if listing.get_ID() == delivery.get_id() %}
-                            {{ listing.get_category() }}
-                        {% endif %}
-                    {% endfor %}
-                {% if not found %}
-                    <span class="text-danger">No Listing Found</span>
-                {% endif %}
-                </td>
                 <td>{{ delivery.get_address() }}</td>
                 <td>{{ delivery.get_expected_date() }}</td>
                 <td>

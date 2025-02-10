@@ -3192,7 +3192,8 @@ def operatorcontrolcenter():
         print("Error in opening main.db")
     operator_stats = operatorstats_dict.get(1)
     userinfo=[operator_stats.get_users_count(),operator_stats.get_users_active_count(),operator_stats.get_users_suspended_count(),operator_stats.get_users_terminated_count()]
-    return render_template('OperatorControlCenter.html',userinfo = userinfo)
+    listinginfo=[operator_stats.get_listings_count(),operator_stats.get_listings_available_count(),operator_stats.get_listings_disabled_count()]
+    return render_template('OperatorControlCenter.html',userinfo = userinfo,listinginfo=listinginfo)
 
 #dashboard users
 @app.route('/dashboard/users',methods=['GET', 'POST'])
@@ -3716,12 +3717,24 @@ def operatorviewprofilefeedback(id):
 
 
 #operator actions
-@app.route('/operatordisablelisting/<int:customerid>/<int:listingid>',methods=['GET', 'POST'])
-def operatordisablelisting(listingid,customerid):
+
+#listing related
+@app.route('/invalidlisting')
+def invalidlisting():
+    return render_template('Operatorinvalidlisting.html')
+
+#opstats - listing
+@app.route('/operatordisablelisting/<int:listingid>',methods=['GET', 'POST'])
+def operatordisablelisting(listingid):
     dbmain = shelve.open('main.db','c')
     operatoractions_dict = {}
     listings_dict = {}
-    disable_listing = OperatorDisableListing(request.form,typeofaction='disable listing',listingid=listingid)
+    if listingid != 0:
+
+        disable_listing = OperatorDisableListing(request.form,typeofaction='disable listing',listingid=listingid)
+    else:
+        disable_listing = OperatorDisableListing(request.form,typeofaction='disable listing')
+    
     #sync listing dbs
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -3754,51 +3767,99 @@ def operatordisablelisting(listingid,customerid):
     except:
         print("Error in retrieving data from DB main count or count is at 0")
 
+    
     if request.method == 'POST' and disable_listing.validate():
         if disable_listing.password.data == "sysadmin1":
-            #create operator action object)
-            operator_action = operatoractions.Operatoractions(id,disable_listing.typeofaction.data,disable_listing.category.data,disable_listing.disable_text.data)
-            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
-            
-            #syncs db5 with local dict
-            #syncs db5 count with local count (aka customer class)
-            dbmain['operatoractions'] = operatoractions_dict
-            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-
-
-            #make changes to affected listing
             listing = listings_dict.get(int(disable_listing.listingid.data))
-            listing.set_status("disabled")
-            print(listing.get_status())
-            dbmain['Listings'] = listings_dict
-            return(redirect(url_for('operatorviewprofile', id=customerid)))
-    return render_template('OperatorDisableListing.html',form = disable_listing,customerID = customerid)
-    
-@app.route('/operatorrestorelisting/<int:customerid>/<int:listingid>',methods=['GET','POST'])
-def operatorrestorelisting(listingid,customerid):
+            if (int(disable_listing.listingid.data)) in listings_dict and listing.get_status() == "available":
+
+
+                #create operator action object)
+                operator_action = operatoractions.Operatoractions(id,disable_listing.typeofaction.data,disable_listing.category.data,disable_listing.disable_text.data)
+                operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+                
+                #syncs db5 with local dict
+                #syncs db5 count with local count (aka customer class)
+                dbmain['operatoractions'] = operatoractions_dict
+                dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
+
+                #make changes to affected listing
+                listing = listings_dict.get(int(disable_listing.listingid.data))
+                listing.set_status("disabled")
+                print(listing.get_status())
+                dbmain['Listings'] = listings_dict
+
+                try:
+                    Operatorstats.operatorstats_listings("available","minus")
+                    Operatorstats.operatorstats_listings("disabled","plus")
+                except:
+                    pass
+                return(redirect(url_for('operatorcontrolcenter')))
+            else:
+                return (redirect(url_for('invalidlisting')))
+        else:
+            print("wrong password")
+
+    return render_template('OperatorDisableListing.html',form = disable_listing)
+
+#opstats - listing
+@app.route('/operatorrestorelisting/<int:listingid>',methods=['GET','POST'])
+def operatorrestorelisting(listingid):
     dbmain = shelve.open('main.db','c')
     operatoractions_dict = {}
     listings_dict = {}
-    restore_listing = OperatorRestoreListing(request.form,typeofaction='restore user',listingid = listingid)
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    #sync listing IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main count or count is at 0")
+    if listingid != 0:
+
+        restore_listing = OperatorRestoreListing(request.form,typeofaction='restore user',listingid=listingid)
+    else:
+        restore_listing = OperatorRestoreListing(request.form,typeofaction='restore user')
+
+    
     #restore listing
     if request.method == 'POST' and restore_listing.validate():
         if restore_listing.password.data == "sysadmin1":
-            #create operator action object
-            operator_action = operatoractions.Operatoractions(id,restore_listing.typeofaction.data,"nil","nil")
-            operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
-            
-            #syncs db5 with local dict
-            #syncs db5 count with local count (aka customer class)
-            dbmain['operatoractions'] = operatoractions_dict
-            dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-
-            #make changes to affected listing
             listing = listings_dict.get(int(restore_listing.listingid.data))
-            listing.set_status("available")
-            print(listing.get_status())
-            dbmain['Listings'] = listings_dict
-            return(redirect(url_for('operatorviewprofile', id=customerid)))
-    return render_template('OperatorDisableListing.html',form = restore_listing,customerID = customerid)
+            if (int(restore_listing.listingid.data)) in listings_dict and listing.get_status() != "available":
+                #create operator action object
+                operator_action = operatoractions.Operatoractions(id,restore_listing.typeofaction.data,"nil","nil")
+                operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
+                
+                #syncs db5 with local dict
+                #syncs db5 count with local count (aka customer class)
+                dbmain['operatoractions'] = operatoractions_dict
+                dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
+
+                #make changes to affected listing
+                listing = listings_dict.get(int(restore_listing.listingid.data))
+                listing.set_status("available")
+                print(listing.get_status())
+                dbmain['Listings'] = listings_dict
+                try:
+                    Operatorstats.operatorstats_listings("available","plus")
+                    Operatorstats.operatorstats_listings("disabled","minus")
+                except:
+                    pass
+                return(redirect(url_for('operatorcontrolcenter')))
+            else:
+                return (redirect(url_for('invalidlisting')))
+        else:
+            print("invalid password")
+    return render_template('OperatorRestoreListing.html',form = restore_listing)
 
 
 #invalid user page

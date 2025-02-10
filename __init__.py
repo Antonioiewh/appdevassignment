@@ -745,7 +745,7 @@ def Customerprofile_reviews(id):
 
     return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
-#opstatshere
+#opstatshere- user
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     global session_ID
@@ -805,8 +805,13 @@ def signup():
 
             print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
             session_ID = Customer.Customer.count_id
-            Operatorstats.operatorstats_users("total","plus")
-            Operatorstats.operatorstats_users("active","plus")
+
+            try:
+                Operatorstats.operatorstats_users("total","plus")
+                Operatorstats.operatorstats_users("active","plus")
+            except:
+                print("Error! Operator stats did not update")
+
             dbmain.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
             #notifs
             send_welcomenotifcation(customer.get_id())
@@ -975,7 +980,7 @@ def loginoptions():
 
     return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
-#opstatshere
+#opstatshere - listing
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
     global session_ID
@@ -1034,8 +1039,11 @@ def createlisting():
         listings_dict[listing.get_ID()] = listing
         dbmain['Listings'] = listings_dict
         dbmain['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
-        Operatorstats.operatorstats_listings("total","plus")
-        Operatorstats.operatorstats_listings("available","plus")
+        try:
+            Operatorstats.operatorstats_listings("total","plus")
+            Operatorstats.operatorstats_listings("available","plus")
+        except:
+            print("Error! Operator stats did not update.")
         #upload img
         file = request.files['file']
         check_upload_file_type(file,"listing",listing.get_ID())
@@ -1205,7 +1213,7 @@ def viewListing(id):
 
     return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
-#opstatshere
+#opstatshere - listing
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
 def deleteListing(id):
     global session_ID
@@ -1230,14 +1238,17 @@ def deleteListing(id):
         print("Error in opening main.db")
     #get status of listing
     listing = listings_dict.get(id)
-    if listing.get_status() == "available":
-        Operatorstats.operatorstats_listings("total","minus")
-        Operatorstats.operatorstats_listings("available","minus")
-    elif listing.get_status() == "disabled":
-        Operatorstats.operatorstats_listings("total","minus")
-        Operatorstats.operatorstats_listings("disabled","minus")
-    else:
-        pass
+    try:
+        if listing.get_status() == "available":
+            Operatorstats.operatorstats_listings("total","minus")
+            Operatorstats.operatorstats_listings("available","minus")
+        elif listing.get_status() == "disabled":
+            Operatorstats.operatorstats_listings("total","minus")
+            Operatorstats.operatorstats_listings("disabled","minus")
+        else:
+            pass
+    except:
+        print("Error! Operator stats did not update.")
     del listings_dict[id]
     customer = customers_dict.get(session_ID)
     customer.remove_listings(id)
@@ -1581,6 +1592,7 @@ def viewLikedListings(id): #retrieve current session_ID
         pass
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
+#creates delivery object which for some reason = transaction but ok lmao
 @app.route('/delivery_status', methods=['GET', 'POST'])
 def delivery_status():
     global session_ID
@@ -1673,6 +1685,7 @@ def delivery_status():
                     listing_id=session_ID,
                     address=listing.get_deal_deliveryinfo()
                 )
+
 
                 deliveries_dict[new_delivery.get_ID()] = new_delivery
 
@@ -3083,7 +3096,6 @@ def report(id):
 
     return redirect(url_for('Customerprofile', id=id))
 
-    
 @app.route('/c_invaliduser',methods=['GET','POST'])
 def cinvaliduser():
     dbmain = shelve.open('main.db','c')
@@ -3178,8 +3190,9 @@ def operatorcontrolcenter():
             dbmain['Operatorstats'] = operatorstats_dict # sync db1 with local (basically null)
     except:
         print("Error in opening main.db")
-    userinfo=[]
-    return render_template('OperatorControlCenter.html')
+    operator_stats = operatorstats_dict.get(1)
+    userinfo=[operator_stats.get_users_count(),operator_stats.get_users_active_count(),operator_stats.get_users_suspended_count(),operator_stats.get_users_terminated_count()]
+    return render_template('OperatorControlCenter.html',userinfo = userinfo)
 
 #dashboard users
 @app.route('/dashboard/users',methods=['GET', 'POST'])
@@ -3787,6 +3800,7 @@ def operatorrestorelisting(listingid,customerid):
             return(redirect(url_for('operatorviewprofile', id=customerid)))
     return render_template('OperatorDisableListing.html',form = restore_listing,customerID = customerid)
 
+
 #invalid user page
 @app.route('/invaliduser')
 def invaliduser():
@@ -3863,7 +3877,7 @@ def confirmsuspenduser(customerid):
 
     return render_template('Operatorconfirmsuspenduser.html',customer=customer)
 
-#actual code
+#actual code, opstats - user
 @app.route('/suspenduser/<int:customerid>')
 def suspenduser(customerid):
     dbmain = shelve.open('main.db','c')
@@ -3910,6 +3924,13 @@ def suspenduser(customerid):
     customer = customers_dict.get(customerid)
     customer.set_status("suspended")
     dbmain['Customers'] = customers_dict
+
+    try:
+        Operatorstats.operatorstats_users("suspended","plus")
+        Operatorstats.operatorstats_users("active","minus")
+    except:
+        print("Error! Operator stats did not update")
+
     return(redirect(url_for('operatorviewprofile', id=customerid)))
 
 
@@ -3971,6 +3992,7 @@ def confirmterminateuser(customerid):
     customer = customers_dict.get(customerid)
     return render_template('Operatorconfirmterminateuser.html',customer=customer)
 
+#opstats - terminate user
 @app.route('/terminateuser/<int:customerid>',methods=['GET','POST'])
 def terminateuser(customerid):
     dbmain = shelve.open('main.db','c')
@@ -4017,6 +4039,13 @@ def terminateuser(customerid):
     customer = customers_dict.get(customerid)
     customer.set_status("terminated")
     dbmain['Customers'] = customers_dict
+
+    try:
+        Operatorstats.operatorstats_users("terminated","plus")
+        Operatorstats.operatorstats_users("active","minus")
+    except:
+        print("Error! Operator stats did not update")
+
     return(redirect(url_for('operatorviewprofile', id=customerid)))
 
 #restore user
@@ -4052,7 +4081,7 @@ def operatorrestoreuser(customerid):
             else:
                 return(redirect(url_for('invaliduser')))
     else:
-        pass
+        print("restore user redirect no work")
             
     return render_template('Operatorrestoreuser.html',form=restore_user,customerID = customerid)
 
@@ -4072,6 +4101,7 @@ def confirmrestoreuser(customerid):
     customer = customers_dict.get(customerid)
     return render_template('Operatorconfirmrestoreuser.html',customer=customer)
 
+#opstats - user
 @app.route('/restoreuser/<int:customerid>',methods=['GET','POST'])
 def restoreuser(customerid):
     dbmain = shelve.open('main.db','c')
@@ -4116,8 +4146,25 @@ def restoreuser(customerid):
 
     #make changes to affected user
     customer = customers_dict.get(customerid)
+
+    if customer.get_status() == "suspended":
+        try:
+            Operatorstats.operatorstats_users("suspended","minus")
+            Operatorstats.operatorstats_users("active","plus")
+        except:
+            print("Error! Operator stats did not update")
+    elif customer.get_status() == "terminated":
+        try:
+            Operatorstats.operatorstats_users("terminated","minus")
+            Operatorstats.operatorstats_users("active","plus")
+        except:
+            print("Error! Operator stats did not update")
+    else:
+        print("Error! Can't find customer status under restore user")
+
     customer.set_status("active")
     dbmain['Customers'] = customers_dict
+        
     return(redirect(url_for('operatorviewprofile', id=customerid)))
 
 @app.route('/dashboard/listings',methods=['GET', 'POST'])

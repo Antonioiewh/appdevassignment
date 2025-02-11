@@ -11,6 +11,25 @@
     <a href="/dashboard/reports" style="text-decoration:none; color:black; font-weight:bold" class="m-auto">Reports</a>
     <a href="/dashboard/operatoractions" style="text-decoration:none; color:black; font-weight:bold" class="m-auto">operator actions</a>
 </div>
+<div class="d-flex flex-column">
+    <div>
+        <h2>Sort by</h2>
+        <div class="d-flex flex-row"> <!--filter here-->
+            <div> <!--by username-->
+                <form class="d-flex flex-row align-items-end" method="POST">
+                    <div class="form-group" style="margin-left:3vh; margin-right:3vh;">
+                        {{ render_field(form.searchstatusfield, class="form-control") }}
+                    </div>
+                    <div style="justify-self:center"> <!--div for button only-->
+                        <input type="submit" value="Submit" class="btn btn-primary"/>
+                    </div>
+                </form>
+                
+            </div>
+            
+        </div>
+    </div>
+</div>
 <div>
     <table class="table table-striped">
         <thead><tr><th>Feedback ID</th><th>Rating</th><th>Remarks</th><th>Reply</th><th>Action</th>

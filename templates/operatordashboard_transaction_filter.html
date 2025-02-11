@@ -1,5 +1,5 @@
 {% extends "Operatorbase.html"%}
-{% block title %}Dashboard-transactions-search{% endblock %}
+{% block title %}Dashboard-transactions-filter{% endblock %}
 {% from "includes/_formHelper.html" import render_field %}
 {% block content %}
 <h1 class="display-4">Dashboard</h1>
@@ -14,7 +14,7 @@
 <div class="d-flex flex-column">
     <div>
         <h2>Sort by</h2>
-        <p>Searching for transactions that have <span>{{searchcondition}}</span> in their title</p>
+        <p>Searching for transactions that have status <span>{{searchcondition}}</span></p>
         <div class="d-flex flex-row">
             <div>
                 <form class="d-flex flex-row align-items-end" method="POST">
@@ -26,6 +26,7 @@
                     </div>
                 </form>
             </div>
+
             <div>
                 <form class="d-flex flex-row align-items-end" method="POST">
                     <div class="form-group" style="margin-left:3vh; margin-right:3vh;">

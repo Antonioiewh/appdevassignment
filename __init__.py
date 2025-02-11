@@ -6,7 +6,7 @@ from Delivery import Delivery
 from Forms import CustomerSignupForm, ReportForm, CustomerLoginForm, ListingForm, ReviewForm, CustomerUpdateForm, \
     SearchBar, OperatorLoginForm, OperatorLoginVerifyForm, SearchUserField, OperatorSuspendUser, OperatorTerminateUser, \
     OperatorRestoreUser, DeliveryForm, SearchListingIDField,SearchListingStatusField,SearchTransactionField   # our forms
-from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback,SearchUserStatus
+from Forms import OperatorDisableListing,OperatorRestoreListing,SearchListingField,SearchReportField,SearchOperatorActionField,FeedbackForm,FilterForm,UpdateFeedback,ReplyFeedback,SearchUserStatus,FilterFeedback,FilterTransactions
 import Operatorstats
 import Email,Search,Notifications
 import shelve, Customer
@@ -1455,6 +1455,7 @@ def createLikedListing(id): #ID of listing
 
     return redirect(url_for('viewListing', id = id))
 
+#opstats, cancels delicvery
 @app.route('/createUnlikedListing/<int:id>', methods = ['GET', 'POST'])
 def createUnlikedListing(id):
     global session_ID
@@ -1522,6 +1523,18 @@ def createUnlikedListing(id):
 
     for delivery in deliveries_dict.values():
         if delivery.get_item_title() == listing.get_title() and delivery.get_customer_id() == session_ID:
+            #code for opstats
+            if delivery.get_status() == "Pending":
+                Operatorstats.operatorstats_feedbacks("Pending","minus")
+                Operatorstats.operatorstats_feedbacks("Cancelled","plus")
+            elif delivery.get_status() == "In Transit":
+                Operatorstats.operatorstats_feedbacks("In Transit","minus")
+                Operatorstats.operatorstats_feedbacks("Cancelled","plus")
+            elif delivery.get_status() == "Delivered":
+                Operatorstats.operatorstats_feedbacks("Delivered","minus")
+                Operatorstats.operatorstats_feedbacks("Cancelled","plus")
+            else:
+                pass
             delivery.set_status("Cancelled")
             print(f'Delivery ID:{delivery.get_ID()} for Listing {listing.get_title()} is now Cancelled.')
 
@@ -1592,7 +1605,7 @@ def viewLikedListings(id): #retrieve current session_ID
         pass
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
-#creates delivery object which for some reason = transaction but ok lmao
+#creates delivery object , opstats
 @app.route('/delivery_status', methods=['GET', 'POST'])
 def delivery_status():
     global session_ID
@@ -1692,6 +1705,12 @@ def delivery_status():
     dbmain["delivery"] = deliveries_dict
     dbmain['DeliveryCount'] = Delivery.count_ID
 
+    #code for opstats
+    try:
+        Operatorstats.operatorstats_transactions("total","plus")
+        Operatorstats.operatorstats_transactions("Pending","plus")
+    except:
+        pass
 
     deliveries_list = [
         delivery for delivery in deliveries_dict.values()
@@ -2470,7 +2489,7 @@ def filterresults():
     
     return render_template('Customerfilterresults.html',listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
 
-#opstatshere
+#opstats - feedback
 @app.route('/feedback', methods = ['GET', 'POST'])
 def feedback():
     global session_ID
@@ -2525,10 +2544,11 @@ def feedback():
         feedbacks_dict[feedback.get_ID()] = feedback #store obj in dict
         dbmain['Feedback'] = feedbacks_dict
         dbmain['FeedbackCount'] = Feedback.Feedback.count_ID
-
-        Operatorstats.operatorstats_feedbacks("total","plus")
-        Operatorstats.operatorstats_feedbacks("unreplied","plus")
-
+        try:
+            Operatorstats.operatorstats_feedbacks("total","plus")
+            Operatorstats.operatorstats_feedbacks("unreplied","plus")
+        except:
+            pass
         #add feedback ID to customer
         customer = customers_dict.get(session_ID)
         if customer:
@@ -2786,7 +2806,7 @@ def update_feedback(feedback_id):
 
     return render_template("CustomerUpdatefeedback.html",current_sessionID = session_ID,feedback=feedback,feedbacks_list=feedbacks_list,update_feedback_form=update_feedback_form,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
 
-#opstatshere
+#opstats - feedback
 @app.route('/delete_feedback/<int:feedback_id>', methods=['POST','GET'])
 def delete_feedback(feedback_id):
     global session_ID
@@ -2817,12 +2837,15 @@ def delete_feedback(feedback_id):
     except:
         print("Error in retrieving data from DB main Feedback count or count is at 0")
     feedback = feedbacks_dict.get(feedback_id)
-    if feedback.get_reply() == None:
-        Operatorstats.operatorstats_feedbacks("total","minus")
-        Operatorstats.operatorstats_feedbacks("unreplied","minus")
-    else:
-        Operatorstats.operatorstats_feedbacks("total","minus")
-        Operatorstats.operatorstats_feedbacks("replied","minus")
+    try:
+        if feedback.get_reply() == None:
+            Operatorstats.operatorstats_feedbacks("total","minus")
+            Operatorstats.operatorstats_feedbacks("unreplied","minus")
+        else:
+            Operatorstats.operatorstats_feedbacks("total","minus")
+            Operatorstats.operatorstats_feedbacks("replied","minus")
+    except:
+        pass
     # Check if the feedback ID exists
     if feedback_id in feedbacks_dict:
         del feedbacks_dict[feedback_id]  # Remove the feedback
@@ -2836,7 +2859,7 @@ def delete_feedback(feedback_id):
     
     return redirect(url_for('Customerprofilefeedback',id=session_ID))
 
-#opstatshere
+#opstats - feedback
 @app.route('/reply_feedback/<int:feedback_id>', methods=['POST', 'GET'])
 def reply_feedback(feedback_id):
     feedbacks_dict = {}
@@ -2878,9 +2901,12 @@ def reply_feedback(feedback_id):
     # Check if the feedback ID exists
     if feedback_id not in feedbacks_dict:
         return "Feedback not found", 404
-
-    Operatorstats.operatorstats_feedbacks("unreplied","minus")
-    Operatorstats.operatorstats_feedbacks("replied","plus")
+    
+    try:
+        Operatorstats.operatorstats_feedbacks("unreplied","minus")
+        Operatorstats.operatorstats_feedbacks("replied","plus")
+    except:
+        pass
     print(f"Feedback id:{feedback_id}")  # Retrieve the feedback obj
     if request.method == 'POST' and reply_feedback_form.validate():
         # Update feedback details
@@ -3055,7 +3081,6 @@ def confirmreportuser(id):
 
 @app.route('/reportuser/<int:id>', methods=['GET', 'POST'])
 def report(id):
-    print("reached report")
     global session_ID
     dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
@@ -3092,6 +3117,12 @@ def report(id):
     customer = customers_dict.get(id)
     customer.add_reports(report.get_ID())
     dbmain['Customers'] = customers_dict
+
+    try:
+        Operatorstats.operatorstats_reports("total","plus")
+    except:
+        pass
+
     dbmain.close()
 
     return redirect(url_for('Customerprofile', id=id))
@@ -3193,7 +3224,9 @@ def operatorcontrolcenter():
     operator_stats = operatorstats_dict.get(1)
     userinfo=[operator_stats.get_users_count(),operator_stats.get_users_active_count(),operator_stats.get_users_suspended_count(),operator_stats.get_users_terminated_count()]
     listinginfo=[operator_stats.get_listings_count(),operator_stats.get_listings_available_count(),operator_stats.get_listings_disabled_count()]
-    return render_template('OperatorControlCenter.html',userinfo = userinfo,listinginfo=listinginfo)
+    feedbackinfo = [operator_stats.get_feedback_count(),operator_stats.get_feedback_replied_count(),operator_stats.get_feedback_unreplied_count()]
+    transactioninfo = [operator_stats.get_transactions_count(),operator_stats.get_transactions_Pending_count(),operator_stats.get_transactions_In_Transit_count(),operator_stats.get_transactions_Delivered_count(),operator_stats.get_transactions_Cancelled_count()]
+    return render_template('OperatorControlCenter.html',userinfo = userinfo,listinginfo=listinginfo,feedbackinfo = feedbackinfo,transactioninfo = transactioninfo)
 
 #dashboard users
 @app.route('/dashboard/users',methods=['GET', 'POST'])
@@ -4553,8 +4586,9 @@ def dashboardoperatoractionssearch(keyword):
     
     return render_template('Operatordashboard_operatoraction_search.html',form = operatoraction_search_field,operator_actions_list=operator_actions_list)
 
-@app.route('/dashboard/feedbacks')
+@app.route('/dashboard/feedbacks', methods=['GET','POST'])
 def dashboardfeedbacks():
+    search_replied = FilterFeedback(request.form)
     feedbacks_dict = {}
     dbmain = shelve.open('main.db','c')
     try:
@@ -4568,8 +4602,44 @@ def dashboardfeedbacks():
     for key in feedbacks_dict:
         feedback = feedbacks_dict.get(key)
         feedbacks_list.append(feedback)
+    if request.method == "POST" and search_replied.validate():
+        return(redirect(url_for('dashboardfeedbackssearch',keyword = search_replied.searchstatusfield.data)))
     
-    return render_template("Operatordashboard_feedback.html",feedbacks_list=feedbacks_list)
+    return render_template("Operatordashboard_feedback.html",feedbacks_list=feedbacks_list,form = search_replied)
+
+@app.route('/dashboard/feedbacks/<keyword>',methods=['GET','POST'])
+def dashboardfeedbackssearch(keyword):
+    search_replied = FilterFeedback(request.form)
+    feedbacks_dict = {}
+    dbmain = shelve.open('main.db','c')
+    try:
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"] #sync local with db1
+        else:
+            dbmain['Feedback'] = feedbacks_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    feedbacks_list=[]
+    for key in feedbacks_dict:
+        feedback = feedbacks_dict.get(key)
+        if keyword == "unreplied":
+            if feedback.get_reply() == None:
+                feedbacks_list.append(feedback)
+            else:
+                pass
+        elif keyword == "replied":
+            if feedback.get_reply() != None:
+                feedbacks_list.append(feedback)
+            else:
+                pass
+        else:
+            pass
+    
+    if request.method == "POST" and search_replied.validate():
+        return(redirect(url_for('dashboardfeedbackssearch',keyword = search_replied.searchstatusfield.data)))
+    
+    
+    return render_template("Operatordashboard_feedback_search.html",feedbacks_list=feedbacks_list,form = search_replied,searchcondition = keyword)
 
 
 @app.route('/operator-dashboard', methods=['POST'])
@@ -4746,13 +4816,14 @@ def dashboard_feedback_reply(feedback_id):
     dbmain.close()
     return render_template('feedback_reply.html', feedback=feedback)
 
-
+#modifes delivery status , opstat
 @app.route('/dashboard/transactions', methods=['GET', 'POST'])
 def dashboard_transactions():
     searchform = SearchTransactionField(request.form)
+    filterform = FilterTransactions(request.form)
     delivery_id = request.form.get('Delivery_id')
     new_status = request.form.get('new_status')
-
+    
     dbmain = shelve.open('main.db', 'c')
     deliveries_dict = dbmain.get("delivery", {})
 
@@ -4774,6 +4845,25 @@ def dashboard_transactions():
             print("Invalid delivery ID format")
             delivery_id = None
 
+
+    #opstats code here - in theory it shld work
+    try:
+        print(f"New status is {new_status}")
+        deliveryobj = deliveries_dict.get(delivery_id)
+        if deliveryobj.get_status() == "Pending":
+            Operatorstats.operatorstats_feedbacks("Pending","minus")
+            Operatorstats.operatorstats_feedbacks(new_status,"plus")
+        elif deliveryobj.get_status() == "In Transit":
+            Operatorstats.operatorstats_feedbacks("In Transit","minus")
+            Operatorstats.operatorstats_feedbacks(new_status,"plus")
+        elif deliveryobj.get_status() == "Delivered":
+            Operatorstats.operatorstats_feedbacks("Delivered","minus")
+            Operatorstats.operatorstats_feedbacks(new_status,"plus")
+        else:
+            pass
+    except:
+        pass
+    
     if delivery_id and delivery_id in deliveries_dict:
         delivery = deliveries_dict[delivery_id]
         print(f"Updating Delivery ID {delivery_id} to status: {new_status}")
@@ -4786,13 +4876,51 @@ def dashboard_transactions():
 
     if request.method == 'POST' and searchform.validate():
         return redirect(url_for('dashboardtransactionssearch',  keyword=searchform.searchfield.data))
-    return render_template('Operatordashboard_transaction.html',searchform=searchform , deliveries_list=deliveries_list)
+    
+    if request.method == 'POST' and filterform.validate():
+        return redirect(url_for('dashboardtransactionsfilter',  keyword=filterform.searchstatusfield.data))
+    
+    return render_template('Operatordashboard_transaction.html',searchform=searchform , deliveries_list=deliveries_list,filterform = filterform)
 
 
-@app.route('/dashboard/transactions/search/', defaults={'keyword': ''}, methods=['GET', 'POST'])
+@app.route('/dashboard/transactions/filter=<keyword>',methods=['GET','POST'])
+def dashboardtransactionsfilter(keyword):
+    if not keyword:
+        return redirect(url_for('dashboard_transactions'))
+    filterform = FilterTransactions(request.form)
+    searchform = SearchTransactionField(request.form)
+    dbmain = shelve.open('main.db', 'c')
+    deliveries_dict = {}
+    try:
+        if "delivery" in dbmain:
+            deliveries_dict = dbmain["delivery"]  # sync local with db2
+        else:
+            dbmain['delivery'] = deliveries_dict  # sync db2 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    deliveries_list = []
+    for key in deliveries_dict:
+        delivery = deliveries_dict.get(key)
+        if delivery.get_status() == keyword:
+            deliveries_list.append(delivery)
+        else:
+            pass
+
+    if request.method == 'POST' and searchform.validate():
+        return redirect(url_for('dashboardtransactionssearch', keyword=searchform.searchfield.data))
+
+    if request.method == 'POST' and filterform.validate():
+        return redirect(url_for('dashboardtransactionsfilter',  keyword=filterform.searchstatusfield.data))   
+    
+    return render_template('Operatordashboard_transaction_filter.html', searchform = searchform,
+                           deliveries_list=deliveries_list,filterform = filterform, searchcondition = keyword)
+
+
+@app.route('/dashboard/transactions/search/<keyword>',  methods=['GET', 'POST'])
 def dashboardtransactionssearch(keyword):
     if not keyword:
         return redirect(url_for('dashboard_transactions'))
+    filterform = FilterTransactions(request.form)
     searchform = SearchTransactionField(request.form)
     dbmain = shelve.open('main.db', 'c')
     deliveries_dict = {}
@@ -4813,9 +4941,11 @@ def dashboardtransactionssearch(keyword):
     if request.method == 'POST' and searchform.validate():
         return redirect(url_for('dashboardtransactionssearch', keyword=searchform.searchfield.data))
 
+    if request.method == 'POST' and filterform.validate():
+        return redirect(url_for('dashboardtransactionsfilter',  keyword=filterform.searchstatusfield.data))
 
     return render_template('Operatordashboard_transaction_search.html', searchform = searchform,
-                           deliveries_list=deliveries_list)
+                           deliveries_list=deliveries_list,filterform = filterform, searchcondition = keyword)
 
 if __name__ == "__main__":
     

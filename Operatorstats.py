@@ -24,6 +24,7 @@ class Operatorstats:
         self.__transactions_Pending_count = 0
         self.__transactions_In_Transit_count = 0
         self.__transactions_Delivered_count = 0
+        self.__transactions_Cancelled_count = 0
         #reports
         self.__report_count = 0
 
@@ -57,7 +58,7 @@ class Operatorstats:
         return self.__feedback_count
     def get_feedback_replied_count(self):
         return self.__feedback_replied_count
-    def get_feedback_unrepliedcount(self):
+    def get_feedback_unreplied_count(self):
         return self.__feedback_unreplied_count
     
     #transactions related (delivery status here too)
@@ -69,6 +70,8 @@ class Operatorstats:
         return self.__transactions_In_Transit_count
     def get_transactions_Delivered_count(self):
         return self.__transactions_Delivered_count
+    def get_transactions_Cancelled_count(self):
+        return self.__transactions_Cancelled_count 
     
     #reports related
     def get_reports_count(self):
@@ -158,6 +161,12 @@ class Operatorstats:
     def decrease_transactions_Delivered_count(self):
         self.__transactions_Delivered_count -=1
 
+    def increase_transactions_Cancelled_count(self):
+        self.__transactions_Cancelled_count +=1
+    def decrease_transactions_Cancelled_count(self):
+        self.__transactions_Cancelled_count -=1
+
+    
     #reports
     
     def increase_reports_count(self):
@@ -388,3 +397,38 @@ def operatorstats_transactions(category,operation):
             print(f" - | Current amount of transactions Delivered is {obj.get_transactions_Delivered_count()}")
             dbmain['Operatorstats'] = operatorstats_dict
             return
+    elif category == "Cancelled":
+        if operation == "plus":
+            obj.increase_transactions_Cancelled_count()
+            print(f" + | Current amount of transactions Cancelled is {obj.get_transactions_Cancelled_count()}")
+            dbmain['Operatorstats'] = operatorstats_dict
+            return
+        elif operation == "minus":
+            obj.decrease_transactions_Cancelled_count()
+            print(f" - | Current amount of transactions Cancelled is {obj.get_transactions_Cancelled_count()}")
+            dbmain['Operatorstats'] = operatorstats_dict
+            return
+
+
+def operatorstats_reports(category,operation):
+    dbmain = shelve.open('main.db', 'c')
+    operatorstats_dict = {}
+    try:
+        if "Operatorstats" in dbmain:
+            operatorstats_dict = dbmain["Operatorstats"]  # sync local with db1
+        else:
+            dbmain['Operatorstats'] = operatorstats_dict # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    obj = operatorstats_dict.get(1)
+    if category == "total":
+        if operation == "plus":
+            obj.increase_reports_count()
+            print(f" + | Current amount of total reports is {obj.get_reports_count()}")
+            dbmain['Operatorstats'] = operatorstats_dict
+            return
+        elif operation == "minus":
+            obj.decrease_reports_count()
+            print(f" - | Current amount of total transactions is {obj.get_reports_count()}")
+            dbmain['Operatorstats'] = operatorstats_dict
+            return    

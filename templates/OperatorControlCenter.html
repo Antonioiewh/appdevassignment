@@ -236,7 +236,7 @@
                         <div class="d-flex flex-row" style="width:100%;"> <!--content itself-->
                             <div class="d-flex flex-column">
                                 <h3>Feedback</h3>
-                                <p>There are currently x feedbacks on your site</p>
+                                <p>There are currently <span>{{feedbackinfo[0]}}</span> feedbacks on your site</p>
                             </div>
                         </div>
                         <div> <!--button to go to dashboard-->
@@ -245,7 +245,7 @@
                                     <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
-                                    <li><a class="dropdown-item" href="" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
+                                    <li><a class="dropdown-item" href="/dashboard/feedbacks" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
                                 </ul>
                             </div>
                         </div>
@@ -262,7 +262,7 @@
                                 </div>
                                 <div class="d-flex flex-column">
                                     <h3 style="color:green">Answered</h3>
-                                    <p>You have replied to x feedbacks</p>
+                                    <p>You have replied to <span>{{feedbackinfo[1]}}</span> feedbacks</p>
                                 </div>
                                 <div> <!--button to go to dashboard-->
                                     <div style="justify-self:end;">
@@ -270,7 +270,7 @@
                                             <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
-                                            <li><a class="dropdown-item" href="" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
+                                            <li><a class="dropdown-item" href="/dashboard/feedbacks/replied" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -285,7 +285,7 @@
                                 </div>
                                 <div class="d-flex flex-column">
                                     <h3 style="color:red">Unanswered</h3>
-                                    <p>You have not replied to x feedbacks</p>
+                                    <p>You have not replied to <span>{{feedbackinfo[2]}}</span> feedbacks</p>
                                 </div>
                                 <div> <!--button to go to dashboard-->
                                     <div style="justify-self:end;">
@@ -293,7 +293,7 @@
                                             <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
-                                            <li><a class="dropdown-item" href="" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
+                                            <li><a class="dropdown-item" href="/dashboard/feedbacks/unreplied" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
                                         </ul>
                                     </div>
                                 </div>
@@ -306,14 +306,14 @@
                     <div style="max-width:100%; width:100%; max-height:20vh; height:100%; border:lightgray solid 1px;" class="shadow-sm p-3 mb-5 bg-body rounded d-flex flex-column"> <!--main section-->
                         <div> <!--click to open more details-->
                             <div style="justify-self:end;">
-                                <button class="btn btn-primary border-0" style="background:none;" type="button" data-bs-toggle="collapse" data-bs-target="" aria-expanded="false" aria-controls="">
+                                <button class="btn btn-primary border-0" style="background:none;" type="button" data-bs-toggle="collapse" data-bs-target="#transactionmoreinfo" aria-expanded="false" aria-controls="transactionmoreinfo">
                                     <i class="bi bi-arrow-down-short" style="color:black; font-size: 1.2rem;"></i> 
                                 </button>
                             </div>
                             <div class="d-flex flex-row" style="width:100%;"> <!--content itself-->
                                 <div class="d-flex flex-column">
                                     <h3>Transactions</h3>
-                                    <p>There are currently x transactions on your site</p>
+                                    <p>There are currently <span>{{transactioninfo[0]}}</span> transactions on your site</p>
                                 </div>
                             </div>
                             <div> <!--button to go to dashboard-->
@@ -322,12 +322,111 @@
                                         <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
-                                        <li><a class="dropdown-item" href="" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
+                                        <li><a class="dropdown-item" href="/dashboard/transactions" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    <div class="collapse" id="transactionmoreinfo" style="max-width:100%; width:100%; max-height:60vh; height:100%; margin-bottom:17%;"><!--more transac infos-->
+                        <div class="card card-body" style="border:none;">
+                            <div style="max-width:100%; width:100%; max-height:19vh; height:100%;border:lightgray solid 1px;" class="shadow-sm p-3 mb-2 bg-body rounded d-flex flex-column">
+                                <div> <!--click to open more details-->
+                                    <div style="justify-self:end;">
+                                        <button class="btn btn-primary border-0" style="background:none;" type="button" data-bs-toggle="collapse" data-bs-target="#transactionmoreinfo" aria-expanded="false" aria-controls="transactionmoreinfo">
+                                            <i class="bi bi-arrow-up-short" style="color:black; font-size: 1.2rem;"></i> 
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <h3 style="color:purple">Pending</h3>
+                                    <p>There are <span>{{transactioninfo[1]}}</span> pending transactions</p>
+                                </div>
+                                <div> <!--button to go to dashboard-->
+                                    <div style="justify-self:end;">
+                                        <button class="btn btn-primary border-0" style="background:none;" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
+                                            <li><a class="dropdown-item" href="/dashboard/transactions/filter=Pending" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="max-width:100%; width:100%; max-height:19vh; height:100%;border:lightgray solid 1px;" class="shadow-sm p-3 mb-2 bg-body rounded d-flex flex-column">
+                                <div> <!--click to open more details-->
+                                    <div style="justify-self:end;">
+                                        <button class="btn btn-primary border-0" style="background:none;" type="button" data-bs-toggle="collapse" data-bs-target="#transactionmoreinfo" aria-expanded="false" aria-controls="transactionmoreinfo">
+                                            <i class="bi bi-arrow-up-short" style="color:black; font-size: 1.2rem;"></i> 
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <h3 style="color:purple">In Transit</h3>
+                                    <p>There are <span>{{transactioninfo[2]}}</span> in transit transactions</p>
+                                </div>
+                                <div> <!--button to go to dashboard-->
+                                    <div style="justify-self:end;">
+                                        <button class="btn btn-primary border-0" style="background:none;" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
+                                            <li><a class="dropdown-item" href="/dashboard/transactions/filter=In Transit" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="max-width:100%; width:100%; max-height:19vh; height:100%;border:lightgray solid 1px;" class="shadow-sm p-3 mb-2 bg-body rounded d-flex flex-column">
+                                <div> <!--click to open more details-->
+                                    <div style="justify-self:end;">
+                                        <button class="btn btn-primary border-0" style="background:none;" type="button" data-bs-toggle="collapse" data-bs-target="#transactionmoreinfo" aria-expanded="false" aria-controls="transactionmoreinfo">
+                                            <i class="bi bi-arrow-up-short" style="color:black; font-size: 1.2rem;"></i> 
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <h3 style="color:green">Delivered</h3>
+                                    <p>There are <span>{{transactioninfo[3]}}</span> delivered transactions</p>
+                                </div>
+                                <div> <!--button to go to dashboard-->
+                                    <div style="justify-self:end;">
+                                        <button class="btn btn-primary border-0" style="background:none;" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
+                                            <li><a class="dropdown-item" href="/dashboard/transactions/filter=Delivered" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="max-width:100%; width:100%; max-height:19vh; height:100%;border:lightgray solid 1px;" class="shadow-sm p-3 mb-2 bg-body rounded d-flex flex-column">
+                                <div> <!--click to open more details-->
+                                    <div style="justify-self:end;">
+                                        <button class="btn btn-primary border-0" style="background:none;" type="button" data-bs-toggle="collapse" data-bs-target="#transactionmoreinfo" aria-expanded="false" aria-controls="transactionmoreinfo">
+                                            <i class="bi bi-arrow-up-short" style="color:black; font-size: 1.2rem;"></i> 
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-column">
+                                    <h3 style="color:red">Cancelled</h3>
+                                    <p>There are <span>{{transactioninfo[4]}}</span> cancelled transactions</p>
+                                </div>
+                                <div> <!--button to go to dashboard-->
+                                    <div style="justify-self:end;">
+                                        <button class="btn btn-primary border-0" style="background:none;" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical" style="color:black; font-size: 1.2rem;"></i> 
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu" aria-labelledby="dropdownMenuButton2">
+                                            <li><a class="dropdown-item" href="/dashboard/transactions/filter=Cancelled" class="align-items-center" style="color:black">View on dashboard<i class="bi bi-eye" style="color: black; margin-left:4%;"></i></a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div> 
                 </div>
 
                 <div><!--Reports-->

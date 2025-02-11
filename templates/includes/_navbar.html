@@ -76,10 +76,10 @@
                         <li class="dropdown-item">Current sessionID: {{current_sessionID}}</li>
                         {% if current_sessionID != 0 %}
                         <li><a class="dropdown-item" href="/profile/{{current_sessionID}}">View profile</a></li>
-                        <li><a class="dropdown-item" href="/feedback">Submit Feedback</a></li>
-                        <li><a class="dropdown-item" href="/loginoptions">Logout</a></li>
                         <li><a class="dropdown-item" href="/createlisting">Create listing</a></li>
+                        <li><a class="dropdown-item" href="/feedback">Submit Feedback</a></li>
                         <li><a class="dropdown-item" href="/report/user/0">Report a user</a></li>
+                        <li><a class="dropdown-item" href="/loginoptions">Logout</a></li>
                         {% else %}
                         <li><a class="dropdown-item" href="/signup">Login</a></li>
                         {% endif %}

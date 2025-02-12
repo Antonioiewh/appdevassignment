@@ -16,19 +16,24 @@
                     <div style="width:35%" class="align-items-center">
                         <a href="#" class="btn btn-info align-items-center" role="button" style="background:white; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Chat with dealer<i class="bi bi-chat" style="font-size:1.3rem"></i></p></a>
                     </div>
-                    <div style="width:35%" class="align-items-center">
-                        <a href="#" class="btn btn-info" role="button" style="background:red; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Add to cart<i class="bi bi-cart2" style="font-size:1.3rem"></i></p></a>
+                    <div style="width:30%" class="align-items-center">
+                        <a href="/createLikedListing/{{listing.get_ID()}}" class="btn btn-info" role="button" style="background:red; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Add to cart<i class="bi bi-cart2" style="font-size:1.3rem"></i></p></a>
                     </div>
-                    
+                    {%else%}
+                    <div style="width:35%" class="align-items-center">
+                        <a href="#" class="btn btn-info" role="button" style="background:purple; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Marked as reserved</p></a>
+                    </div>
+                    {%endif%}
     
                     {%if user_liked_post == 'False'%} 
+
                         <a href="/createLikedListing/{{listing.get_ID()}}">
                             <i class="bi bi-heart" style="color:black; font-size: 2rem;"></i>
                         </a>
                     </div>
                     {% endif %}
                     {%  if user_liked_post == 'True'%}
-                    <div>
+
                         <a href="/createUnlikedListing/{{listing.get_ID()}}">
                             <i class="bi bi-heart-fill" style="color:red; font-size: 2rem;"></i>
                         </a>

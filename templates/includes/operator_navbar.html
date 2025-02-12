@@ -11,7 +11,7 @@
             <div> 
             <ul class="navbar-nav w-100 " >
                 <div class="d-flex align-items-center me-auto" >
-                    <a class="navbar-brand p-auto" href="">FreeSell</a>
+                    <a class="navbar-brand p-auto" >FreeSell</a>
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mynavbar">
                     <span class="navbar-toggler-icon"></span>
                     </button>
@@ -77,7 +77,8 @@
 
                         {% if current_sessionID != 0 %}
                         <li><a class="dropdown-item" href="/loginoptions">Logout</a></li>
-                        <li><a class="dropdown-item" href="/dashboard/users" style="color: red;">View dashboard</a></li>
+                        <li><a class="dropdown-item" href="/dashboard/users" style="color: red;">View management center</a></li>
+                        <li><a class="dropdown-item" href="/operatorcontrolcenter" style="color: red;">Operator dashboard</a></li>
                         {% endif %}
                         <!--
                         {% if current_sessionID != 0 %}

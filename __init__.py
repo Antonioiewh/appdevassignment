@@ -199,7 +199,7 @@ def send_welcomenotifcation(id): #id of person to add notifactions to
         else:
             dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
-        print("Error in opening main.db")
+        print("Error in opening customer in main.db")
     try:
         if "Notifications" in dbmain:
             notifications_dict = dbmain["Notifications"] #sync local with db1
@@ -227,6 +227,7 @@ def send_welcomenotifcation(id): #id of person to add notifactions to
     #send the notifcation to their email
 
     Email.send_signup_notification_gmail(customer.get_email(),customer.get_username())
+
 
 #current_sessionID IS FOR THE PROFILE!!
 #Current session ID
@@ -307,8 +308,7 @@ def Customerhome():
     except:
         print("Error in opening main.db")
 
-
-
+    #opstats code
     try:
         dbmain = shelve.open('main.db', 'c')
         Operatorstats.Operatorstats.count_ID = dbmain["Operatorstatscount"]  # sync count between local and db1
@@ -339,6 +339,13 @@ def Customerhome():
             return redirect(url_for('filterresults'))
     except:
         pass
+
+    #get username for navbar
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     #data analytics for users
     customer = customers_dict.get(session_ID)
@@ -424,7 +431,22 @@ def Customerhome():
     print(day_avg)#amount of time for products to be sold
 
 
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic, rating_dic = rating_dic)
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic, rating_dic = rating_dic,current_username=current_username)
+
+@app.route('/suspended')
+def Customersuspended_terminatedhome():
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} 
+    global session_ID
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    customer = customers_dict.get(int(session_ID))
+    return render_template('Customerhome.html', current_sessionID = session_ID, customer = customer)
 
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
@@ -530,8 +552,12 @@ def Customerprofile(id):
             pass
     except:
         pass
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
-                            current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
+                            current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/updateprofile/<int:id>', methods = ['GET', 'POST'])
 def updateCustomerprofile(id):
@@ -621,10 +647,13 @@ def updateCustomerprofile(id):
             pass
     except:
         pass
+    
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
 
 
-
-    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
+    return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/profilereviews/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile_reviews(id):
@@ -742,81 +771,189 @@ def Customerprofile_reviews(id):
     except:
         pass
 
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
-    return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+
+@app.route('/usernametaken')
+def usernametaken():
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    global session_ID
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    #search func
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    current_username = "nil"
+    return render_template('Customersignupinvalidusername.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
+
+
+@app.route('/emailtaken')
+def emailtaken():
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    global session_ID
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    #search func
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    current_username = "nil"
+    return render_template('Customersignupinvalidemail.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
+
 
 #opstatshere- user
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     global session_ID
+    session_ID = 0
     create_customer_form = CustomerSignupForm(request.form)
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     dbmain = shelve.open('main.db','c')  
     customers_dict = {} #local one
+    customers_username_list = []
+    customers_email_list = []
     if request.method == 'POST' and create_customer_form.validate():
-        
 
-
-        #make sure local and db1 are the same state
-        #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
         try:
             if "Customers" in dbmain:
-                customers_dict = dbmain["Customers"] #sync local with db1
+                customers_dict = dbmain["Customers"] 
             else:
-                dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+                dbmain['Customers'] = customers_dict
         except:
             print("Error in opening main.db")
 
-        
+        #makes checking thru doing account creation a bit easier
+        try:
+            if "Customer_usernames" in dbmain:
+                customers_username_list = dbmain["Customer_usernames"]
+            else:
+                dbmain['Customer_usernames'] = customers_username_list
+        except:
+            print("Error in opening main.db")
+
+        #makes checking thru doing account creation a bit easier
+        try:
+            if "Customer_emails" in dbmain:
+                customers_email_list = dbmain["Customer_emails"]
+            else:
+                dbmain['Customer_emails'] = customers_email_list
+        except:
+            print("Error in opening main.db")
         #sync IDs
         try:
             dbmain = shelve.open('main.db','c')    
-            Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+            Customer.Customer.count_id = dbmain["CustomerCount"]
         except:
             print("Error in retrieving data from DB main Customer count or count is at 0")
 
         #checks if username is taken
-        username_list=[]
-        for key in customers_dict:
-            customer = customers_dict.get(key)
-            username_list.append(customer.get_username().strip())
-        
-        if create_customer_form.username.data.strip() in username_list:
-            print("username taken!")
-            redirect(url_for('Customerhome'))
+        if create_customer_form.username.data in customers_username_list:
+            print("Error! Username is already in db!")
+            return(redirect(url_for('usernametaken')))
+        elif create_customer_form.email.data in customers_email_list:
+            print("Error! Email is already in db!")
+            return(redirect(url_for('emailtaken')))
         else:
-            #create user, stores data in local dict
+            #creation of customer obj
             customer =  Customer.Customer(create_customer_form.username.data.strip(), create_customer_form.email.data,create_customer_form.password.data.strip())
             customers_dict[customer.get_id()] = customer
-
-            #syncs db1 with local dict
-            #syncs db1 count with local count (aka customer class)
             dbmain['Customers'] = customers_dict
             dbmain['CustomerCount'] = Customer.Customer.count_id
-
-            #upload img
-            file = request.files['file']
-            check_upload_file_type(file,"customer",customer.get_id())
-
+            #update opstats
+            try:
+                Operatorstats.operatorstats_users("total","plus")
+                Operatorstats.operatorstats_users("active","plus")
+            except:
+                print("Error! Operator stats did not update")
+            
+            #stores username and email into local var
+            customers_username_list.append(str(customer.get_username()))
+            customers_email_list.append(str(customer.get_email()))
+            dbmain['Customer_usernames'] = customers_username_list
+            dbmain['Customer_emails'] = customers_email_list
             #verifies new user is stored
             customers_dict = dbmain['Customers'] #sync local dict with db1
             customer = customers_dict[customer.get_id()]
 
             print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
             session_ID = Customer.Customer.count_id
-
-            try:
-                Operatorstats.operatorstats_users("total","plus")
-                Operatorstats.operatorstats_users("active","plus")
-            except:
-                print("Error! Operator stats did not update")
-
+            #upload img
+            file = request.files['file']
+            check_upload_file_type(file,"customer",customer.get_id())
             dbmain.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
             #notifs
             send_welcomenotifcation(customer.get_id())
             
+
+            \
+
+            
+            
+            
+
             return redirect(url_for('Customerhome'))
+        
+
+    
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -844,13 +981,15 @@ def signup():
     except:
         pass
 
+    #get username for navbar
+    current_username = "nil"
 
-
-    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform)
+    return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/login', methods = ['GET', 'POST'])
 def login():
     global session_ID
+    session_ID = 0
     login_customer_form = CustomerLoginForm(request.form)
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
@@ -882,6 +1021,7 @@ def login():
         input_password = login_customer_form.password.data.strip()
 
         #check
+
         for key in customers_dict:
             customer = customers_dict[key] #ID
             if input_username == customer.get_username():
@@ -889,14 +1029,21 @@ def login():
                 if input_password == customer.get_password():
                     print("Passwords match.")
                     session_ID = key #current session = this ID
+                    break
                 else:
                     print("password verification failed")
             else:
                 print("invalid username")
         
         print(f"\n*start of message*Login success, current session ID is {session_ID}\n*end of message*")
-        return redirect(url_for('Customerhome'))
+        if customer.get_status() == "active":
+
+            return redirect(url_for('Customerhome'))
+
+        else:
+            return redirect(url_for('Customersuspended_terminatedhome'))
     
+
     #search func
     try:
         if request.method == 'POST' and search_field.validate():
@@ -923,9 +1070,11 @@ def login():
     except:
         pass
 
+    #get username for navbar
+    
+    current_username = "nil"
 
-
-    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username = current_username)
 
 @app.route('/loginoptions',methods = ['GET', 'POST'])
 def loginoptions():
@@ -977,14 +1126,17 @@ def loginoptions():
             pass
     except:
         pass
+    
+    #get username for navbar
+    current_username = "nil"
 
-    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 #opstatshere - listing
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
     global session_ID
-
+    session_ID = 0
     dbmain = shelve.open('main.db','c')
     listings_dict = {}
     customers_dict = {}
@@ -1080,8 +1232,10 @@ def createlisting():
             pass
     except:
         pass
-
-    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
 def updateListing(id):
@@ -1146,7 +1300,10 @@ def updateListing(id):
             pass
     except:
         pass
-    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing) #to render the form 
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing,current_username=current_username) #to render the form 
 
 @app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
 def viewListing(id):
@@ -1210,8 +1367,12 @@ def viewListing(id):
             pass
     except:
         pass
+    
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
 
-    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 #opstatshere - listing
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
@@ -1371,8 +1532,11 @@ def createReview(id):
             pass
     except:
         pass
-
-    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/createLikedListing/<int:id>', methods = ['GET', 'POST'])
 def createLikedListing(id): #ID of listing
@@ -1603,7 +1767,10 @@ def viewLikedListings(id): #retrieve current session_ID
             pass
     except:
         pass
-    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 #creates delivery object , opstats
 @app.route('/delivery_status', methods=['GET', 'POST'])
@@ -1746,9 +1913,13 @@ def delivery_status():
             pass
     except:
         pass
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+
     return render_template('CustomerListingDelivery.html',delivery=delivery,form=form,deliveries_list=deliveries_list,customer=customer, listings_to_display=listings_to_display,
                            current_sessionID=session_ID, searchform=search_field,
-                           customer_notifications=customer_notifications, filterform=filterform)
+                           customer_notifications=customer_notifications, filterform=filterform,current_username=current_username)
 
 @app.route('/trackDelivery/<int:delivery_id>', methods=['GET', 'POST'])
 def delivery_track(delivery_id):
@@ -1868,10 +2039,15 @@ def delivery_track(delivery_id):
             pass
     except:
         pass
+
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+
     return render_template('Customerdeliverytrack.html', form=form, delivery=delivery,
                            customer=customer,deliveries_list=[delivery for delivery in deliveries_dict.values() if delivery.get_customer_id() == session_ID],
                            current_sessionID=session_ID, searchform=search_field,
-                           customer_notifications=customer_notifications, filterform=filterform)
+                           customer_notifications=customer_notifications, filterform=filterform,current_username=current_username)
 
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
@@ -1986,6 +2162,10 @@ def messages():
                 'receiver_id': receiver_id,
                 'messages': message
             }
+
+        #get username for navbar
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
         return render_template(
             'CustomerMessages.html',
             received_messages=received_messages,
@@ -1996,7 +2176,8 @@ def messages():
             searchform =search_field,
             customer_notifications=customer_notifications,
             show_error_modal=False,
-            filterform=filterform
+            filterform=filterform,
+            current_username = current_username
         )
     finally:
         db.close()
@@ -2141,10 +2322,12 @@ def searchresults(keyword):
             pass
     except:
         pass
-
-    return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications,filterform=filterform)
     
-
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
+    
 @app.route('/category1', methods=['GET', 'POST'])
 def category1():
     global session_ID
@@ -2201,8 +2384,11 @@ def category1():
         if listing.get_category() == 'Category 1':
             print("true!")
             listings_to_display.append(listing)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
 
-    return render_template('CustomerCategory1.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('CustomerCategory1.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/category2',methods = ['GET','POST'])
 def category2():
@@ -2261,7 +2447,11 @@ def category2():
         if listing.get_category() == 'Category 2':
             listings_to_display.append(listing)
 
-    return render_template('CustomerCategory2.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+
+    return render_template('CustomerCategory2.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/category3',methods = ['GET','POST'])
 def category3():
@@ -2319,7 +2509,10 @@ def category3():
         if listing.get_category() == 'Category 3':
             listings_to_display.append(listing)
 
-    return render_template('CustomerCategory3.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('CustomerCategory3.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/category4',methods = ['GET','POST'])
 def category4():
@@ -2376,8 +2569,10 @@ def category4():
         listing = listings_dict.get(key)
         if listing.get_category() == 'Category 4':
             listings_to_display.append(listing)
-
-    return render_template('CustomerCategory4.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('CustomerCategory4.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/category5',methods = ['GET','POST'])
 def category5():
@@ -2435,9 +2630,10 @@ def category5():
         listing = listings_dict.get(key)
         if listing.get_category() == 'Category 5':
             listings_to_display.append(listing)
-
-    return render_template('CustomerCategory5.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
-
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('CustomerCategory5.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/filterresults/',methods = ['GET','POST'])
 def filterresults():
@@ -2485,9 +2681,11 @@ def filterresults():
     get_matchinglistingID(session['filters'],outputlistID)
     outputlistID = deduper(outputlistID)
     ID_to_obj(outputlistID,listings_to_display)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
     
-    
-    return render_template('Customerfilterresults.html',listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform)
+    return render_template('Customerfilterresults.html',listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 #opstats - feedback
 @app.route('/feedback', methods = ['GET', 'POST'])
@@ -2571,10 +2769,12 @@ def feedback():
             pass
     except:
         pass
-
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
     
     return render_template('CustomerFeedback.html',searchform =search_field,
-            customer_notifications=customer_notifications,current_sessionID=int(session_ID),form=feedback_form,filterform=filterform)
+            customer_notifications=customer_notifications,current_sessionID=int(session_ID),form=feedback_form,filterform=filterform,current_username=current_username)
 
 @app.route('/notifications/<int:id>')
 def viewnotifications(id): #id is current_sessionID
@@ -2647,8 +2847,10 @@ def viewnotifications(id): #id is current_sessionID
     except:
         pass
 
-    
-    return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display,filterform=filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display,filterform=filterform,current_username=current_username)
     
 @app.route('/profilefeedback/<int:id>', methods = ['GET', 'POST'])
 def Customerprofilefeedback(id):#id not needed for now
@@ -2719,8 +2921,11 @@ def Customerprofilefeedback(id):#id not needed for now
         pass
     
     print(feedbacks_list)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
     return render_template('Customerprofile_feedback.html',number_of_feedbacks = numberfeedbacks,list_feedback = feedbacks_list, current_sessionID=session_ID,searchform=search_field
-                           ,customer_notifications=customer_notifications,reply_feedback_form=reply_feedback_form, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform)
+                           ,customer_notifications=customer_notifications,reply_feedback_form=reply_feedback_form, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform,current_username=current_username)
 
 @app.route('/update_feedback/<int:feedback_id>', methods=['POST', 'GET'])
 def update_feedback(feedback_id):
@@ -2803,8 +3008,10 @@ def update_feedback(feedback_id):
             pass
     except:
         pass
-
-    return render_template("CustomerUpdatefeedback.html",current_sessionID = session_ID,feedback=feedback,feedbacks_list=feedbacks_list,update_feedback_form=update_feedback_form,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template("CustomerUpdatefeedback.html",current_sessionID = session_ID,feedback=feedback,feedbacks_list=feedbacks_list,update_feedback_form=update_feedback_form,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
 #opstats - feedback
 @app.route('/delete_feedback/<int:feedback_id>', methods=['POST','GET'])
@@ -2948,11 +3155,14 @@ def reply_feedback(feedback_id):
             pass
     except:
         pass
-
+    
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
     return render_template("Operatordashboard_feedback_reply.html", current_sessionID=session_ID, feedback=feedback,
                            feedbacks_list=feedbacks_list, reply_feedback_form=reply_feedback_form,
                            searchform=search_field, customer_notifications=customer_notifications,
-                           filterform=filterform)
+                           filterform=filterform,current_username = current_username)
 
 #report user
 @app.route('/report/user/<int:id>', methods=['POST', 'GET'])
@@ -3029,7 +3239,10 @@ def report_user(id):
             pass
     except:
         pass
-    return render_template('Customerreport.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,reportform = reportform,customerID= id)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('Customerreport.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,reportform = reportform,customerID= id,current_username=current_username)
 
 @app.route('/confirmreport/user/<int:id>', methods=['POST', 'GET'])
 def confirmreportuser(id):
@@ -3076,8 +3289,10 @@ def confirmreportuser(id):
             pass
     except:
         pass
-
-    return render_template('Customerconfirmreport.html',customer = customer,current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,customerid = id)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('Customerconfirmreport.html',customer = customer,current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,customerid = id,current_username=current_username)
 
 @app.route('/reportuser/<int:id>', methods=['GET', 'POST'])
 def report(id):
@@ -3166,8 +3381,10 @@ def cinvaliduser():
             return redirect(url_for('filterresults'))
     except:
         pass
-    
-    return render_template('Customerinvaliduser.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('Customerinvaliduser.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
@@ -3221,12 +3438,15 @@ def operatorcontrolcenter():
             dbmain['Operatorstats'] = operatorstats_dict # sync db1 with local (basically null)
     except:
         print("Error in opening main.db")
+
     operator_stats = operatorstats_dict.get(1)
     userinfo=[operator_stats.get_users_count(),operator_stats.get_users_active_count(),operator_stats.get_users_suspended_count(),operator_stats.get_users_terminated_count()]
     listinginfo=[operator_stats.get_listings_count(),operator_stats.get_listings_available_count(),operator_stats.get_listings_disabled_count()]
     feedbackinfo = [operator_stats.get_feedback_count(),operator_stats.get_feedback_replied_count(),operator_stats.get_feedback_unreplied_count()]
     transactioninfo = [operator_stats.get_transactions_count(),operator_stats.get_transactions_Pending_count(),operator_stats.get_transactions_In_Transit_count(),operator_stats.get_transactions_Delivered_count(),operator_stats.get_transactions_Cancelled_count()]
-    return render_template('OperatorControlCenter.html',userinfo = userinfo,listinginfo=listinginfo,feedbackinfo = feedbackinfo,transactioninfo = transactioninfo)
+    reportinfo = [operator_stats.get_reports_count()]
+    opactioninfo = [operator_stats.get_opactions_count()]
+    return render_template('OperatorControlCenter.html',userinfo = userinfo,listinginfo=listinginfo,feedbackinfo = feedbackinfo,transactioninfo = transactioninfo,reportinfo = reportinfo,opactioninfo = opactioninfo)
 
 #dashboard users
 @app.route('/dashboard/users',methods=['GET', 'POST'])
@@ -4014,6 +4234,10 @@ def suspenduser(customerid):
     dbmain['operatoractions'] = operatoractions_dict
     dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
 
+    try:
+        Operatorstats.operatorstats_opactions("total","plus")
+    except:
+        pass
     #make changes to affected user
     customer = customers_dict.get(customerid)
     customer.set_status("suspended")
@@ -4128,7 +4352,10 @@ def terminateuser(customerid):
     #syncs db5 count with local count (aka customer class)
     dbmain['operatoractions'] = operatoractions_dict
     dbmain['operatoractionsCount'] = operatoractions.Operatoractions.count_ID
-
+    try:
+        Operatorstats.operatorstats_opactions("total","plus")
+    except:
+        pass
     #make changes to affected user
     customer = customers_dict.get(customerid)
     customer.set_status("terminated")
@@ -4232,7 +4459,10 @@ def restoreuser(customerid):
     #create operator action object
     operator_action = operatoractions.Operatoractions(customerid,session['typeofaction'],session['category'],session['restore_text'])
     operatoractions_dict[operator_action.get_ID()] = operator_action #store into local
-
+    try:
+        Operatorstats.operatorstats_opactions("total","plus")
+    except:
+        pass
     #syncs db5 with local dict
     #syncs db5 count with local count (aka customer class)
     dbmain['operatoractions'] = operatoractions_dict

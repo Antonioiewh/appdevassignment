@@ -27,6 +27,8 @@ class Operatorstats:
         self.__transactions_Cancelled_count = 0
         #reports
         self.__report_count = 0
+        #opactions
+        self.__opactions_count = 0
 
     #ID
     def get_ID(self):
@@ -77,7 +79,9 @@ class Operatorstats:
     def get_reports_count(self):
         return self.__report_count
     
-
+    #opactions
+    def get_opactions_count(self):
+        return self.__opactions_count
     #user related
     #amount add/minus is hardcoded
     def increase_user_count(self):
@@ -168,12 +172,16 @@ class Operatorstats:
 
     
     #reports
-    
     def increase_reports_count(self):
         self.__report_count +=1
     def decrease_reports_count(self):
         self.__report_count -=1
 
+    #opactions
+    def increase_opactions_count(self):
+        self.__opactions_count +=1
+    def decrease_opactions_count(self):
+        self.__opactions_count -=1
 
 def operatorstats_users(category,operation):
     dbmain = shelve.open('main.db', 'c')
@@ -430,5 +438,28 @@ def operatorstats_reports(category,operation):
         elif operation == "minus":
             obj.decrease_reports_count()
             print(f" - | Current amount of total transactions is {obj.get_reports_count()}")
+            dbmain['Operatorstats'] = operatorstats_dict
+            return    
+
+def operatorstats_opactions(category,operation):
+    dbmain = shelve.open('main.db', 'c')
+    operatorstats_dict = {}
+    try:
+        if "Operatorstats" in dbmain:
+            operatorstats_dict = dbmain["Operatorstats"]  # sync local with db1
+        else:
+            dbmain['Operatorstats'] = operatorstats_dict # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    obj = operatorstats_dict.get(1)
+    if category == "total":
+        if operation == "plus":
+            obj.increase_opactions_count()
+            print(f" + | Current amount of total opactions is {obj.get_opactions_count()}")
+            dbmain['Operatorstats'] = operatorstats_dict
+            return
+        elif operation == "minus":
+            obj.decrease_opactions_count()
+            print(f" - | Current amount of total opactions is {obj.get_opactions_count()}")
             dbmain['Operatorstats'] = operatorstats_dict
             return    

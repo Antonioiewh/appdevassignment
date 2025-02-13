@@ -493,7 +493,7 @@ def Customersuspended_terminatedhome():
     except:
         print("Error in opening main.db")
     customer = customers_dict.get(int(session_ID))
-    return render_template('Customerhome.html', current_sessionID = session_ID, customer = customer)
+    return render_template('Customersuspend_terminate.html', current_sessionID = session_ID, customer = customer)
 
 
 #listingalgo

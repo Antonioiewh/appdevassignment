@@ -2326,6 +2326,9 @@ def messages():
             pass
     except:
         pass
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
     try:
         if request.method == 'POST':
             receiver_id = request.form.get('receiver_id', type=str)# searchbar refers to this code when used, causes crash
@@ -2342,7 +2345,8 @@ def messages():
                     selected_chat=None,
                     customer_notifications=customer_notifications,
                     searchform=search_field,
-                    filterform=filterform
+                    filterform=filterform,
+                    current_username=current_username
                 )
             if int(receiver_id) == session_ID:
                 return render_template(
@@ -2354,7 +2358,8 @@ def messages():
                     selected_chat=None,
                     customer_notifications=customer_notifications,
                     searchform=search_field,
-                    filterform=filterform  #<- always put
+                    filterform=filterform,  #<- always put
+                    current_username=current_username
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
             # Handle Start New Chat (without content) logic
@@ -2407,9 +2412,7 @@ def messages():
                 'messages': message
             }
 
-        #get username for navbar
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        
         return render_template(
             'CustomerMessages.html',
             received_messages=received_messages,

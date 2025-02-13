@@ -76,14 +76,14 @@ class OperatorRestoreUser(Form):
     typeofaction = HiddenField()
 
 class OperatorDisableListing(Form):
-    listingid = HiddenField()
+    listingid = StringField('Enter ID of listing',[validators.DataRequired(),validators.Length(min=1,max=1234)])
     category = SelectField('Category',[validators.DataRequired()], choices=[('Phishing','Phishing'),('Scamming','Scamming'),('Suspicious account','Suspicious account'),('Offering prohibited items','Offering prohibited items')])
     disable_text = StringField('Add a comment',[validators.Length(min=4,max=1234)])
     password        = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
     typeofaction = HiddenField()
 
 class OperatorRestoreListing(Form):
-    listingid = HiddenField()
+    listingid = StringField('Enter ID of listing',[validators.DataRequired(),validators.Length(min=1,max=1234)])
     password = StringField('Password', [validators.Length(min=6, max=35),validators.DataRequired()])
     typeofaction = HiddenField()
 
@@ -95,6 +95,14 @@ class SearchListingIDField(Form):
 class SearchListingStatusField(Form):
     searchstatusfield = SelectField('Choose status', [validators.DataRequired()],choices=[('available','Available'),('disabled','Disabled'),('sold','Sold')])
 
+#feedback dashboard
+class FilterFeedback(Form):
+    searchstatusfield = SelectField('Choose status', [validators.DataRequired()],choices=[('unreplied','Unreplied'),('replied','Replied')])
+
+#transactions dashboard
+class FilterTransactions(Form):
+    searchstatusfield = SelectField('Select status',[validators.DataRequired()],choices=[('Pending','Pending'),('In Transit','In Transit'),('Delivered','Delivered'),('Cancelled','Cancelled')])
+    
 class SearchReportField(Form):
     searchfield = StringField("Enter offender username")
 
@@ -102,7 +110,7 @@ class SearchOperatorActionField(Form):
     searchfield = SelectField('Category',[validators.DataRequired()], choices=[('suspend user','Suspend user'),('terminate user','Terminate user'),('restore user','restore user'),('restore listing','Restore listing'),('disable listing','Disable listing')])
 
 class SearchTransactionField(Form):
-    searchfield = StringField("Enter Listing title")
+    searchfield = StringField("Enter Listing title",[validators.DataRequired()])
 class FeedbackForm(Form):
     rating = RadioField('Rate your experience', [validators.DataRequired()],choices=[(1,1),(2,2), (3,3),(4,4),(5,5)])
     feedback = TextAreaField('Have you encountered any issues so far? If so, please describe it', [validators.InputRequired(), validators.Length(max=500)])

@@ -1040,26 +1040,27 @@ def login():
     filterform = FilterForm(request.form)
     dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
-    if request.method == 'POST' and login_customer_form.validate():
-        
-
-        #make sure local and db1 are the same state
-        #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
-        try:
-            if "Customers" in dbmain:
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
                 customers_dict = dbmain["Customers"] #sync local with db1
-            else:
+        else:
                 dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
-        except:
-            print("Error in opening main.db")
+    except:
+        print("Error in opening main.db")
         
-        #sync IDs
-        try:
-            dbmain = shelve.open('main.db','c')    
-            Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
-        except:
-            print("Error in retrieving data from DB main Customer count or count is at 0")
-
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+    if request.method == 'POST' and login_customer_form.validate() and Customer.Customer.count_id ==0:
+        return redirect(url_for("signup"))
+    else:
+        pass 
+    if request.method == 'POST' and login_customer_form.validate() and Customer.Customer.count_id !=0 :
         
         #retrieve data from the form
         input_username = login_customer_form.username.data.strip()
@@ -1087,7 +1088,8 @@ def login():
 
         else:
             return redirect(url_for('Customersuspended_terminatedhome'))
-    
+    else:
+        pass
 
     #search func
     try:
@@ -1181,7 +1183,6 @@ def loginoptions():
 @app.route('/createlisting', methods = ['GET', 'POST'])
 def createlisting():
     global session_ID
-    session_ID = 0
     dbmain = shelve.open('main.db','c')
     listings_dict = {}
     customers_dict = {}

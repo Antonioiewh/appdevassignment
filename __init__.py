@@ -18,6 +18,8 @@ from datetime import datetime
 import Filters
 import openpyxl
 from openpyxl.styles import Alignment
+import uuid
+import re
 app = Flask(__name__)
 
 
@@ -1131,6 +1133,7 @@ def loginoptions():
     session_ID = 0
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
+    reports_dict = {}
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -2095,17 +2098,18 @@ def delivery_track(delivery_id):
                            current_sessionID=session_ID, searchform=search_field,
                            customer_notifications=customer_notifications, filterform=filterform,current_username=current_username)
 
+
 @app.route('/messages', methods=['GET', 'POST'])
 def messages():
     global session_ID
     customers_dict = {}
-    dbmain = shelve.open('main.db','c')
-    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    dbmain = shelve.open('main.db', 'c')
+    # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in dbmain:
-            customers_dict = dbmain["Customers"] #sync local with db1
+            customers_dict = dbmain["Customers"]  # sync local with db1
         else:
-            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
     except:
         print("Error in opening main.db")
     # add in for official project
@@ -2114,29 +2118,33 @@ def messages():
     db = shelve.open('messages.db', 'c')  # Open shelve database
     users_db = shelve.open('main.db')
     user = User(session_ID)
-    recent_chats = user.get_recent_chats() 
+    recent_chats = user.get_recent_chats()
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
-
-
-    #get notifs
+    listings_dict = {}
+    titles_dict = {}
+    if "Listings" in dbmain:
+        listings_dict = dbmain["Listings"]
+    for key, i in listings_dict.items():
+        titles_dict[key] = i.get_title()
+    # get notifs
     if session_ID != 0:
         owncustomer = customers_dict.get(session_ID)
         customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0  
-    #search func
+        customer_notifications = 0
+        # search func
     try:
         if request.method == 'POST' and search_field.validate():
-            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+            return redirect(url_for('searchresults', keyword=search_field.searchfield.data))
     except:
         pass
-    #filter
+    # filter
     try:
         if filterdict(filterform.data) == True:
             if request.method == "POST" and filterform.validate():
                 searchconditionlist = []
-                get_searchquery(filterform.data,searchconditionlist)
+                get_searchquery(filterform.data, searchconditionlist)
                 session['filters'] = searchconditionlist
                 return redirect(url_for('filterresults'))
         else:
@@ -2145,10 +2153,24 @@ def messages():
         pass
     try:
         if request.method == 'POST':
-            receiver_id = request.form.get('receiver_id', type=str)# searchbar refers to this code when used, causes crash
+            listingTag = False
+            receiver_id = request.form.get('receiver_id', type=str)  # searchbar refers to this code when used, causes crash
             content = request.form.get('content', '').strip()  # Strip leading/trailing spaces
             customers_dict = users_db.get('Customers', {})
-            image_file = request.form.get('image')
+            reply_value = request.form.get('reply', type=str)
+            reply_message_content = request.form.get('replymessagecontent', type=str)
+            image_file = request.files.get('image')
+            match = re.search(r'@(\d+)\s+([^\s]+)', content)
+            reply_id = request.form.get('sender_ID', type=str)
+            if match:
+                listing_id = int(match.group(1))  # Extract the numeric ID
+                listing_title = match.group(2)
+                if listing_id in titles_dict:
+                    expected_title = titles_dict[listing_id]
+                    if listing_title == expected_title:
+                        listingTag = True
+                        content = re.sub(r'@(\d+)\s+([^\s]+)', f'<a href="/viewListing/{listing_id}">@{listing_id} {listing_title}</a>', content)
+
             if not receiver_id.isdigit() or int(receiver_id) == 0 or int(receiver_id) not in customers_dict:
                 return render_template(
                     'CustomerMessages.html',
@@ -2171,38 +2193,73 @@ def messages():
                     selected_chat=None,
                     customer_notifications=customer_notifications,
                     searchform=search_field,
-                    filterform=filterform  #<- always put
+                    filterform=filterform  # <- always put
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
-            # Handle Start New Chat (without content) logic
-            # Handle sending a message only if content is provided
             if image_file and content:
                 message_type = "text+pic"
             elif image_file and content == '':
-                #filename = secure_filename(image_file.filename)
-                #image_path = os.path.join('static/uploads', filename)
-                #image_file.save(image_path)
-
-                # Set message type to picture
                 message_type = "picture"
-                #content = image_path  # Save the path as the message content
+                content = ' '
             else:
                 message_type = "text"
-            print(message_type)
             if receiver_id and content == '':  # Only receiver_id is provided, no content
                 return redirect(url_for('messages', receiver_id=receiver_id))  # Open the chat in the right column without changing recent chats order
+            UUID = str(uuid.uuid4())
+            filename = secure_filename(image_file.filename)
+            if os.path.splitext(filename)[1] == ".png" or os.path.splitext(filename)[1] == ".jpg" or os.path.splitext(filename)[1] == ".jpeg":
+                extension = os.path.splitext(filename)[1]
+            else:
+                message_type = "text"
+                image_file = None
+                extension = None
+            reply_content = None
+            sender_id = None
+            if reply_value == "True" and reply_message_content != "" and reply_id != "":
+                reply_content = reply_message_content
+                sender_id = reply_id
+                print(reply_content)
             if content:
-                user.send_message(receiver_id, content, db, message_type)  # This will update recent chats order
-
+                user.send_message(receiver_id, content, db, message_type, UUID, extension, None, reply_content, sender_id)
+                if message_type == "text+pic" or message_type == "picture":
+                    UPLOAD_FOLDER = "static/messagepics"
+                    if not os.path.exists(UPLOAD_FOLDER):
+                        os.makedirs(UPLOAD_FOLDER)
+                    if image_file and image_file.filename != '':
+                        unique_filename = UUID + os.path.splitext(filename)[1]
+                        image_path = os.path.join(UPLOAD_FOLDER, unique_filename)  # Full path to save the file
+                        image_file.save(image_path)  # Save the image
+            if listingTag:
+                global_listing = listings_dict[int(match.group(1))]
+                message_type = "listingpic"
+                content = (
+                    f"<b>{global_listing.get_title()}</b>\n"
+                    f"Seller: {global_listing.get_creator_username()}\n"
+                    f"Status: {global_listing.get_status()}\n"
+                    f"Condition: {global_listing.get_condition()}\n"
+                    f"{global_listing.get_description()}\n"
+                    f"<div><button onclick=\"window.location.href='/viewListing/{int(match.group(1))}'\" id=\"viewlistingbutton\">View listing</button></div>"
+                )
+                UUID = str(uuid.uuid4())
+                folder_path = "static/listingpics"  # Path where images are stored
+                filename_prefix = f"listing{int(match.group(1))}"  # The expected filename pattern
+                for file in os.listdir(folder_path):
+                    if file.startswith(filename_prefix):  # Check if the file starts with "listing{ID}"
+                        file_extension = os.path.splitext(file)[1]  # Extract extension
+                        extension = file_extension
+                        break  # Stop after finding the first match
+                    else:
+                        extension = '.jpg'
+                user.send_message(receiver_id, content, db, message_type, UUID, extension, int(match.group(1)), None, None)
             return redirect(url_for('messages', receiver_id=receiver_id))  # Reload to show the new message
-        
+
         # Display messages and recent chats
         received_messages = user.get_received_messages(db)
         sent_messages = user.get_sent_messages(db)
-
         selected_chat = None
         if 'receiver_id' in request.args:
             receiver_id = request.args.get('receiver_id', type=int)
+            sender_id = session_ID
             message = [
                 {
                     "type": "sent" if message.sender_id == session_ID else "received",
@@ -2212,7 +2269,13 @@ def messages():
                     "sender_id": message.sender_id,
                     "message_id": message.message_id,
                     "status": message.status,
-                    "type2": message.type
+
+                    "type2": message.type,
+                    "extension": message.extension,
+                    "listing_id": str(message.listing_id),
+                    "reply_content": message.reply_value,
+                    "sender_reply_id": message.replier_id
+
                 }
                 for message in db.get("Messages", [])
                 if (message.sender_id == session_ID and message.receiver_id == receiver_id) or
@@ -2221,7 +2284,8 @@ def messages():
 
             selected_chat = {
                 'receiver_id': receiver_id,
-                'messages': message
+                'messages': message,
+                'sender_id': sender_id
             }
 
         #get username for navbar
@@ -2234,11 +2298,14 @@ def messages():
             current_sessionID=session_ID,
             recent_chats=recent_chats,
             selected_chat=selected_chat,
-            searchform =search_field,
+            searchform=search_field,
             customer_notifications=customer_notifications,
             show_error_modal=False,
             filterform=filterform,
+            listings_dict=listings_dict,
+            titles_dict=titles_dict
             current_username = current_username
+
         )
     finally:
         db.close()
@@ -3360,6 +3427,7 @@ def report(id):
     global session_ID
     dbmain = shelve.open('main.db','c')
     customers_dict = {} #local one
+    reports_dict = {}
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in dbmain:

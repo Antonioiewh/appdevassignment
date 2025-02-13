@@ -4,6 +4,17 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
       xmlns="http://www.w3.org/1999/html">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lazysizes/5.2.1/lazysizes.min.js" async></script>
+<script>
+    window.onload = function() {
+        scrollToBottom();
+    };
+    function scrollToBottom() {
+        const messageBox = document.querySelector('.message-box');
+        messageBox.scrollTop = messageBox.scrollHeight;
+    }
+</script>
+
 <!-- error Modal for Invalid Receiver ID -->
 {% if show_error_modal %}
 <script>
@@ -14,7 +25,6 @@
             window.location.href = "{{ url_for('messages') }}";
           });
     }
-
 </script>
 {% endif %}
 <style>
@@ -168,6 +178,8 @@
 
     .messagebox {
         margin-bottom: -1%;
+        margin-top: 0.5%;
+
     }
 
     #sendbutton {
@@ -251,6 +263,61 @@
         padding-left: 2%;
         padding-right: 2%;
     }
+
+    .thumbnail_box {
+        display: flex;
+        flex-direction: column;
+        background-color: #d3d3d3;
+        margin-bottom: 5px;
+        width: 109.1%;
+        margin-left: -1%;
+        border-radius: 5px;
+    }
+
+    .thumbnail-image {
+        max-width: auto;
+        max-height: 40px;
+        margin-bottom: 5px;
+        margin-left: 5px;
+        margin-top: 5px;
+
+    }
+
+    .thumbnail-text {
+        max-width: 100%;
+        padding: 7px;
+        margin-top: 10px;
+        font-size: 14px;
+    }
+    .remove-file-btn:hover {
+        color: #ff0000; /* Change color on hover (e.g., red) */
+        cursor: pointer; /* Change cursor to indicate it's clickable */
+    }
+    #listings div:hover {
+        background-color: #f0f0f0;
+        cursor: pointer;
+    }
+    #viewlistingbutton{
+        width: 100%;
+        border: none;
+        border-radius: 5px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        margin-top: 10px;
+    }
+    #viewlistingbutton:hover{
+        background-color: #d3d3d3;
+    }
+    .replymessage{
+        display: flex;
+        flex-direction: column;
+        width: 109.1%;
+        margin-left: -1%;
+        padding: 6px;
+        padding-left: 10px;
+        border-radius: 5px;
+    }
+
 </style>
 
 <body>
@@ -270,7 +337,7 @@
                                     {% if selected_chat and selected_chat['receiver_id'] == chat['receiver_id'] %}
                                         background-color: lightgray;  /* Dark Gray */
                                     {% endif %}">
-                                    <div class="profile-picture" style="display: flex; align-items: center;"><img src="static/profilepics/hermos.jpg" alt="Profile Picture"></div>
+                                    <div class="profile-picture" style="display: flex; align-items: center;"><img src="static/profilepics/customer{{ chat['receiver_id'] }}.jpg" onerror="this.onerror=null; this.src='static/profilepics/placeholder.png';" alt="Profile Picture"></div>
                                     <div style="margin-left: 15px; margin-top: -4px;" class="user_name111">User {{ chat['receiver_id'] }}</div>
                                 </li>
                             </a>
@@ -288,21 +355,31 @@
                     <hr id="hr2">
                     <div class="message-box">
                         {% for message in selected_chat['messages'] %}
-                            <div class="message {{ message.type }}" id="{{ message.message_id }}">
+                            <div class="message {{ message.type }}" id="{{ message.message_id }}" data-message-content="{{ message.content }}">
                                 <div id="shiftup" ><b>{{ 'To' if message.type == 'sent' else 'From' }}:</b>
                                 {{ message.receiver_id if message.type == 'sent' else message.sender_id }}</div>
                                 {% if message.status == "deleted" %}
                                     <pre><i style="color: lightgray;">This message has been deleted</i></pre>
                                     <div class="time"><small>{{ message.timestamp }}</small></div>
                                 {% elif message.status == "edited" %}
-                                <pre>{{ message.content }}</pre>
+                                {% if message.reply_content is not none %}
+                                    {% if message.sender_reply_id|string == message.sender_id|string and message.sender_reply_id|string == current_sessionID|string %}
+                                        <div style="background-color: #8fbc8f; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ message.reply_content|safe}}</div>
+                                        <script>console.log("{{ message.sender_id }}")</script>
+                                    {% else %}
+                                        <div style="background-color: #d3d3d3; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px; color:black;">{{ message.reply_content|safe }}</div>
+                                    {% endif %}
+                                {% endif %}
+                                {% if message.type2 in ["text+pic", "picture"] %}
+                                    <img src="{{ url_for('static', filename='messagepics/' + message.message_id + message.extension) }}"
+                                         alt="Sent Image" style="max-width: 100%; height: auto; border-radius: 3px; margin-top: 3%;" class="lazyload">
+                                {% elif message.type2 == "listingpic" %}
+                                    <img src="{{ url_for('static', filename='listingpics/' + 'listing' + message.listing_id + message.extension) }}" onerror="this.onerror=null; this.src='static/listingpics/notfound.png';"
+                                         alt="Sent Image" style="max-width: 100%; height: auto; border-radius: 3px; margin-top: 3%;" class="lazyload">
+                                {% endif %}
+                                <pre>{{ message.content | safe }}</pre>
                                 <div class="time"><small>{{ message.timestamp }}</small></div>
                                 <div class="time" style="margin-left: 94%;" id="editcheck"><small>Edited</small></div>
-                                {% else %}
-                                <pre>{{ message.content }}</pre>
-                                <div class="time"><small>{{ message.timestamp }}</small></div>
-                                {% endif %}
-                                <!-- Ellipsis Icon (Three dots) and Dropdown -->
                                 <div class="ellipsis-container">
                                     <div class="ellipsis"></div>
                                     <div class="ellipsis"></div>
@@ -311,13 +388,53 @@
                                 <div class="dropdown-menu2">
                                     <ul>
                                         {% if message.type == 'sent' %}
-                                            <li><a href="#" class="edit-option" data-message-id="{{ message.message_id }}" data-message-content="{{ message.content }}">Edit</a></li>
-                                            <li><a href="#" class="delete-option" data-message-id="{{ message.message_id }}">Delete</a></li>
+                                            {% if message.type2 != 'picture' and message.type2 != 'listingpic' %}
+                                                <li><a href="#" class="edit-option" data-message-id="{{ message.message_id }}" data-message-content="{{ message.content }}">Edit</a></li>
+                                            {% endif %}
+                                            {% if message.type2 != 'listingpic' %}
+                                                <li><a href="#" class="delete-option" data-message-id="{{ message.message_id }}">Delete</a></li>
+                                            {% endif %}
                                         {% endif %}
                                         <li><a href="#" class="reply-option">Reply</a></li>
                                     </ul>
                                 </div>
-
+                                {% else %}
+                                {% if message.reply_content is not none %}
+                                    {% if message.sender_reply_id|string == message.sender_id|string and message.sender_reply_id|string == current_sessionID|string %}
+                                        <div style="background-color: #8fbc8f; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ message.reply_content|safe }}</div>
+                                        <script>console.log("{{ message.sender_id }}")</script>
+                                    {% else %}
+                                        <div style="background-color: #d3d3d3; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px; color:black;">{{ message.reply_content|safe }}</div>
+                                    {% endif %}
+                                {% endif %}
+                                {% if message.type2 in ["text+pic", "picture"] %}
+                                    <img src="{{ url_for('static', filename='messagepics/' + message.message_id + message.extension) }}"
+                                         alt="Sent Image" style="max-width: 100%; height: auto; border-radius: 3px; margin-top: 3%;" class="lazyload">
+                                {% elif message.type2 == "listingpic" %}
+                                    <img src="{{ url_for('static', filename='listingpics/' + 'listing' + message.listing_id + message.extension) }}" onerror="this.onerror=null; this.src='static/listingpics/notfound.png';"
+                                         alt="Sent Image" style="max-width: 100%; height: auto; border-radius: 3px; margin-top: 3%;" class="lazyload">
+                                {% endif %}
+                                <pre>{{ message.content | safe }}</pre>
+                                <div class="time"><small>{{ message.timestamp }}</small></div>
+                                <div class="ellipsis-container">
+                                    <div class="ellipsis"></div>
+                                    <div class="ellipsis"></div>
+                                    <div class="ellipsis"></div>
+                                </div>
+                                <div class="dropdown-menu2">
+                                    <ul>
+                                        {% if message.type == 'sent' %}
+                                            {% if message.type2 != 'picture' and message.type2 != 'listingpic' %}
+                                                <li><a href="#" class="edit-option" data-message-id="{{ message.message_id }}" data-message-content="{{ message.content }}">Edit</a></li>
+                                            {% endif %}
+                                            {% if message.type2 != 'listingpic' %}
+                                                <li><a href="#" class="delete-option" data-message-id="{{ message.message_id }}">Delete</a></li>
+                                            {% endif %}
+                                        {% endif %}
+                                        <li><a href="#" class="reply-option" data-message-id="{{ message.message_id }}" data-message-content="{{ message.content }}" data-message-sender = "{{ message.sender_id }}">Reply</a></li>
+                                    </ul>
+                                </div>
+                                {% endif %}
                             </div>
                         {% endfor %}
                     </div>
@@ -329,17 +446,52 @@
 
                 {% if selected_chat %}
                 <div class="messagebox">
-                    <form method="POST" id="message-form">
-                        <input type="hidden" name="receiver_id" id="textinput" value="{{ selected_chat['receiver_id'] }}">
-                        <label for="content"></label>
-                        <textarea id="content" name="content" required placeholder="Type a message..." autofocus></textarea><br><br>
-                        <input type="file" id="image-upload" name="image" accept=".jpg, .png" style="display: none;">
-                        <button type="button" class="btn btn-secondary" id="camera-button">
-                            <i class="bi bi-camera"></i>
-                        </button>
-                        <button type="submit" class="btn btn-primary" id="sendbutton" disabled>Send</button>
-                    </form>
-                </div>
+                    <div id="listings" style="max-height: 40px; overflow-y: auto; overflow-x: hidden; border:1px solid #ccc; display: none; margin-bottom: 5px;" data-ids='{{ listings_dict.keys()|list|tojson }}'>
+                        {% for id, listing in listings_dict.items() %}
+                        <div style="padding: 1px; margin-left: 5px;" class="unfiltered-item" data-id="{{ id }}" data-title="{{ listing.get_title() }}">@{{ id ~ " " ~ listing.get_title() }} </div>
+                        {% endfor %}
+                        <script>
+                            document.addEventListener("DOMContentLoaded", function() {
+                                const listingsDiv = document.getElementById("listings");
+                                listingsDiv.addEventListener("click", function(event) {
+                                    if (event.target.classList.contains("unfiltered-item")) {
+                                        const inputField = document.getElementById("content");  // Assuming the input field has the id 'content'
+                                        const id = event.target.getAttribute("data-id"); // Get the id from the data-id attribute
+                                        const title = event.target.getAttribute("data-title"); // Get the title from the data-title attribute
+                                        const textBeforeAt = inputField.value.substring(0, inputField.selectionStart);
+                                        const textAfterAt = inputField.value.substring(inputField.selectionEnd);
+                                        const lastAtIndex = textBeforeAt.lastIndexOf('@');
+                                        const updatedText = textBeforeAt.substring(0, lastAtIndex) + `@${id} ${title}` + textAfterAt;
+                                        inputField.value = updatedText;
+                                        inputField.focus();
+                                        inputField.selectionStart = inputField.selectionEnd = updatedText.length;
+                                        listingsDiv.style.display = "none";
+                                    }
+                                });
+                            });
+                        </script>
+                    </div>
+                    <div id="replymessage" class="replymessage" style="display: none; position: relative;background-color: #c0c0c0;">
+                        <b>Replying to:</b><br>
+                        <div id="reply-message-content"></div>
+                        <span class="btn-close remove-reply-btn" style="position: absolute; top:5px; right:5px; color: #333; cursor: pointer;" onclick="removeReplyPreview()"></span>
+                    </div>
+                    <div id="thumbnail" class="thumbnail_box"></div>
+                        <form method="POST" id="message-form" enctype="multipart/form-data">
+                            <input type="hidden" name="receiver_id" id="textinput" value="{{ selected_chat['receiver_id'] }}">
+                            <input type="hidden" name="reply" id="replyvalue" value="False">
+                            <input type="hidden" name="replymessagecontent" id="replymessageid" value="">
+                            <input type="hidden" name="sender_ID" id="sender_ID" value="">
+                            <label for="content"></label>
+                            <textarea id="content" name="content" required placeholder="Type a message..." autofocus></textarea><br><br>
+                            <input type="file" id="image-upload" name="image" accept=".jpg, .png, .jpeg" style="display: none;">
+                            <button type="button" class="btn btn-secondary" id="camera-button">
+                                <i class="bi bi-camera"></i>
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="sendbutton" disabled>Send</button>
+                        </form>
+                    </div>
+
                 {% endif %}
             </div>
         </div>
@@ -412,7 +564,7 @@
             <div class="modal-body text-center">
                 <!-- Profile Picture -->
                 <div class="profile-picture">
-                    <img id="profilePicture" src="static/profilepics/hermos.jpg" alt="Profile Picture" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #ccc;">
+                    <img src="static/profilepics/customer{{ selected_chat['receiver_id'] }}.jpg" onerror="this.onerror=null; this.src='static/profilepics/placeholder.png';" alt="Profile Picture" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #ccc;">
                 </div>
                 <!-- Buttons below Profile Picture -->
                 <div class="mt-3" style="text-align: center;">
@@ -530,6 +682,10 @@
                     preElement.innerHTML = "<i style='color: lightgray;'>This message has been deleted</i>";
                     const ellipsisContainer = messageElement.querySelector('.ellipsis-container');
                     ellipsisContainer.style.display = 'none';
+                    const imageElement = messageElement.querySelector('img');
+                    if (imageElement) {
+                        imageElement.remove(); // Remove the image from the UI
+                    }
 
                     fetch('/delete_message', {
                         method: 'POST',  // Use POST for modifying data
@@ -555,14 +711,6 @@
                 });
             });
         });
-        //Scroll to the bottom
-        function scrollToBottom() {
-            const messageBox = document.querySelector('.message-box');
-            messageBox.scrollTop = messageBox.scrollHeight;
-        }
-        window.onload = function() {
-            scrollToBottom();
-        };
         //function to shorten text to ...
         function truncateName(name, maxLength) {
             if (name.length > maxLength) {
@@ -644,13 +792,10 @@
                     const inputValue = messageInput.value.trim();  // Get the trimmed value of the input field
                     if (inputValue === messageContent.trim()) {
                         newConfirmEditButton.disabled = true;  // Disable button if input is same as original content
-                        console.log("New and old message are the same");
                     } else if (inputValue) {
                         newConfirmEditButton.disabled = false;  // Enable the button if there's input
-                        console.log("New message is new");
                     } else {
                         newConfirmEditButton.disabled = true;  // Disable button if input is empty
-                        console.log("Empty message");
                     }
                 };
                 updateButtonState();
@@ -708,16 +853,185 @@
             });
         });
     document.getElementById('camera-button').addEventListener('click', function() {
-        document.getElementById('image-upload').click(); // Trigger file input when the camera button is clicked
-    });
 
+        const fileInput = document.getElementById('image-upload');
+        fileInput.click();  // Trigger the file input when the camera button is clicked
+    });
     document.getElementById('image-upload').addEventListener('change', function() {
-        if (this.files.length > 0) {
-            alert("File selected: " + this.files[0].name); // Show an alert (you can replace this with a preview)
+        const fileInput = this;
+        const thumbnailDiv = document.getElementById('thumbnail');
+        const sendButton = document.getElementById('sendbutton');
+        const contentTextarea = document.getElementById('content');
+        const validExtensions = ['.jpg', '.jpeg', '.png'];  // Valid image extensions
+        // Clear the thumbnail div whenever a new file is selected
+        thumbnailDiv.innerHTML = '';
+
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0]; // Get the first selected file
+            const fileNameStr = file.name.toLowerCase();
+            const fileExtension = fileNameStr.slice(fileNameStr.lastIndexOf('.'));
+            const container = document.createElement('div');
+            container.classList.add('thumbnail-container');
+            container.style.position = 'relative'
+            if (!validExtensions.includes(fileExtension)) {
+                alert('Invalid file type. Please upload a PNG, JPG, or JPEG image.');
+                fileInput.value = '';  // Clear the file input
+                thumbnailDiv.innerHTML = '';  // Clear the preview
+                sendButton.disabled = true;  // Disable the send button
+                contentTextarea.setAttribute('required', 'required'); // Set the textarea to required again
+                return;  // Exit the function to prevent further processing
+            }
+
+            // Create image element for preview
+            const imageElement = document.createElement('img');
+            imageElement.src = URL.createObjectURL(file); // Create a URL for the image
+            imageElement.classList.add('thumbnail-image'); // Apply styling
+
+            // Create the text for the file name
+            const fileName = document.createElement('span');
+            fileName.classList.add('thumbnail-text');
+            fileName.textContent = file.name;
+
+            // Create the remove button (X)
+            const removeButton = document.createElement('span');
+            removeButton.classList.add('btn-close' ,'remove-file-btn');
+            removeButton.style.position = 'absolute'; // Position the close button
+            removeButton.style.top = '5px'; // Adjust the top position
+            removeButton.style.right = '5px'; // Adjust the right position
+            removeButton.style.color = '#333';
+
+            // When the remove button is clicked, clear the file input and the preview
+            removeButton.addEventListener('click', function() {
+                fileInput.value = ''; // Clear the file input
+                thumbnailDiv.innerHTML = ''; // Clear the preview
+                sendButton.disabled = true; // Disable the send button
+                contentTextarea.setAttribute('required', 'required'); // Set the textarea to required again
+            });
+
+            // Append the image, filename, and remove button to the container
+            container.appendChild(imageElement);
+            container.appendChild(fileName);
+            container.appendChild(removeButton);
+
+        //document.getElementById('image-upload').click(); // Trigger file input when the camera button is clicked
+    //});
+
+    //document.getElementById('image-upload').addEventListener('change', function() {
+        //if (this.files.length > 0) {
+            //alert("File selected: " + this.files[0].name); // Show an alert (you can replace this with a preview)
+        //}
+    //});
+
+
+            // Append the container to the thumbnail div
+            thumbnailDiv.appendChild(container);
+
+            // Enable the send button once the file is selected
+            sendButton.disabled = false;
+            contentTextarea.removeAttribute('required'); // Remove the required attribute from the textarea
         }
     });
+    {% if listings_dict %}
+        const originalListingsHTML = `
+            {% for id, listing in listings_dict.items() %}
+                <div style="padding: 1px; margin-left: 5px;" class="unfiltered-item" data-id="{{ id }}" data-title="{{ listing.get_title() }}">@{{ id ~ " " ~ listing.get_title() }} </div>
+            {% endfor %}
+        `;
+        const listingIds = {{ listings_dict.keys() | list | tojson }};
+    {% endif %}
+    const listingsDiv = document.getElementById("listings");
+    listingsDiv.innerHTML = originalListingsHTML;
+    {% if titles_dict %}
+        titles_dict = {{ titles_dict | tojson }}
+    {% endif %}
+    document.getElementById("content").addEventListener("input", function () {
+        const inputField = this;
+        const listingsDiv = document.getElementById("listings");
+        const cursorPosition = inputField.selectionStart;
+        const textBeforeCursor = inputField.value.substring(0, cursorPosition);
+        const match = textBeforeCursor.match(/@(\d+)$/);
+        const isMultipleAtSymbols = (textBeforeCursor.match(/@/g) || []).length > 1;
+        const isAtSymbolPresent = textBeforeCursor.includes("@");
+        const textAfterAt = textBeforeCursor.split('@')[1];
+        const isSpaceAfterAt = textAfterAt?.includes(" ");
+        const isLetterPresent = /[a-zA-Z]/.test(textAfterAt);
 
+        listingsDiv.style.display = (
+            isAtSymbolPresent &&  // Check if '@' is typed
+            !isSpaceAfterAt &&    // Ensure no space after '@'
+            !isLetterPresent &&     // Ensure no letters after '@'
+            !isMultipleAtSymbols
+        ) ? "block" : "none";
 
+        if (match) {
+            const typedId = parseInt(match[1]); // Extract the number after '@'
+
+            // Filter the listing IDs that start with the typed number
+            const filteredIds = listingIds.filter(id => id.toString().startsWith(match[1].toString()));
+            listingsDiv.innerHTML = ""; // Clear the previous list
+
+            // If there are matching results, show them
+            if (filteredIds.length > 0) {
+                filteredIds.forEach(id => {
+                    let div = document.createElement('div'); // Use let here to define the div
+                    div.style.padding = "1px";
+                    div.style.marginLeft = "5px";
+                    div.textContent = `@${id} ${titles_dict[id]}`;
+                    div.classList.add("filtered-item");
+                    div.addEventListener("click", function () {
+                       const textBeforeAt = inputField.value.substring(0, inputField.selectionStart);
+                       const textAfterAt = inputField.value.substring(inputField.selectionEnd);
+                       const lastAtIndex = textBeforeAt.lastIndexOf('@');
+                       const updatedText = textBeforeAt.substring(0, lastAtIndex) + `@${id} ${titles_dict[id]}` + textAfterAt;
+                       inputField.value = updatedText;
+                       inputField.focus();
+                       inputField.selectionStart = inputField.selectionEnd = updatedText.length;
+                       listingsDiv.style.display = "none";
+                    });
+                    listingsDiv.appendChild(div);
+                });
+            } else {
+                listingsDiv.innerHTML = "<div style='padding: 1px; margin-left: 5px;'>No matches found</div>";
+            }
+        } else {
+            // If no number is typed after '@', restore the original listingsDiv state
+            listingsDiv.innerHTML = originalListingsHTML;
+        }
+    });
+    document.querySelectorAll('.reply-option').forEach(button => {
+        button.addEventListener('click', function() {
+            const messageId = this.getAttribute('data-message-id');
+            const messageContent = this.getAttribute('data-message-content');
+            const senderID = this.getAttribute('data-message-sender');
+            document.getElementById('replymessage').style.display = 'block';
+            shortenedmessage = truncateName(messageContent, 80)
+            document.getElementById('reply-message-content').innerHTML = shortenedmessage;
+            document.getElementById('replyvalue').value = "True";
+            document.getElementById('replymessageid').value = shortenedmessage;
+            document.getElementById('sender_ID').value = senderID;
+            const inputField = document.getElementById("content");  // Assuming the input field has the id 'content'
+            inputField.focus();
+            const dropdown = this.closest('.dropdown-menu2'); // Get the closest dropdown menu
+            if (dropdown) {
+                dropdown.style.display = 'none';  // Hide the dropdown
+                dropdown.previousElementSibling.classList.remove('active');  // Remove active class
+            }
+            const currentSessionID = {{ current_sessionID|string }};
+            if (senderID != currentSessionID) {
+                document.getElementById('replymessage').style.backgroundColor = '#c0c0c0';  // Gray for receiver's message
+            } else {
+                document.getElementById('replymessage').style.backgroundColor = '#8fbc8f';  // Green for sender's message
+            }
+        });
+    });
+    function removeReplyPreview() {
+        document.getElementById('reply-message-content').innerHTML = '';
+        document.getElementById('replymessage').style.display = 'none';
+        document.getElementById('replyvalue').value = "False";
+        document.getElementById('replymessageid').value = '';
+        document.getElementById('sender_ID').value = '';
+        document.getElementById('replymessage').style.backgroundColor = '';
+    }
     </script>
 </body>
 

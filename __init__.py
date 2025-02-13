@@ -2334,6 +2334,9 @@ def messages():
             pass
     except:
         pass
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
     try:
         if request.method == 'POST':
             listingTag = False
@@ -2364,7 +2367,8 @@ def messages():
                     selected_chat=None,
                     customer_notifications=customer_notifications,
                     searchform=search_field,
-                    filterform=filterform
+                    filterform=filterform,
+                    current_username=current_username
                 )
             if int(receiver_id) == session_ID:
                 return render_template(
@@ -2376,7 +2380,9 @@ def messages():
                     selected_chat=None,
                     customer_notifications=customer_notifications,
                     searchform=search_field,
-                    filterform=filterform  # <- always put
+                    filterform=filterform,  #<- always put
+                    current_username=current_username
+
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
             if image_file and content:
@@ -2471,9 +2477,7 @@ def messages():
                 'sender_id': sender_id
             }
 
-        #get username for navbar
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        
         return render_template(
             'CustomerMessages.html',
             received_messages=received_messages,

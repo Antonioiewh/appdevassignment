@@ -11,7 +11,7 @@ class Listing:
         self.__condition = condition
         self.__category = category
         self.__likes = 0
-        self.__status = "available" #or "disabled" or "sold"
+        self.__status = "available" #or "disabled" or "reserved"
         self.__buyerID = None #by default, change to buyer ID when purchased
         self.__creationDate = creationDate
         self.__soldDate = None

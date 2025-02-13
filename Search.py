@@ -25,9 +25,16 @@ def check_listing(obj): #check if creator is suspended,terminated and if listing
             dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
     except:
         print("Error in opening main.db")
-        
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+
     customer = customers_dict.get(obj.get_creatorID())
-    if customer.get_status() == "active":
+    if customer.get_status() == "active" and obj.get_status() == "available":
         print("success")
         return True
     else:

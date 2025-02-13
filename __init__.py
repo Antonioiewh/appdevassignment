@@ -273,7 +273,10 @@ def template():
             return redirect(url_for('filterresults'))
     except:
         pass
-    return render_template('template.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform)
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('template.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
 #create op stats obj here
 @app.route('/', methods = ['GET', 'POST']) #shld be the same as href for buttons,links,navbar, etc...
@@ -495,6 +498,7 @@ def Customersuspended_terminatedhome():
     return render_template('Customerhome.html', current_sessionID = session_ID, customer = customer)
 
 
+#listingalgo
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
 def Customerprofile(id):
     global session_ID
@@ -506,8 +510,6 @@ def Customerprofile(id):
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
 
-    #make sure local and db1 are the same state
-    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in dbmain:
             customers_dict = dbmain["Customers"] #sync local with db1
@@ -573,7 +575,13 @@ def Customerprofile(id):
             print(key)
             if key in customer_listings:
                 listing = listings_dict.get(key)
-                listing_list.append(listing)
+                if session_ID != idreal: #if you are NOT viewing your own profile
+                    if Search.check_listing(listing):
+                        listing_list.append(listing)
+                    else:
+                        pass
+                else:
+                    listing_list.append(listing)
 
     #search func
     try:
@@ -1422,6 +1430,181 @@ def viewListing(id):
     current_username = customer.get_username()
 
     return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
+
+#opstats - listing
+@app.route('/reservelisting/<int:id>')
+def reservelisting(id):
+    dbmain = shelve.open('main.db','c')
+    listings_dict = {}
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    listing = listings_dict.get(id)
+    #opstats code
+    try:
+        if listing.get_status() == "available":
+            Operatorstats.operatorstats_listings("total","minus")
+            Operatorstats.operatorstats_listings("available","minus")
+            Operatorstats.operatorstats_listings("reserved","plus")
+        elif listing.get_status() == "disabled":
+            Operatorstats.operatorstats_listings("total","minus")
+            Operatorstats.operatorstats_listings("disabled","minus")
+            Operatorstats.operatorstats_listings("reserved","plus")
+        else:
+            pass
+    except:
+        print("Error! Operator stats did not update.")
+    listing.set_status('reserved')
+    dbmain['Listings'] = listings_dict
+    print("reserved listing")
+    return redirect(url_for('confirmreservelisting', id=id))
+
+#opstats - listing
+@app.route('/unreservelisting/<int:id>')
+def unreservelisting(id):
+    dbmain = shelve.open('main.db','c')
+    listings_dict = {}
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    listing = listings_dict.get(id)
+    #opstats code
+    try:
+        Operatorstats.operatorstats_listings("available","plus")
+        Operatorstats.operatorstats_listings("reserved","minus")
+    except:
+        print("Error! Operator stats did not update.")
+    listing.set_status('available')
+    dbmain['Listings'] = listings_dict
+    return redirect(url_for('confirmunreservelisting', id=id))
+
+@app.route('/reservelistingconfirmed/<int:id>')
+def confirmreservelisting(id):
+    global session_ID
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    listings_dict = {}
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    listing = listings_dict.get(id)
+
+    #search func
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('Customerconfirmreservelisting.html',current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,listing = listing,current_username=current_username)
+
+@app.route('/unreservelistingconfirmed/<int:id>')
+def confirmunreservelisting(id):
+    global session_ID
+    dbmain = shelve.open('main.db','c')
+    customers_dict = {} #local one
+    listings_dict = {}
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+        
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')    
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    listing = listings_dict.get(id)
+
+    #search func
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    #get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+    return render_template('Customerconfirmunreservelisting.html',current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,listing = listing,current_username=current_username)
 
 #opstatshere - listing
 @app.route('/deleteListing/<int:id>/', methods = ['GET', 'POST'])
@@ -2396,6 +2579,7 @@ def edit_message():
     finally:
         db.close()
 
+#listingalgo
 @app.route('/searchresults/<keyword>', methods=['GET', 'POST'])
 def searchresults(keyword):
     global session_ID

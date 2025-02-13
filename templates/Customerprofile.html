@@ -68,17 +68,14 @@
             <img src=../static/listingpics/listing{{listing.get_ID()}}.jpg style="max-width:250px;width:100%; max-height:200px;height:100%; border-radius: 5%; justify-self:center">
         </div>
         {% if listing.get_status() == "disabled"%}
-        
         <p class="" style="justify-self:center; color:red;">This listing is under review</p> 
     </div>
         {%endif%}
-        {% if listing.get_status() == "available"%}
         <div style="margin-left:9%; margin-bottom:0px;">
             <p class="" style="justify-self:start; margin-bottom:0px;">{{listing.get_title()}}</p> 
             <p class=""style="justify-self:start; margin-bottom:0px; font-weight:bold"> {{listing.get_condition()}}</p>
         </div>
 
-        {%endif%}
     
 
         <!--drop down options and stuff-->

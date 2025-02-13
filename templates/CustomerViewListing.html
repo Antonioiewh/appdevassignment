@@ -22,9 +22,15 @@
                         <a href="/createLikedListing/{{listing.get_ID()}}" class="btn btn-info" role="button" style="background:red; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Add to cart<i class="bi bi-cart2" style="font-size:1.3rem"></i></p></a>
                     </div>
                     {%else%}
+                    {% if listing.get_status() == "available"%}
                     <div style="max-width:35%; width:100%;" class="align-items-center">
-                        <a href="#" class="btn btn-info" role="button" style="background:purple; height:6vh; border:none; padding:5%; max-width:100%; width:100%;"><p style="color:black; font-weight:bold">Marked as reserved</p></a>
+                        <a href="/reservelisting/{{listing.get_ID()}}" class="btn btn-info" role="button" style="background:purple; height:6vh; border:none; padding:5%; max-width:100%; width:100%;"><p style="color:black; font-weight:bold">Reserve it!</p></a>
                     </div>
+                    {%else%}
+                    <div style="max-width:35%; width:100%;" class="align-items-center">
+                        <a href="/unreservelisting/{{listing.get_ID()}}" class="btn btn-info" role="button" style="background:purple; height:6vh; border:none; padding:5%; max-width:100%; width:100%;"><p style="color:black; font-weight:bold">Unreserve it!</p></a>
+                    </div>
+                    {%endif%}
                     {%endif%}
     
                     {%if user_liked_post == 'False'%} 

@@ -999,7 +999,7 @@ def signup():
             send_welcomenotifcation(customer.get_id())
             
 
-            \
+
 
             
             
@@ -2490,7 +2490,7 @@ def messages():
             show_error_modal=False,
             filterform=filterform,
             listings_dict=listings_dict,
-            titles_dict=titles_dict
+            titles_dict=titles_dict,
             current_username = current_username
 
         )

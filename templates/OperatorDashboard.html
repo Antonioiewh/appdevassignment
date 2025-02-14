@@ -7,9 +7,15 @@
     #categoryChart {
       max-width: 70%;
       height: 350px;
-      margin-left: 5%;
+      margin-left: 15%;
       margin-top: -1%;
       }
+    #avgDaysChart { /* Style for the new chart */
+      max-width: 60%;
+      height: 350px;
+      margin: 20px auto; /* Center the chart */
+      margin-top: -15%;
+    }
 </style>
 <body>
     <h1 class="display-4">Operator listing dashboard</h1>
@@ -24,20 +30,21 @@
     </div>
     <div style="display: flex; align-items: flex-start; gap: 20px;">
       <!-- Table Container -->
-      <div style="flex: 1; max-width: 40%; height: 400px;">
-          <canvas id="topSellersChart" height="300" width="450"></canvas>
-      </div>
+        <div style="flex: 1; max-width: 40%; height: 400px;">
+            <canvas id="topSellersChart" height="300" width="450"></canvas>
+        </div>
         <!-- Chart Container -->
-      <div style="flex: 1;">
+        <div style="flex: 1; margin-left: 200px;">
             <canvas id="categoryChart"></canvas>
-      </div>
+        </div>
     </div>
-    <br><p><strong>Average days for a listing to sell:</strong> {{ avg_days_to_sell }} days</p>
-    <p><strong>Average days for listing in Electronics to sell:</strong> {{ electronics_day_avg }} days</p>
-    <p><strong>Average days for listing in Books to sell:</strong> {{ books_day_avg }} days</p>
-    <p><strong>Average days for listing in Fashion sell:</strong> {{ fashion_day_avg }} days</p>
-    <p><strong>Average days for listing in Entertainment to sell:</strong> {{ entertainment_day_avg }} days</p>
-    <p><strong>Average days for listing in Misc to sell:</strong> {{ misc_day_avg }} days</p>
+    <div style="display: flex; justify-content: center; flex-direction: column; align-items: center; max-width: 320px; position: relative; left: 53%; transform: translateX(53%); margin-top: -1%;">
+        <canvas id="ratingGauge"></canvas>
+        <h1 style="margin-top: -45px;">{{ customer_satisfaction_gauge }}%</h1>
+    </div>
+    <div style="margin-top:-20%; margin-left: -54.3%;">
+        <canvas id="avgDaysChart"></canvas> <--- Add canvas element for the chart
+    </div>
 </body>
 <script>
     const categories = ["Electronics", "Books", "Fashion", "Entertainment", "Misc"];
@@ -162,6 +169,108 @@
                         stepSize: 1,
                         precision: 0
                     }
+                }
+            }
+        }
+    });
+</script>
+<script>
+    const ctx3 = document.getElementById('ratingGauge').getContext('2d');
+    const customerSatisfaction = {{ customer_satisfaction_gauge }}; // Jinja variable
+    const customer_total_feedbacks = {{ customer_total_feedbacks }}; // Jinja variable
+
+    new Chart(ctx3, {
+        type: 'doughnut',
+        data: {
+            labels: ['Satisfaction', 'Remaining'],
+            datasets: [{
+                data: [customerSatisfaction, 100 - customerSatisfaction],
+                backgroundColor: ['#4CAF50', '#E0E0E0'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            rotation: -90, // Starts from top
+            circumference: 180, // Makes it a semi-circle
+            cutout: '70%', // Controls thickness
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Customer Satisfaction Score',
+                    font: {
+                        size: 16
+                    },
+                    padding: {
+                        top: 80
+                    }
+                },
+                legend: { display: false },
+                tooltip: {
+                    enabled: true,
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            return 'Total Feedbacks: ' + customer_total_feedbacks;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+<script>
+    const avgDaysData = {
+        labels: ["Electronics", "Books", "Fashion", "Entertainment", "Misc"],
+        datasets: [{
+            label: 'Average Days to Sell',
+            data: [{{ electronics_day_avg }}, {{ books_day_avg }}, {{ fashion_day_avg }}, {{ entertainment_day_avg }}, {{ misc_day_avg }}],
+            backgroundColor: ['#1F77B4', '#FF7F0E', '#2CA02C', '#D62728', '#9467BD'],
+            borderColor: '#FFFFFF',
+            borderWidth: 1
+        }]
+    };
+    const dataPoints = avgDaysData.labels.map((label, index) => ({
+        label: label,
+        value: avgDaysData.datasets[0].data[index]
+    }));
+    dataPoints.sort((a, b) => b.value - a.value);
+    const sortedLabels = dataPoints.map(point => point.label);
+    const sortedData = dataPoints.map(point => point.value);
+    avgDaysData.labels = sortedLabels;
+    avgDaysData.datasets[0].data = sortedData;
+    const avgDaysCtx = document.getElementById('avgDaysChart').getContext('2d');
+    const avgDaysChart = new Chart(avgDaysCtx, {
+        type: 'bar', // Correct chart type
+        data: avgDaysData,
+        options: {
+            indexAxis: 'y', // Invert for horizontal
+            responsive: false, // Prevent automatic resizing
+            maintainAspectRatio: false, // Allow aspect ratio changes
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Average Days to Sell (Lower is Better)',
+                    font: { size: 16 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Average Days: ${context.formattedValue}`;
+                        }
+                    }
+                },
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    title: { display: true, text: 'Days' },
+                    beginAtZero: true
+                },
+                y: {
+                    title: { display: true, text: 'Category' },
+                    reverse: true
                 }
             }
         }

@@ -122,4 +122,5 @@ class Listing:
     def set_creation_date(self, creationDate):
         self.__creationDate = creationDate
 
-    
+    def set_address(self,address):
+        self.__address = address

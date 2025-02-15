@@ -18,9 +18,13 @@ class Listing:
         #for deal method
         self.__deal_deliveryinfo = deal_deliveryinfo
         self.__deal_method = None
-        self.__deliveryinfo = None
-        self.__meetupinfo = None
 
+        #self.__deliveryinfo = None
+        #self.__meetupinfo = None
+        #use self.__address from now on instead
+
+
+        self.__address = None
 
     def get_creatorID(self):
         return self.__creatorID
@@ -52,14 +56,18 @@ class Listing:
     def get_status(self):
         return self.__status
     
-    def get_deal_meetupinfo(self):
-        return self.__deal_meetupinfo
+    #def get_deal_meetupinfo(self):
+        #return self.__deal_meetupinfo
     
-    def get_deal_deliveryinfo(self):
-        return self.__deliveryinfo
+    #def get_deal_deliveryinfo(self):
+        #return self.__deliveryinfo
+
     
     def get_deal_method(self):
         return self.__deal_method
+    
+    def get_address(self):
+        return self.__address
     
     def get_buyerID(self):
         return self.__buyerID
@@ -122,4 +130,5 @@ class Listing:
     def set_creation_date(self, creationDate):
         self.__creationDate = creationDate
 
-    
+    def set_address(self,address):
+        self.__address = address

@@ -18,8 +18,10 @@ from datetime import datetime
 import Filters
 import openpyxl
 from openpyxl.styles import Alignment
+from openpyxl.styles import Font
 import uuid
 import re
+import io
 app = Flask(__name__)
 
 
@@ -361,126 +363,8 @@ def Customerhome():
             dbmain["Listings"] = listings_dict
     except:
         print("Error in opening Listings data.")
-    cat_electronics = 0
-    cat_books = 0
-    cat_fashion = 0
-    cat_entertainment = 0
-    cat_misc = 0
-    listings_list = list(listings_dict.values())
-    seller_sales_count = {}
-    listing_days = []
-    top10_seller_dic = {}
-    name_dic = {}
-    rating_dic = {}
-    cat_electronics_avg_days = []
-    cat_books_avg_days = []
-    cat_fashion_avg_days = []
-    cat_entertainment_avg_days = []
-    cat_misc_avg_days = []
+    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer)
 
-    for listing in listings_list:
-        listing.set_status("sold") #FOR TESTING REMOVE LATER, also make sure that listing status gets changed to sold when purchased, and also allow user to change listing to disabled/available/sold AND ALSO make sure that when users check out/edit the page, the SOLD TIME in listing.py is also updated
-        listing.set_creation_date("10/12/24") #REMOVE LATER
-        current_date = datetime.now() #THIS SHOULD ALREADY BE STORED
-        formatted_date = current_date.strftime('%d/%m/%y') #REMOVE LATER
-        listing.set_soldDate(formatted_date) #REMOVE LATER
-        category = listing.get_category()
-        creatorID = listing.get_creatorID()
-        username = listing.get_creator_username()
-        customer11 = customers_dict.get(creatorID)
-        rating = 0
-        if customer11:
-            rating = customer11.get_rating()
-        #most sold categories
-        if listing.get_status() == "sold":
-            if category == "Category 1":
-                cat_electronics += 1
-            elif category == "Category 2":
-                cat_books += 1
-            elif category == "Category 3":
-                cat_fashion += 1
-            elif category == "Category 4":
-                cat_entertainment += 1
-            elif category == "Category 5":
-                cat_misc += 1
-        #top sellers
-        if listing.get_status() == "sold":
-            if creatorID in seller_sales_count:
-                seller_sales_count[creatorID] += 1
-            else:
-                seller_sales_count[creatorID] = 1
-        sorted_sellers = sorted(seller_sales_count.items(), key=lambda x: x[1], reverse=True)
-        top_10_sellers_with_counts = sorted_sellers[:10]
-        for seller_id, sold_count in top_10_sellers_with_counts:
-            top10_seller_dic[seller_id] = sold_count
-            if seller_id not in name_dic:
-                name_dic[seller_id] = username
-                rating_dic[seller_id] = rating
-
-        #average number of days for listing to be sold
-        if listing.get_status() == "sold":
-            creationdate = listing.get_creation_date()
-            solddate = listing.get_soldDate()
-            date_format = "%d/%m/%y"
-            creation_date = datetime.strptime(creationdate, date_format)
-            sold_date = datetime.strptime(solddate, date_format)
-            days_to_sell = (sold_date - creation_date).days
-            listing_days.append(days_to_sell)
-            if category == "Category 1":
-                cat_electronics_avg_days.append(days_to_sell)
-            elif category == "Category 2":
-                cat_books_avg_days.append(days_to_sell)
-            elif category == "Category 3":
-                cat_fashion_avg_days.append(days_to_sell)
-            elif category == "Category 4":
-                cat_entertainment_avg_days.append(days_to_sell)
-            elif category == "Category 5":
-                cat_misc_avg_days.append(days_to_sell)
-
-    sorted_top10_seller = sorted(top10_seller_dic.items(), key=lambda x: x[1], reverse=True)
-    sorted_top10_seller = sorted_top10_seller[:10]
-    sorted_top10_seller_dic = dict(sorted_top10_seller)
-    print(f"{cat_electronics} + {cat_books} + {cat_fashion} + {cat_entertainment} + {cat_misc}")
-    print(sorted_top10_seller_dic) # formatted as { id: listings sold, id2: listings sold }
-    print(name_dic)
-
-    if sum(listing_days) != 0:
-        day_avg = sum(listing_days) / len(listing_days)
-        print(day_avg)  # amount of time for products to be sold
-    else:
-        day_avg = 0
-    if sum(cat_electronics_avg_days) != 0:
-        electronics_day_avg = sum(cat_electronics_avg_days) / len(cat_electronics_avg_days)# amount of time for products to be sold
-    else:
-        electronics_day_avg = 0
-    if sum(cat_books_avg_days) != 0:
-        books_day_avg = sum(cat_books_avg_days) / len(cat_books_avg_days)
-    else:
-        books_day_avg = 0
-    if sum(cat_fashion_avg_days) != 0:
-        fashion_day_avg = sum(cat_fashion_avg_days) / len(cat_fashion_avg_days)
-    else:
-        fashion_day_avg = 0
-    if sum(cat_entertainment_avg_days) != 0:
-        entertainment_day_avg = sum(cat_entertainment_avg_days) / len(cat_entertainment_avg_days)
-    else:
-        entertainment_day_avg = 0
-    if sum(cat_misc_avg_days) != 0:
-        misc_day_avg = sum(cat_misc_avg_days) / len(cat_misc_avg_days)
-    else:
-        misc_day_avg = 0
-
-
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic, rating_dic = rating_dic, electronics_day_avg = electronics_day_avg, books_day_avg = books_day_avg, fashion_day_avg = fashion_day_avg, entertainment_day_avg = entertainment_day_avg, misc_day_avg = misc_day_avg)
-    try:
-        
-        day_avg = sum(listing_days) / len(listing_days)
-    except:
-        day_avg = "nil"
-    print(day_avg)#amount of time for products to be sold
-
-
-    return render_template('Customerhome.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,customer= customer, avg_days_to_sell = day_avg, top10_seller_dic = sorted_top10_seller_dic, cat_electronics = cat_electronics, cat_books = cat_books, cat_fashion = cat_fashion, cat_entertainment = cat_entertainment, cat_misc = cat_misc, name_dic=name_dic, rating_dic = rating_dic,current_username=current_username)
 
 @app.route('/suspended')
 def Customersuspended_terminatedhome():
@@ -997,13 +881,6 @@ def signup():
             dbmain.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
             #notifs
             send_welcomenotifcation(customer.get_id())
-            
-
-
-
-            
-            
-            
 
             return redirect(url_for('Customerhome'))
         
@@ -2336,9 +2213,6 @@ def messages():
             pass
     except:
         pass
-    #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
     try:
         if request.method == 'POST':
             listingTag = False
@@ -2350,6 +2224,7 @@ def messages():
             image_file = request.files.get('image')
             match = re.search(r'@(\d+)\s+([^\s]+)', content)
             reply_id = request.form.get('sender_ID', type=str)
+
             if match:
                 listing_id = int(match.group(1))  # Extract the numeric ID
                 listing_title = match.group(2)
@@ -2369,8 +2244,7 @@ def messages():
                     selected_chat=None,
                     customer_notifications=customer_notifications,
                     searchform=search_field,
-                    filterform=filterform,
-                    current_username=current_username
+                    filterform=filterform
                 )
             if int(receiver_id) == session_ID:
                 return render_template(
@@ -2382,9 +2256,7 @@ def messages():
                     selected_chat=None,
                     customer_notifications=customer_notifications,
                     searchform=search_field,
-                    filterform=filterform,  #<- always put
-                    current_username=current_username
-
+                    filterform=filterform  # <- always put
                 )
             receiver_id = int(receiver_id)  # Convert to integer after validation
             if image_file and content:
@@ -2409,9 +2281,11 @@ def messages():
             if reply_value == "True" and reply_message_content != "" and reply_id != "":
                 reply_content = reply_message_content
                 sender_id = reply_id
-                print(reply_content)
+            if customers_dict:
+                receiver_object = customers_dict[receiver_id]
+                receiver_name = receiver_object.get_username()
             if content:
-                user.send_message(receiver_id, content, db, message_type, UUID, extension, None, reply_content, sender_id)
+                user.send_message(receiver_id, content, db, message_type, UUID, extension, None, reply_content, sender_id, receiver_name)
                 if message_type == "text+pic" or message_type == "picture":
                     UPLOAD_FOLDER = "static/messagepics"
                     if not os.path.exists(UPLOAD_FOLDER):
@@ -2441,16 +2315,21 @@ def messages():
                         break  # Stop after finding the first match
                     else:
                         extension = '.jpg'
-                user.send_message(receiver_id, content, db, message_type, UUID, extension, int(match.group(1)), None, None)
+                user.send_message(receiver_id, content, db, message_type, UUID, extension, int(match.group(1)), None, None, receiver_name)
             return redirect(url_for('messages', receiver_id=receiver_id))  # Reload to show the new message
 
-        # Display messages and recent chats
         received_messages = user.get_received_messages(db)
         sent_messages = user.get_sent_messages(db)
         selected_chat = None
+        customers_dict = users_db.get('Customers', {})
         if 'receiver_id' in request.args:
             receiver_id = request.args.get('receiver_id', type=int)
             sender_id = session_ID
+            receiver_name = None
+            if customers_dict:
+                receiver_object = customers_dict[receiver_id]
+                receiver_name = receiver_object.get_username()
+
             message = [
                 {
                     "type": "sent" if message.sender_id == session_ID else "received",
@@ -2460,13 +2339,12 @@ def messages():
                     "sender_id": message.sender_id,
                     "message_id": message.message_id,
                     "status": message.status,
-
                     "type2": message.type,
                     "extension": message.extension,
                     "listing_id": str(message.listing_id),
                     "reply_content": message.reply_value,
-                    "sender_reply_id": message.replier_id
-
+                    "sender_reply_id": message.replier_id,
+                    "receiver_name": receiver_name
                 }
                 for message in db.get("Messages", [])
                 if (message.sender_id == session_ID and message.receiver_id == receiver_id) or
@@ -2476,10 +2354,9 @@ def messages():
             selected_chat = {
                 'receiver_id': receiver_id,
                 'messages': message,
-                'sender_id': sender_id
+                'sender_id': sender_id,
+                'receiver_name': receiver_name
             }
-
-        
         return render_template(
             'CustomerMessages.html',
             received_messages=received_messages,
@@ -2492,15 +2369,12 @@ def messages():
             show_error_modal=False,
             filterform=filterform,
             listings_dict=listings_dict,
-            titles_dict=titles_dict,
-            current_username = current_username
+            titles_dict=titles_dict
+
 
         )
     finally:
         db.close()
-    # dropdown menu: option to delete chat/hyperlink to user's profile/block profile,
-    # option to send pictures in chat, make enter key send message, message delivered/read/notifications(red number icon),
-    # message previews, make date appear like whatsapp, message deletion timer (max 15min to delete msg)
 
 @app.route('/delete_chat', methods=['POST'])
 def delete_chat():
@@ -3791,31 +3665,22 @@ def dashboardusers():
         Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
     except:
         print("Error in retrieving data from DB main Customer count or count is at 0")
-
-
     customers_list = []
     for key in customers_dict:
         customer = customers_dict.get(key)
         customers_list.append(customer)
-
-
     try:
 
         if request.method == 'POST' and user_search_field.validate():
             return redirect(url_for('dashboarduser_usernamesearch',keyword = user_search_field.searchfield.data))
     except:
         pass
-    
-
     try:
 
         if request.method == 'POST' and user_status_field.validate():
             return redirect(url_for('dashboarduser_categorysearch',keyword = user_status_field.category.data))
     except:
         pass
-    
-    
-    
     return render_template('Operatordashboard_users.html',form = user_search_field,customers_list = customers_list,form2 = user_status_field)
 
 
@@ -4813,46 +4678,101 @@ def restoreuser(customerid):
         
     return(redirect(url_for('operatorviewprofile', id=customerid)))
 
-@app.route('/dashboard/listings',methods=['GET', 'POST'])
+@app.route('/dashboard/listings', methods=['GET', 'POST'])
 def dashboardlistings():
     listing_search_field = SearchListingField(request.form)
     listing_searchstatus_field = SearchListingStatusField(request.form)
     listing_searchid_field = SearchListingIDField(request.form)
-    dbmain = shelve.open('main.db','c')
+    dbmain = shelve.open('main.db', 'c')
     listings_dict = {}
 
     try:
         if "Listings" in dbmain:
-            listings_dict = dbmain["Listings"] #sync local with db2
+            listings_dict = dbmain["Listings"]  # Sync local with db
         else:
-            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
-    except:
-            print("Error in opening main.db")
-    listings_list = []
-    for key in listings_dict:
-        listing = listings_dict.get(key)
-        listings_list.append(listing)
+            dbmain['Listings'] = listings_dict  # Initialize db if empty
+    except Exception as e:
+        print("Error in opening main.db:", e)
 
+    listings_list = list(listings_dict.values())  # Convert dict to list
+
+    # Detect which form was submitted
+    form_action = request.form.get("action")
+
+    if request.method == 'POST':
+        if form_action == "generate_report":
+            return generate_excel_report(listings_list)
     try:
         if request.method == 'POST' and listing_search_field.validate():
-            return redirect(url_for('dashboardlistingssearch',keyword = listing_search_field.searchfield.data))
+            return redirect(url_for('dashboardlistingssearch', keyword=listing_search_field.searchfield.data))
     except:
         pass
 
     try:
         if request.method == 'POST' and listing_searchid_field.validate():
-            return redirect(url_for('dashboardlistingssearchid',id = listing_searchid_field.searchidfield.data))
-        print("e")
+            return redirect(url_for('dashboardlistingssearchid', id=listing_searchid_field.searchidfield.data))
     except:
         pass
 
     try:
         if request.method == 'POST' and listing_searchstatus_field.validate():
-            return redirect(url_for('dashboardlistingssearchstatus',status = listing_searchstatus_field.searchstatusfield.data))
+            return redirect(
+                url_for('dashboardlistingssearchstatus', status=listing_searchstatus_field.searchstatusfield.data))
     except:
         pass
-    
-    return render_template('Operatordashboard_listings.html',form = listing_search_field, form2 = listing_searchid_field,form3 = listing_searchstatus_field,listings_list = listings_list)
+    return render_template(
+        'Operatordashboard_listings.html',
+        form=listing_search_field,
+        form2=listing_searchid_field,
+        form3=listing_searchstatus_field,
+        listings_list=listings_list
+    )
+def generate_excel_report(listings_list):
+    # Create a new workbook and select the active worksheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Listings Report"
+
+    # Define headers (adjust based on your listing attributes)
+    headers = ["Listing ID", "Creator username", "Creator ID", "Title", "Description", "Category", "Status", "Creation Date", "Likes", "Sold date"]
+    ws.append(headers)
+
+    # Bold the header row
+    for col in range(1, len(headers) + 1):
+        ws.cell(row=1, column=col).font = Font(bold=True)
+
+    # Append data rows from listings_list
+    for listing in listings_list:
+        # If listing is an object, use its attributes; if it's a dict, adjust accordingly.
+        row = [
+            listing.get_ID(),
+            listing.get_creator_username(),
+            listing.get_creatorID(),
+            listing.get_title(),
+            listing.get_description(),
+            listing.get_category(),
+            listing.get_status(),
+            listing.get_creation_date(),
+            listing.get_likes(),
+            listing.get_soldDate()
+        ]
+        ws.append(row)
+    for row in ws.iter_rows():
+        for cell in row:
+            if cell.value:
+                cell.alignment = Alignment(wrap_text=True)
+    for col_num in range(1, ws.max_column + 1):
+        column_letter = openpyxl.utils.get_column_letter(col_num)
+        ws.column_dimensions[column_letter].width = 20
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(
+        output,
+        download_name="listings_report.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 @app.route('/dashboard/listings/search=<keyword>',methods=['GET', 'POST'])
 def dashboardlistingssearch(keyword):
@@ -5223,6 +5143,26 @@ def dashboard_dashboard():
             dbmain["Listings"] = listings_dict
     except:
         print("Error in opening Listings data.")
+
+    cust_ratings_list = []
+    feedbacks_dict = {}
+    feedbacks_count = 0
+    try:
+        if "Feedback" in dbmain:
+            feedbacks_dict = dbmain["Feedback"]  # sync local with db1
+        else:
+            dbmain['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    for key, value in feedbacks_dict.items():
+        cust_ratings_list.append(int(feedbacks_dict[key].get_rating()))
+        feedbacks_count += 1
+    if feedbacks_count != 0:
+        customer_satisfaction_gauge = f"{((sum(cust_ratings_list)/feedbacks_count)/5) * 100:.1f}"
+    else:
+        customer_satisfaction_gauge = 0
+    customer_total_feedbacks = feedbacks_count
     customers_list = []
     for key in customers_dict:
         customer = customers_dict.get(key)
@@ -5245,8 +5185,7 @@ def dashboard_dashboard():
     cat_misc_avg_days = []
 
     for listing in listings_list:
-        listing.set_status(
-            "sold")  # FOR TESTING REMOVE LATER, also make sure that listing status gets changed to sold when purchased, and also allow user to change listing to disabled/available/sold AND ALSO make sure that when users check out/edit the page, the SOLD TIME in listing.py is also updated
+        listing.set_status("sold")  # FOR TESTING REMOVE LATER, also make sure that listing status gets changed to sold when purchased, and also allow user to change listing to disabled/available/sold AND ALSO make sure that when users check out/edit the page, the SOLD TIME in listing.py is also updated
         listing.set_creation_date("10/12/24")  # REMOVE LATER
         current_date = datetime.now()  # THIS SHOULD ALREADY BE STORED
         formatted_date = current_date.strftime('%d/%m/%y')  # REMOVE LATER
@@ -5256,6 +5195,7 @@ def dashboard_dashboard():
         username = listing.get_creator_username()
         customer11 = customers_dict.get(creatorID)
         rating = 0
+        
         if customer11:
             rating = customer11.get_rating()
         # most sold categories
@@ -5307,12 +5247,8 @@ def dashboard_dashboard():
     sorted_top10_seller = sorted(top10_seller_dic.items(), key=lambda x: x[1], reverse=True)
     sorted_top10_seller = sorted_top10_seller[:10]
     sorted_top10_seller_dic = dict(sorted_top10_seller)
-    print(f"{cat_electronics} + {cat_books} + {cat_fashion} + {cat_entertainment} + {cat_misc}")
-    print(sorted_top10_seller_dic)  # formatted as { id: listings sold, id2: listings sold }
-    print(name_dic)
     if sum(listing_days) != 0:
         day_avg = sum(listing_days) / len(listing_days)
-        print(day_avg)  # amount of time for products to be sold
     else:
         day_avg = 0
     if sum(cat_electronics_avg_days) != 0:
@@ -5343,7 +5279,10 @@ def dashboard_dashboard():
                            cat_entertainment=cat_entertainment, cat_misc=cat_misc, name_dic=name_dic,
                            rating_dic=rating_dic, electronics_day_avg=electronics_day_avg, books_day_avg=books_day_avg,
                            fashion_day_avg=fashion_day_avg, entertainment_day_avg=entertainment_day_avg,
-                           misc_day_avg=misc_day_avg, customers_list=customers_list)
+                           misc_day_avg=misc_day_avg, customers_list=customers_list,
+                           customer_satisfaction_gauge=customer_satisfaction_gauge,
+                           customer_total_feedbacks = customer_total_feedbacks)
+
 
 @app.route('/operator-dashboard', methods=['POST'])
 def operator_dashboard():
@@ -5357,16 +5296,61 @@ def operator_dashboard():
         return send_file(file_path, as_attachment=True, download_name=f'User {user_id} account details.xlsx')
     return render_template('Operatordashboard_users.html')
 
+@app.route('/operator-dashboard-download-all', methods=['POST'])
+def operator_dashboard_download_all():
+    if request.method == 'POST':
+        dbmain = shelve.open('main.db', 'r')  # Open the database in read-only mode
+        customers_dict = dbmain.get("Customers", {})
+        users_list = list(customers_dict.values())
+        return save_to_excel_all_user_reports(users_list)
+def save_to_excel_all_user_reports(users_list):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "User Report"
 
+        # Define headers (adjust based on your listing attributes)
+    headers = ["User ID", "User username", "Email", "Rating", "Date joined", "Status"]
+    ws.append(headers)
+
+        # Bold the header row
+    for col in range(1, len(headers) + 1):
+        ws.cell(row=1, column=col).font = Font(bold=True)
+
+        # Append data rows from listings_list
+    for user in users_list:
+            # If listing is an object, use its attributes; if it's a dict, adjust accordingly.
+        row = [
+            user.get_id(),
+            user.get_username(),
+            user.get_email(),
+            user.get_rating(),
+            user.get_date_joined(),
+            user.get_status()
+        ]
+        ws.append(row)
+    for row in ws.iter_rows():
+        for cell in row:
+            if cell.value:
+                cell.alignment = Alignment(wrap_text=True)
+    for col_num in range(1, ws.max_column + 1):
+        column_letter = openpyxl.utils.get_column_letter(col_num)
+        ws.column_dimensions[column_letter].width = 20
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return send_file(
+        output,
+        download_name="users_report.xlsx",
+        as_attachment=True,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 def save_to_excel(selected_options, user_id):
     try:
         dbmain = shelve.open('main.db', 'r')  # Open the database in read-only mode
         customers_dict = dbmain.get("Customers", {})
         if int(user_id) not in customers_dict:
             print("User not found.")
-
         customer = customers_dict[int(user_id)]  # Fetch the customer by user_id
-
         # Retrieve the customer's data
         email_data = customer.get_email()
         username_data = customer.get_username()
@@ -5374,6 +5358,14 @@ def save_to_excel(selected_options, user_id):
         reports_data = [report for report in reports_dict.values() if report.get_offender_ID() == int(user_id)]
         listings_dict = dbmain.get("Listings", {})
         listings_data = [listing for listing in listings_dict.values() if listing.get_creatorID() == int(user_id)]
+        feedbacks_dict = {}
+        try:
+            if "Feedback" in dbmain:
+                feedbacks_dict = dbmain["Feedback"]  # sync local with db1
+            else:
+                dbmain['Feedback'] = feedbacks_dict  # sync db1 with local (basically null)
+        except:
+            print("Error in opening main.db")
         review_dict = dbmain.get("Reviews", {})
         customer_reviews = customer.get_reviews()  # list of review IDs
         customer_reviews_list = []
@@ -5439,6 +5431,23 @@ def save_to_excel(selected_options, user_id):
                 ])
 
         if 'Review information' in selected_options:
+            review_ws = wb.create_sheet("Review information")
+            review_ws.append(["Reviewer ID", "Rating", "Comment"])
+            if customer_reviews_list:
+                for review in customer_reviews_list:
+                    review_ws.append([
+                        review.get_creator_ID(),
+                        review.get_rating(),
+                        review.get_comment()
+                    ])
+            else:
+                review_ws.append([
+                    "No reviews available",
+                    "No reviews available",
+                    "No reviews available"
+                ])
+
+        if 'Feedbacks' in selected_options:
             review_ws = wb.create_sheet("Review information")
             review_ws.append(["Reviewer ID", "Rating", "Comment"])
             if customer_reviews_list:

@@ -327,6 +327,10 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 dbmain['ReportsCount'] = Report.Report.count_ID
                 generated_offender.add_reports(generated_report.get_ID())
                 dbmain['Customers'] = customers_dict
+                try:
+                    Operatorstats.operatorstats_reports("total","plus")
+                except:
+                    pass
                 #add to local var
                 reports_GencreatorID_list.append(int(generated_creatorID))
                 reports_GenoffenderID_list.append(int(generated_offenderID))
@@ -418,13 +422,18 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 feedbacks_dict[generated_feedback.get_ID()] = generated_feedback #store obj in dict
                 dbmain['Feedback'] = feedbacks_dict
                 dbmain['FeedbackCount'] = Feedback.Feedback.count_ID
+                
                 #assign to creator
                 generated_creator = customers_dict.get(generated_creatorID)
                 generated_creator.add_feedback(generated_feedback.get_ID())
                 dbmain['Customers'] = customers_dict
                     
                 gen_feedback_count +=1
-                    
+                try:
+                    Operatorstats.operatorstats_feedbacks("total","plus")
+                    Operatorstats.operatorstats_feedbacks("unreplied","plus")
+                except:
+                    pass
                 #local var
                 feedbacks_rating_list.append(int(generated_rating))
                 feedbacks_feedback_list.append(str(generated_feedback))
@@ -591,6 +600,11 @@ def genlisting(options,listingcount,meetupcount,deliverycount):
             generated_listing.set_status('available')
             dbmain['Listings'] = listings_dict
             dbmain['ListingsCount'] = Listing.Listing.count_ID
+            try:
+                Operatorstats.operatorstats_listings("total","plus")
+                Operatorstats.operatorstats_listings("available","plus")
+            except:
+                print("Error! Operator stats did not update.")
             #store in temp var
             listings_tempGenID_list.append(generated_listing.get_ID())
             #store in local var
@@ -693,6 +707,11 @@ def genlisting(options,listingcount,meetupcount,deliverycount):
             #save it to db
             dbmain['Listings'] = listings_dict
             dbmain['Listings_GenID_status'] = listings_GenID_status_list
+            try:
+                Operatorstats.operatorstats_listings('reserved','plus')
+                Operatorstats.operatorstats_listings('available','minus')
+            except:
+                pass
             #increment var
             i +=1
             gen_listings_meetup_count +=1
@@ -838,6 +857,11 @@ def genlisting(options,listingcount,meetupcount,deliverycount):
             dbmain['Listings_GenID_status'] = listings_GenID_status_list
             dbmain['delivery_listingsID'] = delivery_listingsID_list
             dbmain['delivery_listingstitle'] = delivery_listingstitle_list
+            try:
+                Operatorstats.operatorstats_listings('sold','plus')
+                Operatorstats.operatorstats_listings('available','minus')
+            except:
+                pass
             #increment var
             i +=1
             gen_listings_delivery_count +=1
@@ -1071,7 +1095,11 @@ def gendelivery(options,deliverycount,intransitcount,deliveredcount,cancelledcou
             dbmain["delivery"] = deliveries_dict
             dbmain["DeliveryCount"] = Delivery.Delivery.count_ID
             dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
-            
+            try:
+                Operatorstats.operatorstats_transactions('total','plus')
+                Operatorstats.operatorstats_transactions('Pending','plus')
+            except:
+                pass
             #increment 
             i +=1
             gen_delivery_count +=1
@@ -1137,6 +1165,11 @@ def gendelivery(options,deliverycount,intransitcount,deliveredcount,cancelledcou
             #store into db
             dbmain["delivery"] = deliveries_dict
             dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+            try:
+                Operatorstats.operatorstats_transactions('Pending','minus')
+                Operatorstats.operatorstats_transactions('In Transit','plus')
+            except:
+                pass
             #increment
             i +=1
             gen_deliveryInTransit_count+=1
@@ -1200,6 +1233,11 @@ def gendelivery(options,deliverycount,intransitcount,deliveredcount,cancelledcou
             #store into db
             dbmain["delivery"] = deliveries_dict
             dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+            try:
+                Operatorstats.operatorstats_transactions('Pending','minus')
+                Operatorstats.operatorstats_transactions('Delivered','plus')
+            except:
+                pass
             #increment
             i +=1
             gen_deliveryDelivered_count+=1
@@ -1279,10 +1317,43 @@ def gendelivery(options,deliverycount,intransitcount,deliveredcount,cancelledcou
             print(f"{delivery_tempGenID_list[i]}|{delivery_Gentitle_list[i]}|{delivery_Genstatus_list[i]}|")
             #increment i
             i +=1
-genuser(3,5,1,1,1)
-genlisting(3,12,1,8)
-gendelivery(2,8,2,2,0)
+
+
+
 
 def maingenfunc():
-    pass
+    dbmain = shelve.open('main.db','c')
+    #code to start opstats if not there
+    operatorstats_dict = {}
+    print("Loading opstats....")
+    try:
+        if "Operatorstats" in dbmain:
+            operatorstats_dict = dbmain["Operatorstats"]  # sync local with db1
+        else:
+            dbmain['Operatorstats'] = operatorstats_dict # sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
 
+    #opstats code
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Operatorstats.Operatorstats.count_ID = dbmain["Operatorstatscount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Operatorstats count or count is at 0")
+    if Operatorstats.Operatorstats.count_ID == 0:
+        operatorstats = Operatorstats.Operatorstats()
+        operatorstats_dict[operatorstats.get_ID()] = operatorstats
+        dbmain['Operatorstats'] = operatorstats_dict
+        dbmain['Operatorstatscount'] = Operatorstats.Operatorstats.count_ID
+    else:
+        pass
+    print(operatorstats_dict)
+    #vars
+    inputusercount = 0
+    inputuser_reportcount = 0
+    
+
+maingenfunc()
+genuser(3,18,5,5,5)
+genlisting(3,30,7,10)
+gendelivery(2,10,2,2,0)

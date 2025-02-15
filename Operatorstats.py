@@ -15,6 +15,7 @@ class Operatorstats:
         self.__listings_available_count = 0
         self.__listings_disabled_count = 0
         self.__listings_reserved_count = 0
+        self.__listings_sold_count = 0
         #feedback related
         self.__feedback_count = 0
         self.__feedback_replied_count = 0
@@ -53,7 +54,8 @@ class Operatorstats:
         return self.__listings_disabled_count
     def get_listings_reserved_count(self):
         return self.__listings_reserved_count
-    
+    def get_listings_sold_count(self):
+        return self.__listings_sold_count
 
     #feedback related
     def get_feedback_count(self):
@@ -125,6 +127,11 @@ class Operatorstats:
         self.__listings_reserved_count +=1
     def decrease_listing_reserved_count(self):
         self.__listings_reserved_count -=1
+
+    def increase_listing_sold_count(self):
+        self.__listings_sold_count +=1
+    def decrease_listing_sold_count(self):
+        self.__listings_sold_count -=1
 
     #feedback related
     def increase_feedback_count(self):
@@ -300,6 +307,17 @@ def operatorstats_listings(category,operation):
         elif operation == "minus":
             obj.decrease_listing_reserved_count()
             print(f" - | Current amount of reserved listings is {obj.get_listings_reserved_count()}")
+            dbmain['Operatorstats'] = operatorstats_dict
+            return
+    elif category == "sold":
+        if operation == "plus":
+            obj.increase_listing_sold_count()
+            print(f" + | Current amount of sold listings is {obj.get_listings_sold_count()}")
+            dbmain['Operatorstats'] = operatorstats_dict
+            return
+        elif operation == "minus":
+            obj.decrease_listing_sold_count()
+            print(f" - | Current amount of sold listings is {obj.get_listings_sold_count()}")
             dbmain['Operatorstats'] = operatorstats_dict
             return
 

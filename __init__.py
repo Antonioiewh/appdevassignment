@@ -22,6 +22,9 @@ from openpyxl.styles import Font
 import uuid
 import re
 import io
+import requests
+from bs4 import BeautifulSoup
+from webscraping_ebay_amazon import get_amazon_estimated_price, get_ebay_estimated_price
 app = Flask(__name__)
 
 
@@ -1300,12 +1303,15 @@ def viewListing(id):
             pass
     except:
         pass
-    
+    product_title = listing.get_title()
+    #estimated_amazon_price = get_amazon_estimated_price(product_title)
+    estimated_ebay_price = get_ebay_estimated_price(product_title, listing.get_condition())
+    estimated_amazon_price = 0
     #get username for navbar
     customer = customers_dict.get(session_ID)
     current_username = customer.get_username()
 
-    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
+    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username, estimated_amazon_price=estimated_amazon_price,estimated_ebay_price=estimated_ebay_price,)
 
 #opstats - listing
 @app.route('/reservelisting/<int:id>')

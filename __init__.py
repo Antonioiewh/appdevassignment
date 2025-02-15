@@ -2005,6 +2005,8 @@ def viewLikedListings(id): #retrieve current session_ID
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 #creates delivery object , opstats
+
+
 @app.route('/delivery_status', methods=['GET', 'POST'])
 def delivery_status():
     global session_ID
@@ -2095,7 +2097,7 @@ def delivery_status():
                     status='Pending',  # Set status as 'Pending'
                     expected_date=expected_date,  # You can set an expected date or leave it as "TBD"
                     listing_id=session_ID,
-                    address=listing.get_deal_deliveryinfo()
+                    address =listing.get_deal_deliveryinfo()
                 )
 
 
@@ -3202,7 +3204,9 @@ def Customerprofilefeedback(id):#id not needed for now
         if key in customer_feedbacks_list: #ensure is own customer
             feedback = feedbacks_dict.get(key)
             feedbacks_list.append(feedback)
-            
+            if not hasattr(feedback, "_Feedback__category"):
+                feedback._Feedback__category = "General"
+
     numberfeedbacks = len(feedbacks_list)
     
     
@@ -3288,6 +3292,7 @@ def update_feedback(feedback_id):
         # Update feedback details
         feedback.set_rating(update_feedback_form.rating.data)
         feedback.set_remark(update_feedback_form.feedback.data)
+        feedback.set_category(update_feedback_form.category.data)
         dbmain['Feedback'] = feedbacks_dict  # Update the database
 
         return redirect(url_for('Customerprofilefeedback', id = session_ID))  # Redirect to the feedback dashboard
@@ -5149,9 +5154,11 @@ def dashboardfeedbacks():
     for key in feedbacks_dict:
         feedback = feedbacks_dict.get(key)
         feedbacks_list.append(feedback)
+        if not hasattr(feedback, "_Feedback__category"):
+            feedback._Feedback__category = "General"
     if request.method == "POST" and search_replied.validate():
         return(redirect(url_for('dashboardfeedbackssearch',keyword = search_replied.searchstatusfield.data)))
-    
+
     return render_template("Operatordashboard_feedback.html",feedbacks_list=feedbacks_list,form = search_replied)
 
 @app.route('/dashboard/feedbacks/<keyword>',methods=['GET','POST'])
@@ -5184,8 +5191,8 @@ def dashboardfeedbackssearch(keyword):
     
     if request.method == "POST" and search_replied.validate():
         return(redirect(url_for('dashboardfeedbackssearch',keyword = search_replied.searchstatusfield.data)))
-    
-    
+
+
     return render_template("Operatordashboard_feedback_search.html",feedbacks_list=feedbacks_list,form = search_replied,searchcondition = keyword)
 
 

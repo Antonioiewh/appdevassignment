@@ -468,6 +468,9 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
 # meetupcount - number of meetup listings
 # deliverycount - number of delivery listings
 def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
+    #some error validation 
+    if listingcount <= meetupcount + deliverycount + disabledcount:
+        print("ERROR! PLEASE INCREASE LISTING COUNT!")
     dbmain = shelve.open('main.db','c')
     customers_dict = {}
     listings_dict = {}
@@ -519,11 +522,16 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
     i = 0
     gen_listings_count = 0
     
-    print(F"from listing gen {customers_GenID_list}")
     #TODO ADD AVAIL STATUS
     if options >= 0:
         while i != (listingcount):
-            useridlist = customers_GenID_list.copy()
+            useridlist = []
+            #pre gen id list
+            for key in customers_dict:
+                useridlist.append(key)
+            if useridlist == []:
+                print("NO.")
+                return 
             #get creator ID
             generated_creatorID = random.choice(useridlist)
             #get creator username
@@ -655,8 +663,12 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
         except:
             print("Error in opening Listings data.")   
         i = 0
-        #NOTE THIS LINE OF CODE ONLY SHLD BE HERE ONCE:
-        listings_GenID_status_list = listings_GenID_list.copy()
+        #NOTE THIS LINE OF CODE ONLY SHLD BE HERE ONCE TO PREVENT THE OTHER OPTIONS OVERWRITING IT!
+        # listings_GenID_status_list should be shared for options 1,2 and 3!!!
+        listings_GenID_status_list = []
+        for key in listings_dict:
+            listings_GenID_status_list.append(key)
+        
         while i != (int(meetupcount)):
             #select a random listing ID
             selectedid = random.choice(listings_GenID_status_list)
@@ -681,7 +693,7 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             gen_listings_meetup_count +=1
         
         print(F"Finished generating meetup only listings")
-        print(f"GEN listings meetup is {gen_listings_meetup_count}")
+        print(f"GEN listings MEETUP is {gen_listings_meetup_count}")
         print(f"AFFECTEDID|TITLE|STATUS|DEALMETHOD")
         i = 1
         c = 0
@@ -700,17 +712,23 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             #increment
             i +=1
             c +=1
-
-    #change to delivery
+    
+    #VERY IMPT AS CODE BREAKS IF NOT HERE:
+    dbmain['Listings_GenID_status'] = listings_GenID_status_list
+    
+    #change to delivery 
     if options >= 2:
         #Vars
         listings_GenID_list = []
         listings_dict = {}
+        customers_dict = {}
         gen_listings_delivery_count = 0
         #TO display
         listings_Gentitle_list = []
         listings_Gendealmethod_list = []
         listings_Genstatus_list = []
+        listings_GenBuyerID_list = []
+        listings_Gensolddate_list = []
         #temp var
         listings_tempGenID_list = []
         listings_GenID_status_list = []
@@ -724,20 +742,22 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
                 dbmain['Listings_GenID'] = listings_GenID_list
         except:
             print("Error in opening main.db")
-        #VERY IMPT TO ENSURE NO OVERRIDES:
+        listings_GenID_status_list = []
         try:
             if "Listings_GenID_status" in dbmain:
-                listings_GenID_status_list = dbmain["Listings_GenID_status"]
+                listings_GenID_status_list = dbmain["Listings_GenID"]
             else:
                 dbmain['Listings_GenID_status'] = listings_GenID_status_list
         except:
-            print("Error in opening main.db")
+            print("!!Error in opening main.db")
+        print(listings_GenID_status_list)
         #VERY IMPT 
         try:
             if "delivery_listingsID" in dbmain:
                 delivery_listingsID_list = dbmain["delivery_listingsID"]
             else:
                 dbmain['delivery_listingsID'] = delivery_listingsID_list
+                
         except:
             print("Error in opening main.db")
         #VERY IMPT 
@@ -746,6 +766,14 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
                 delivery_listingstitle_list = dbmain["delivery_listingstitle"]
             else:
                 dbmain['delivery_listingstitle'] = delivery_listingstitle_list
+        except:
+            print("Error in opening main.db")
+        # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+        try:
+            if "Customers" in dbmain:
+                customers_dict = dbmain["Customers"]  # sync local with db1
+            else:
+                dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
         except:
             print("Error in opening main.db")
         try:
@@ -762,8 +790,15 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
         except:
             print("Error in retrieving data from DB main Listing count or count is at 0")
         i = 0
+        #pre gen id list
+        
+            
         while i != (int(deliverycount)):
+            for key in customers_dict:
+                useridlist.append(key)
+            
             #select a random listing ID
+            
             selectedid = random.choice(listings_GenID_status_list)
             #rmbr remove it - needed for option 2 to prevent overrides
             listings_GenID_status_list.remove(selectedid)
@@ -771,16 +806,32 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             selectedlisting = listings_dict.get(selectedid)
             #change its status
             selectedlisting.set_status("sold")
-            
+            #remove its own ID from useridlist
+            try:
+                useridlist.remove(selectedlisting.get_creatorID())
+            except:
+                print(f"")
+            #set buyerID
+            selectedlisting.set_buyerID(int(random.choice(useridlist)))
+            #set sold date
+            start_date = datetime(2024, 3, 1)
+            end_date = datetime(2024, 3, 10)
+            random_date = generate_random_dates(start_date,end_date,1)
+            for index, date in enumerate(random_date):
+                generated_creationdate = (f"{date.strftime('%d/%m/%y')}")
+            selectedlisting.set_soldDate(generated_creationdate)
             #change deal method
-            selected_listing.set_deal_method('delivery')
+            selectedlisting.set_deal_method('delivery')
+            #set buyer ID
             #save to temp var
             listings_tempGenID_list.append(selectedlisting.get_ID())
             listings_Gentitle_list.append(selectedlisting.get_title())
-            listings_Gendealmethod_list.append(selected_listing.get_deal_method())
-            listings_Genstatus_list.append(selected_listing.get_status())
-            delivery_listingsID_list.append(selected_listing.get_ID())
-            delivery_listingstitle_list.append(selected_listing.get_title())
+            listings_Gendealmethod_list.append(selectedlisting.get_deal_method())
+            listings_Genstatus_list.append(selectedlisting.get_status())
+            listings_GenBuyerID_list.append(selectedlisting.get_buyerID())
+            listings_Gensolddate_list.append(selectedlisting.get_soldDate())
+            delivery_listingsID_list.append(selectedlisting.get_ID())
+            delivery_listingstitle_list.append(selectedlisting.get_title())
             #save it to db
             dbmain['Listings'] = listings_dict
             dbmain['Listings_GenID_status'] = listings_GenID_status_list
@@ -791,8 +842,8 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             gen_listings_delivery_count +=1
         
         print(F"Finished generating delivery only listings")
-        print(f"GEN listings reserved is {gen_listings_delivery_count}")
-        print(f"AFFECTEDID|TITLE|STATUS|DEALMETHOD")
+        print(f"GEN listings DELIVERY is {gen_listings_delivery_count}")
+        print(f"AFFECTEDID|TITLE|STATUS|DEALMETHOD|BUYERID|SOLDDATE")
         i = 1
         c = 0
         listings_dict = {}
@@ -806,7 +857,7 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
         while i != int(gen_listings_delivery_count+1):
             
             selected_listing = listings_dict.get(int(listings_tempGenID_list[c]))
-            print(f"{selected_listing.get_ID()}|{listings_Gentitle_list[c]}|{listings_Genstatus_list[c]}|{listings_Gendealmethod_list[c]}|")
+            print(f"{selected_listing.get_ID()}|{listings_Gentitle_list[c]}|{listings_Genstatus_list[c]}|{listings_Gendealmethod_list[c]}|{listings_GenBuyerID_list[c]}|{listings_Gensolddate_list[c]}")
             #increment
             i +=1
             c +=1
@@ -893,9 +944,79 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             #increment
             i +=1
             c +=1
-genuser(3,3,0,0,0)
-genlisting(3,6,2,2,2)
 
+#Generate delivery obj aka transactions
+# 0 - create default transactions
+# 1 - create transactions  with status In Transit
+# 2 - create transactions with status Delivered
+# deliverycount - no. of default transactions
+# intransitcount -no. of In Transit transactions
+# deliveredcount - no. of Delivered transactions
+def gendelivery(options,deliverycount,intransitcount,deliveredcount):
+    #Vars
+    dbmain = shelve.open('main.db','c')
+    listings_dict = {}
+    deliveries_dict = {}
+    #to get IDs of listings that are 'sold'
+    delivery_listingsID_list = []
+    #for display purposes
+    delivery_Gentitle_list = []
+    delivery_Genstatus_list = []
+    delivery_Genexpecteddate_list = []
+    delivery_Genaddress_list = []
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"]  # sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict  # sync db2 with local (basically null)
+    except:
+        print("Error in opening Listings in main.db")
 
+    try:
+        if "delivery" in dbmain:
+            deliveries_dict = dbmain["delivery"]
+        else:
+            dbmain['delivery'] = deliveries_dict
+    except:
+        print("Error in opening deliery in main.db")
+    #VERY IMPT 
+    try:
+        if "delivery_listingsID" in dbmain:
+            delivery_listingsID_list = dbmain["delivery_listingsID"]
+        else:
+            dbmain['delivery_listingsID'] = delivery_listingsID_list
+    except:
+            print("Error in opening delivery_listingsID in main.db")
+    
+    if options >= 0:
+        i = 0
+        delivery_count = 0
+        while i != deliverycount:
+            #get ID of listing
+            generateddeliveryID = random.choice(delivery_listingsID_list)
+            #remove ID to prevent duplicates
+            delivery_listingsID_list.remove(generateddeliveryID)
+            #get listing obj
+            selectedlistingobj = listings_dict.get(generateddeliveryID)
+            #get its title
+            generateddeliverytitle = selectedlistingobj.get_title()
+            #set status, default is 'Pending'
+            generateddeliverystatus = 'Pending'
+            #get creation date from listing
+            selectedlistingobj.get_
+#genuser(0,10,0,0,0)
+#genlisting(2,100,0,10,0)
 
+#test code
+delivery_listingsID_list = []
+dbmain = shelve.open('main.db','c')
+#VERY IMPT TO ENSURE THE IDS ARE ACTUALLY SAVED
+try:
+    if "delivery_listingsID" in dbmain:
+        delivery_listingsID_list = dbmain["delivery_listingsID"]
+    else:
+        dbmain['delivery_listingsID'] = delivery_listingsID_list
+except:
+    print("Error in opening main.db")
 
+print(f"Delivery IDs {delivery_listingsID_list}")

@@ -34,6 +34,7 @@ def check_listing(obj): #check if creator is suspended,terminated and if listing
             print("Error in opening main.db")
 
     customer = customers_dict.get(obj.get_creatorID())
+    print(obj.get_status())
     if customer.get_status() == "active" and obj.get_status() == "available":
         print("success")
         return True

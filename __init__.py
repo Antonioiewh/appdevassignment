@@ -64,7 +64,7 @@ def upload_file(folder,file):
 
 def get_searchquery(formdict,outputlist):
     print(formdict)
-    conditions = ['category1','category2','category3','category4','category5','condition_barelyused','condition_frequentlyused','condition_useddaily','sortlatest']
+    conditions = ['category1','category2','category3','category4','category5','condition_barelyused','condition_frequentlyused','condition_wornout','sortlatest']
     for condition in conditions:
         if formdict.get(condition) == True:
             outputlist.append(condition)
@@ -134,9 +134,9 @@ def get_matchinglistingID(searchquerylist,outputlist):
                         if condition == "condition_frequentlyused":
                             print("f_used")
                             Filters.condition(listing,'Frequently used',outputlist,"addanddelete")
-                        if condition == "condition_useddaily":
+                        if condition == "condition_wornout":
                             print("ud_used")
-                            Filters.condition(listing,'Used daily',outputlist,'addanddelete')
+                            Filters.condition(listing,'Worn out',outputlist,'addanddelete')
                     print("looped")
                     
         if filtercategory == False: #outputlist will be empty
@@ -147,8 +147,8 @@ def get_matchinglistingID(searchquerylist,outputlist):
                         Filters.condition(listing,'Barely used',outputlist,"addonly")
                     if condition == "condition_frequentlyused":
                         Filters.condition(listing,'Frequently used',outputlist,"addonly")
-                    if condition == "condition_useddaily":
-                        Filters.condition(listing,'Used daily',outputlist,'addonly')
+                    if condition == "condition_wornout":
+                        Filters.condition(listing,'Worn out',outputlist,'addonly')
                 print("L")
     #sort latest
     if filtersortlatest == True:
@@ -1247,7 +1247,7 @@ def createlisting():
         listing = Listing.Listing(session_ID,customer.get_username(),create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data, formatted_date)
         listings_dict[listing.get_ID()] = listing
         dbmain['Listings'] = listings_dict
-        dbmain['ListingsCount'] = Listing.Listing.count_ID #syncs with db2
+        dbmain['ListingsCount'] = Listing.Listing.count_ID
         try:
             Operatorstats.operatorstats_listings("total","plus")
             Operatorstats.operatorstats_listings("available","plus")
@@ -2697,8 +2697,8 @@ def category1():
     listings_to_display = []
     for key in listings_dict:
         listing = listings_dict.get(key)
-        if listing.get_category() == 'Category 1':
-            print("true!")
+        if listing.get_category() == 'Category 1' and Search.check_listing(listing):
+
             listings_to_display.append(listing)
     #get username for navbar
     customer = customers_dict.get(session_ID)
@@ -2760,7 +2760,7 @@ def category2():
     listings_to_display = []
     for key in listings_dict:
         listing = listings_dict.get(key)
-        if listing.get_category() == 'Category 2':
+        if listing.get_category() == 'Category 2' and Search.check_listing(listing) :
             listings_to_display.append(listing)
 
     #get username for navbar
@@ -2822,7 +2822,7 @@ def category3():
     listings_to_display = []
     for key in listings_dict:
         listing = listings_dict.get(key)
-        if listing.get_category() == 'Category 3':
+        if listing.get_category() == 'Category 3' and Search.check_listing(listing) :
             listings_to_display.append(listing)
 
     #get username for navbar
@@ -2883,7 +2883,7 @@ def category4():
     listings_to_display = []
     for key in listings_dict:
         listing = listings_dict.get(key)
-        if listing.get_category() == 'Category 4':
+        if listing.get_category() == 'Category 4' and Search.check_listing(listing) :
             listings_to_display.append(listing)
     #get username for navbar
     customer = customers_dict.get(session_ID)
@@ -2944,7 +2944,7 @@ def category5():
     listings_to_display = []
     for key in listings_dict:
         listing = listings_dict.get(key)
-        if listing.get_category() == 'Category 5':
+        if listing.get_category() == 'Category 5' and Search.check_listing(listing) :
             listings_to_display.append(listing)
     #get username for navbar
     customer = customers_dict.get(session_ID)

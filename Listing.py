@@ -11,7 +11,7 @@ class Listing:
         self.__condition = condition
         self.__category = category
         self.__likes = 0
-        self.__status = "available" #or "disabled" or "reserved"
+        self.__status = "available" #or "disabled" or "reserved" or "sold"
         self.__buyerID = None #by default, change to buyer ID when purchased
         self.__creationDate = creationDate
         self.__soldDate = None
@@ -60,6 +60,15 @@ class Listing:
     def get_deal_method(self):
         return self.__deal_method
     
+    def get_buyerID(self):
+        return self.__buyerID
+
+
+    def get_soldDate(self):
+        return self.__soldDate
+    
+    def get_creation_date(self):
+        return self.__creationDate
 
     def set_creatorID(self,creatorID):
         self.__creatorID = creatorID
@@ -106,18 +115,10 @@ class Listing:
     def set_buyerID(self, buyerid):
         self.__buyerID = buyerid
 
-
-    def get_buyerID(self):
-        return self.__buyerID
-
     def set_soldDate(self, date): #formatted as (dd-mm-yyyy)
         self.__soldDate = date
-
-    def get_soldDate(self):
-        return self.__soldDate
 
     def set_creation_date(self, creationDate):
         self.__creationDate = creationDate
 
-    def get_creation_date(self):
-        return self.__creationDate
+    

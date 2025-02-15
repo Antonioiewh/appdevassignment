@@ -964,11 +964,11 @@ def genlisting(options,listingcount,meetupcount,deliverycount):
 # 0 - create default transactions
 # 1 - create transactions  with status In Transit
 # 2 - create transactions with status Delivered
-# 3 - create transactions with status cancelled
+# 3 - create transactions with status cancelled (does not work)
 # deliverycount  - no. of default transactions
 # intransitcount - no. of In Transit transactions
 # deliveredcount - no. of Delivered transactions
-# cancelledcount - no. of cancelled transactions
+# cancelledcount - no. of cancelled transactions (does not work )
 def gendelivery(options,deliverycount,intransitcount,deliveredcount,cancelledcount):
     if deliverycount <= intransitcount + deliveredcount:
         print("ERROR! PLEASE INCREASE DELIVERY COUNT!")

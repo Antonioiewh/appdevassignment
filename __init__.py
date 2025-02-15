@@ -1974,7 +1974,11 @@ def delivery_status():
                     status='Pending',  # Set status as 'Pending'
                     expected_date=expected_date,  # You can set an expected date or leave it as "TBD"
                     listing_id=session_ID,
-                    address =listing.get_deal_deliveryinfo()
+
+                    address=listing.get_address()
+
+                    #address =listing.get_deal_deliveryinfo()
+
                 )
 
 

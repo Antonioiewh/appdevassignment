@@ -103,14 +103,14 @@ class Listing:
 
 
     #deal method
-    def set_deal_meetupinfo(self,info):
-        self.__deal_meetupinfo = info
+    #def set_deal_meetupinfo(self,info):
+        #self.__deal_meetupinfo = info
     
     def set_deal_method(self,method):
         self.__deal_method = method
     
-    def set_deal_deliveryinfo(self,info):
-        self.__deal_meetupinfo = info
+    #def set_deal_deliveryinfo(self,info):
+        #self.__deal_meetupinfo = info
 
 
     def set_buyerID(self, buyerid):

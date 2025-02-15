@@ -23,12 +23,11 @@ def generate_random_dates(start_date, end_date, k):
 
 
 #Generate users
-#Options
-#
-#0 - only user 
-#1 - review
-#2 - report
-#3 - feedback
+# OPTIONS
+# 0 - only user 
+# 1 - review
+# 2 - report
+# 3 - feedback
 # reportcount = no. of reports
 # reviewcount = no. of reviews
 # all var with "gen" is specifically for this and logging purposes
@@ -161,6 +160,8 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
         reviews_Genrating_list = []
         reviews_Gencomment_list = []
         reviews_Genreceiverusername_list = []
+        #temp var
+        reviews_tempGenID_list = []
         #retrieve ID list
         try:
             if "Customer_GenID" in dbmain:
@@ -218,6 +219,7 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
             reviews_Gencreatorusername_list.append(str(review.get_creator_username()))
             reviews_Genrating_list.append(int(review.get_rating()))
             reviews_Gencomment_list.append(str(review.get_comment()))
+            reviews_tempGenID_list.append(int(review.get_ID()))
             #assign review obj to someone 
             
             #select someone
@@ -227,7 +229,6 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
             generated_receiver.set_rating(float(review.get_rating()))
             reviews_Genreceiverusername_list.append(generated_receiver.get_username())
             dbmain['Customers'] = customers_dict
-            print(f"Line end  {customers_GenID_list}")
             #increment variables
             i +=1
             gen_review_count +=1
@@ -248,8 +249,8 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
         except:
             print("Error in opening main.db")
         while i != (int(gen_review_count)):
-            selected_review = reviews_dict.get(int(i))
-            print(f"{selected_review.get_ID()}|{review_GencreatorID_list[c]}|{reviews_Gencreatorusername_list[c]}|{reviews_Genrating_list[c]}|{reviews_Gencomment_list[c]}")
+
+            print(f"{reviews_tempGenID_list[c]}|{review_GencreatorID_list[c]}|{reviews_Gencreatorusername_list[c]}|{reviews_Genrating_list[c]}|{reviews_Gencomment_list[c]}")
             #increment i 
             i +=1
             c+=1
@@ -267,6 +268,7 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
         reports_Genoffenderusername_list = []
         reports_Gencategory_list = []
         reports_Gencomment_list = []
+        reports_tempGenID_list = []
         customers_dict = {}
         reports_dict ={}
         #retrieve ID list
@@ -316,7 +318,6 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 #offender
                 generated_offenderID = int(random.choice(useridlist))
                 generated_offender = customers_dict.get(generated_offenderID)
-                print(generated_offenderID)
                 generated_offender_username = generated_offender.get_username()
 
                 #create report obj
@@ -332,7 +333,7 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 reports_Genoffenderusername_list.append(str(generated_offender_username))
                 reports_Gencategory_list.append(str(generated_category))
                 reports_Gencomment_list.append(str(generated_comment))
-                
+                reports_tempGenID_list.append(int(generated_report.get_ID()))
                 #increment variables
                 i +=1
                 gen_report_count +=1
@@ -353,15 +354,14 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 print("Error in opening main.db")
         #retrieve report obj
         while i != (int(gen_report_count+1)):
-            selected_report = reports_dict.get(int(i))
-            print(f"{selected_report.get_ID()}|{reports_GencreatorID_list[c]}|{reports_GenoffenderID_list[c]}|{reports_Genoffenderusername_list[c]}|{reports_Gencategory_list[c]}|{reports_Gencomment_list[c]}")
+            
+            print(f"{reports_tempGenID_list[c]}|{reports_GencreatorID_list[c]}|{reports_GenoffenderID_list[c]}|{reports_Genoffenderusername_list[c]}|{reports_Gencategory_list[c]}|{reports_Gencomment_list[c]}")
             #increment i 
             i +=1
             c+=1
-    print(f"Option 2 {customers_GenID_list}")
     #trigger feedback func
     if options >= 3:
-        
+
         dbmain  = shelve.open('main.db','c')
         #variables
         i = 0
@@ -371,8 +371,7 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
         feedbacks_rating_list = []
         feedbacks_feedback_list = []
         feedbacks_creatorusername_list = []
-        #RE init this variable just to be safe
-        #Retrive customer obj
+        feedbacks_category_list = []
         try:
             if "Customers" in dbmain:
                 customers_dict = dbmain["Customers"] 
@@ -403,11 +402,19 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 generated_creatorID = int(random.choice(useridlist))
                 #select rating
                 generated_rating = random.randrange(1,5)
+                #get category
+                category_list = ['Bug','Suggestion','General']
+                generatedchoice = random.choice(category_list)
                 #get remark
-                remark = 'remark here'
+                if generatedchoice == "Bug":
+                    generatedremark = "Buggy website"
+                elif generatedchoice == "Suggestion":
+                    generatedremark = "make UI look nicer"
+                elif generatedchoice == "General":
+                    generatedremark == "cool website :D"
 
                 #create feedback obj
-                generated_feedback = Feedback.Feedback(generated_rating,remark)
+                generated_feedback = Feedback.Feedback(generated_rating,generatedremark,generated_category)
                 feedbacks_dict[generated_feedback.get_ID()] = generated_feedback #store obj in dict
                 dbmain['Feedback'] = feedbacks_dict
                 dbmain['FeedbackCount'] = Feedback.Feedback.count_ID
@@ -422,7 +429,7 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 feedbacks_rating_list.append(int(generated_rating))
                 feedbacks_feedback_list.append(str(generated_feedback))
                 feedbacks_creatorusername_list.append(str(generated_creator))
-
+                feedbacks_category_list.append(str(generated_feedback))
                 #increment
                     
                 i+=1
@@ -453,30 +460,28 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
             i +=1
     global global_customer_GenID_list
     global_customer_GenID_list = customers_GenID_list.copy()
-    print(f"User gen list {customers_GenID_list}")
     print("User Generation ended.")
 
-
 #Generate listings
-
-#NEW OPTIONS
+# OPTIONS
 # 0 - create available listings
 # 1 - create meetup listings with reserved status
 # 2 - create delivery listings with sold status
-# 3 - create disabled listings
-# listingcount - number of listings
-# meetupcount - number of meetup listings
+# 3 - create disabled listings (does not work!)
+# listingcount  - number of listings
+# meetupcount   - number of meetup listings
 # deliverycount - number of delivery listings
-def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
+def genlisting(options,listingcount,meetupcount,deliverycount):
     #some error validation 
-    if listingcount <= meetupcount + deliverycount + disabledcount:
+    if listingcount <= meetupcount + deliverycount:
         print("ERROR! PLEASE INCREASE LISTING COUNT!")
+        return
     dbmain = shelve.open('main.db','c')
     customers_dict = {}
     listings_dict = {}
     #Var
     global global_customer_GenID_list
-    customers_GenID_list = global_customer_GenID_list
+    customers_GenID_list = global_customer_GenID_list.copy()
     listings_GenID_list = []
     #Gen var
     listings_GencreatorID_list = []
@@ -582,7 +587,6 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             #create listing obj
             generated_listing = Listing.Listing(generated_creatorID,generated_creatorusername,generated_title,generated_desc,generated_condition,generated_category,generated_creationdate)
             listings_dict[generated_listing.get_ID()] = generated_listing
-            print(generated_listing.get_ID())
             #set status
             generated_listing.set_status('available')
             dbmain['Listings'] = listings_dict
@@ -604,6 +608,7 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             i +=1
             gen_listings_count +=1
         print("Listing generation ended.")
+
         #PRINT OUT GENERATED LISTINGS
         print(f"GEN listing count is {gen_listings_count}")
         print("ID|CREATORID|CREATORUSERNAME|TITLE|DESCRIPTION|CONDITION|CATEGORY|CREATIONDATE|STATUS")
@@ -750,7 +755,6 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
                 dbmain['Listings_GenID_status'] = listings_GenID_status_list
         except:
             print("!!Error in opening main.db")
-        print(listings_GenID_status_list)
         #VERY IMPT 
         try:
             if "delivery_listingsID" in dbmain:
@@ -807,10 +811,7 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             #change its status
             selectedlisting.set_status("sold")
             #remove its own ID from useridlist
-            try:
-                useridlist.remove(selectedlisting.get_creatorID())
-            except:
-                print(f"")
+            useridlist.remove(selectedlisting.get_creatorID())
             #set buyerID
             selectedlisting.set_buyerID(int(random.choice(useridlist)))
             #set sold date
@@ -863,6 +864,7 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             c +=1
     
     #change to disabled
+    """
     if options >= 3:
         #Vars
         listings_GenID_list = []
@@ -871,6 +873,7 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
         #TO display
         listings_Gentitle_list = []
         listings_Genstatus_list = []
+        delivery_listingsID_list = []
         #temp var
         listings_tempGenID_list = []
         listings_GenID_status_list = []
@@ -902,6 +905,16 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
         except:
             print("Error in retrieving data from DB main Listing count or count is at 0")
+        
+        #VERY IMPT 
+        try:
+            if "delivery_listingsID" in dbmain:
+                delivery_listingsID_list = dbmain["delivery_listingsID"]
+            else:
+                dbmain['delivery_listingsID'] = delivery_listingsID_list
+        except:
+            print("Error in opening delivery_listingsID in main.db")
+        print(f"Printing{delivery_listingsID_list}")
 
         i = 0
         while i != (int(disabledcount)):
@@ -920,14 +933,15 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
             #save it to db
             dbmain['Listings'] = listings_dict
             dbmain['Listings_GenID_status'] = listings_GenID_status_list
+            print(f"Options 3 ")
             #increment var
             i +=1
             gen_listings_disabled_count +=1
 
         print(F"Finished generating delivery only listings")
-        print(f"GEN listings reserved is {gen_listings_disabled_count}")
+        print(f"GEN listings disabled is {gen_listings_disabled_count}")
         print(f"AFFECTEDID|TITLE|STATUS")
-        i = 1
+        i = 0
         c = 0
         listings_dict = {}
         try:
@@ -937,22 +951,28 @@ def genlisting(options,listingcount,meetupcount,deliverycount,disabledcount):
                 dbmain["Listings"] = listings_dict
         except:
             print("Error in opening Listings data.")
-        while i != int(gen_listings_delivery_count+1):
-            
-            selected_listing = listings_dict.get(int(listings_tempGenID_list[c]))
-            print(f"{selected_listing.get_ID()}|{listings_Gentitle_list[c]}|{listings_Genstatus_list[c]}|")
+        while i != int(gen_listings_disabled_count):            
+            #print(f"{listings_tempGenID_list[c]}|{listings_Gentitle_list[c]}|{listings_Genstatus_list[c]}|")
             #increment
             i +=1
             c +=1
+        """
 
 #Generate delivery obj aka transactions
+# PS: delivery count must be same as listing deliverycount!!!!!
+# OPTIONS
 # 0 - create default transactions
 # 1 - create transactions  with status In Transit
 # 2 - create transactions with status Delivered
-# deliverycount - no. of default transactions
-# intransitcount -no. of In Transit transactions
+# 3 - create transactions with status cancelled
+# deliverycount  - no. of default transactions
+# intransitcount - no. of In Transit transactions
 # deliveredcount - no. of Delivered transactions
-def gendelivery(options,deliverycount,intransitcount,deliveredcount):
+# cancelledcount - no. of cancelled transactions
+def gendelivery(options,deliverycount,intransitcount,deliveredcount,cancelledcount):
+    if deliverycount <= intransitcount + deliveredcount:
+        print("ERROR! PLEASE INCREASE DELIVERY COUNT!")
+        return
     #Vars
     dbmain = shelve.open('main.db','c')
     listings_dict = {}
@@ -964,6 +984,10 @@ def gendelivery(options,deliverycount,intransitcount,deliveredcount):
     delivery_Genstatus_list = []
     delivery_Genexpecteddate_list = []
     delivery_Genaddress_list = []
+    delivery_tempGenID_list = []
+    listing_tempGenID_list = []
+    #for options 1 and 2, so store into maindb
+    delivery_GenID_status_list = []
     try:
         if "Listings" in dbmain:
             listings_dict = dbmain["Listings"]  # sync local with db2
@@ -979,6 +1003,13 @@ def gendelivery(options,deliverycount,intransitcount,deliveredcount):
             dbmain['delivery'] = deliveries_dict
     except:
         print("Error in opening deliery in main.db")
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Delivery.count_ID = dbmain["DeliveryCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Delivery count or count is at 0")
+
     #VERY IMPT 
     try:
         if "delivery_listingsID" in dbmain:
@@ -987,10 +1018,18 @@ def gendelivery(options,deliverycount,intransitcount,deliveredcount):
             dbmain['delivery_listingsID'] = delivery_listingsID_list
     except:
             print("Error in opening delivery_listingsID in main.db")
+    #VERY IMPT 
+    try:
+        if "delivery_GenID_status_list" in dbmain:
+            delivery_GenID_status_list = dbmain["delivery_GenID_status_list"]
+        else:
+            dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+    except:
+            print("Error in opening delivery_GenID_status_list in main.db")
     
     if options >= 0:
         i = 0
-        delivery_count = 0
+        gen_delivery_count = 0
         while i != deliverycount:
             #get ID of listing
             generateddeliveryID = random.choice(delivery_listingsID_list)
@@ -1002,21 +1041,248 @@ def gendelivery(options,deliverycount,intransitcount,deliveredcount):
             generateddeliverytitle = selectedlistingobj.get_title()
             #set status, default is 'Pending'
             generateddeliverystatus = 'Pending'
-            #get creation date from listing
-            selectedlistingobj.get_
-#genuser(0,10,0,0,0)
-#genlisting(2,100,0,10,0)
+            
+            #get sold date from listing
+            selectedlistingobj_solddate = (selectedlistingobj.get_soldDate())
+            #split it into 2 parts, 1 to keep , 1 to change
+            selectedlistingobj_solddate_part1 = int(selectedlistingobj_solddate[0:2])
+            selectedlistingobj_solddate_part2 = selectedlistingobj_solddate[2:]
+            #print(f"Listing sold date: {selectedlistingobj_solddate}")
+            addate = random.randrange(7,14)
+            #increment date
+            selectedlistingobj_solddate_part1 += addate
+            generateddeliverydate = f"{str(selectedlistingobj_solddate_part1)}{selectedlistingobj_solddate_part2}"
+            #print(f"Listing expected date: {generateddeliverydate}")
+            #get address
+            address_list = ['235 Geylang Road, Lor 9 Geylang, 389294','180 Ang Mo Kio Ave 8, Singapore 569830','31 Jln Chengkek, Singapore 369254','71 W Coast Hwy, Singapore 126844']
+            generateddeliveryaddress = random.choice(address_list)
+            #create delivery obj
+            generated_deliveryobj = Delivery.Delivery(generateddeliveryID,generateddeliverytitle,generateddeliverystatus,generateddeliverydate,generateddeliveryaddress)
+            deliveries_dict[generated_deliveryobj.get_ID()] = generated_deliveryobj
+            #store into local var
+            delivery_Gentitle_list.append(str(generated_deliveryobj.get_item_title()))
+            delivery_Genstatus_list.append(str(generated_deliveryobj.get_status()))
+            delivery_Genexpecteddate_list.append(str(generated_deliveryobj.get_expected_date()))
+            delivery_Genaddress_list.append(str(generated_deliveryobj.get_address()))
+            delivery_tempGenID_list.append(str(generated_deliveryobj.get_ID()))
+            delivery_GenID_status_list.append(int(generated_deliveryobj.get_ID()))
+            listing_tempGenID_list.append(int(selectedlistingobj.get_ID()))
+            #store into db
+            dbmain["delivery"] = deliveries_dict
+            dbmain["DeliveryCount"] = Delivery.Delivery.count_ID
+            dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+            
+            #increment 
+            i +=1
+            gen_delivery_count +=1
+        
+        print(f"Generated deliveryobj is {gen_delivery_count}")
+        print("LISTINGID|DELIVERYID|ITEMTITLE|STATUS|EXPECTEDATE|ADDRESS")
+        i = 0
+        #c = 0
+        deliveries_dict = {}
+        try:
+            if "delivery" in dbmain:
+                deliveries_dict = dbmain["delivery"]
+            else:
+                dbmain['delivery'] = deliveries_dict
+        except:
+            print("Error in opening deliery in main.db")
+        while i !=(int(gen_delivery_count)):
+            print(f"|{listing_tempGenID_list[i]}|{delivery_tempGenID_list[i]}|{delivery_Gentitle_list[i]}|{delivery_Genstatus_list[i]}|{delivery_Genexpecteddate_list[i]}|{delivery_Genaddress_list[i]}")
+        #increment
+            i +=1
 
-#test code
-delivery_listingsID_list = []
-dbmain = shelve.open('main.db','c')
-#VERY IMPT TO ENSURE THE IDS ARE ACTUALLY SAVED
-try:
-    if "delivery_listingsID" in dbmain:
-        delivery_listingsID_list = dbmain["delivery_listingsID"]
-    else:
-        dbmain['delivery_listingsID'] = delivery_listingsID_list
-except:
-    print("Error in opening main.db")
+    #gen in transit
+    if options >=1:
+        i = 0
+        deliveries_dict = {}
+        gen_deliveryInTransit_count = 0
+        delivery_GenID_status_list = []
+        #to display
+        delivery_Gentitle_list = []
+        delivery_Genstatus_list = []
+        delivery_tempGenID_list = []
 
-print(f"Delivery IDs {delivery_listingsID_list}")
+        try:
+            if "delivery" in dbmain:
+                deliveries_dict = dbmain["delivery"]
+            else:
+                dbmain['delivery'] = deliveries_dict
+        except:
+            print("Error in opening deliery in main.db")
+        #VERY IMPT 
+        try:
+            if "delivery_GenID_status_list" in dbmain:
+                delivery_GenID_status_list = dbmain["delivery_GenID_status_list"]
+            else:
+                dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+        except:
+            print("Error in opening delivery_GenID_status_list in main.db")
+        print(f"option 1 delivery_GenID_status_list = {delivery_GenID_status_list}")
+
+        while i != intransitcount:
+            #get id of delivery obj
+            affecteddeliveryid = random.choice(delivery_GenID_status_list)
+            #remove id
+            delivery_GenID_status_list.remove(affecteddeliveryid)
+            #get deliveryob
+            affecteddeliveryobj = deliveries_dict.get(affecteddeliveryid)
+            #set status of affected deliv obj
+            affecteddeliveryobj.set_status("In Transit")
+            #store into local
+            delivery_Gentitle_list.append(str(affecteddeliveryobj.get_item_title()))
+            delivery_Genstatus_list.append(str(affecteddeliveryobj.get_status()))
+            delivery_tempGenID_list.append(str(affecteddeliveryobj.get_ID()))
+            #store into db
+            dbmain["delivery"] = deliveries_dict
+            dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+            #increment
+            i +=1
+            gen_deliveryInTransit_count+=1
+
+        print(f"Generated deliveryobj In Transit is {gen_deliveryInTransit_count}")
+        print("DELIVERYID|ITEMTITLE|STATUS")
+        i = 0
+        deliveries_dict = {}
+        try:
+            if "delivery" in dbmain:
+                deliveries_dict = dbmain["delivery"]
+            else:
+                dbmain['delivery'] = deliveries_dict
+        except:
+            print("Error in opening deliery in main.db")
+        while i !=(int(gen_deliveryInTransit_count)):
+            print(f"|{delivery_tempGenID_list[i]}|{delivery_Gentitle_list[i]}|{delivery_Genstatus_list[i]}|")
+            #increment i
+            i +=1
+
+    #gen Delivered
+    if options >=2:
+        i = 0
+        deliveries_dict = {}
+        gen_deliveryDelivered_count = 0
+        delivery_GenID_status_list = []
+        #to display
+        delivery_Gentitle_list = []
+        delivery_Genstatus_list = []
+        delivery_tempGenID_list = []
+
+        try:
+            if "delivery" in dbmain:
+                deliveries_dict = dbmain["delivery"]
+            else:
+                dbmain['delivery'] = deliveries_dict
+        except:
+            print("Error in opening deliery in main.db")
+        #VERY IMPT 
+        try:
+            if "delivery_GenID_status_list" in dbmain:
+                delivery_GenID_status_list = dbmain["delivery_GenID_status_list"]
+            else:
+                dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+        except:
+            print("Error in opening delivery_GenID_status_list in main.db")
+
+        while i != intransitcount:
+            #get id of delivery obj
+            affecteddeliveryid = random.choice(delivery_GenID_status_list)
+            #remove id
+            delivery_GenID_status_list.remove(affecteddeliveryid)
+            #get deliveryob
+            affecteddeliveryobj = deliveries_dict.get(affecteddeliveryid)
+            #set status of affected deliv obj
+            affecteddeliveryobj.set_status("Delivered")
+            #store into local
+            delivery_Gentitle_list.append(str(affecteddeliveryobj.get_item_title()))
+            delivery_Genstatus_list.append(str(affecteddeliveryobj.get_status()))
+            delivery_tempGenID_list.append(str(affecteddeliveryobj.get_ID()))
+            #store into db
+            dbmain["delivery"] = deliveries_dict
+            dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+            #increment
+            i +=1
+            gen_deliveryDelivered_count+=1
+        print(f"Generated deliveryobj Delivered is {gen_deliveryDelivered_count}")
+        print("DELIVERYID|ITEMTITLE|STATUS")
+        i = 0
+        deliveries_dict = {}
+        try:
+            if "delivery" in dbmain:
+                deliveries_dict = dbmain["delivery"]
+            else:
+                dbmain['delivery'] = deliveries_dict
+        except:
+            print("Error in opening deliery in main.db")
+        while i !=(int(gen_deliveryDelivered_count)):
+            print(f"{delivery_tempGenID_list[i]}|{delivery_Gentitle_list[i]}|{delivery_Genstatus_list[i]}|")
+            #increment i
+            i +=1
+
+    #gen cancelled
+    if options >=3:
+        i = 0
+        deliveries_dict = {}
+        gen_deliveryCancelled_count = 0
+        delivery_GenID_status_list = []
+        #to display
+        delivery_Gentitle_list = []
+        delivery_Genstatus_list = []
+        delivery_tempGenID_list = []
+        try:
+            if "delivery" in dbmain:
+                deliveries_dict = dbmain["delivery"]
+            else:
+                dbmain['delivery'] = deliveries_dict
+        except:
+            print("Error in opening deliery in main.db")
+        #VERY IMPT 
+        try:
+            if "delivery_GenID_status_list" in dbmain:
+                delivery_GenID_status_list = dbmain["delivery_GenID_status_list"]
+            else:
+                dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+        except:
+            print("Error in opening delivery_GenID_status_list in main.db") 
+        while i != cancelledcount:
+            #get id of delivery obj
+            affecteddeliveryid = random.choice(delivery_GenID_status_list)
+            #remove id
+            delivery_GenID_status_list.remove(affecteddeliveryid)
+            #get deliveryob
+            affecteddeliveryobj = deliveries_dict.get(affecteddeliveryid)
+            #set status of affected deliv obj
+            affecteddeliveryobj.set_status("Cancelled")
+            #store into local
+            delivery_Gentitle_list.append(str(affecteddeliveryobj.get_item_title()))
+            delivery_Genstatus_list.append(str(affecteddeliveryobj.get_status()))
+            delivery_tempGenID_list.append(str(affecteddeliveryobj.get_ID()))
+            #store into db
+            dbmain["delivery"] = deliveries_dict
+            dbmain['delivery_GenID_status_list'] = delivery_GenID_status_list
+            #increment
+            i +=1
+            gen_deliveryCancelled_count+=1
+        
+        print(f"Generated deliveryobj Cancelled is {gen_deliveryCancelled_count}")
+        print("DELIVERYID|ITEMTITLE|STATUS")
+        i = 0
+        deliveries_dict = {}
+        try:
+            if "delivery" in dbmain:
+                deliveries_dict = dbmain["delivery"]
+            else:
+                dbmain['delivery'] = deliveries_dict
+        except:
+            print("Error in opening deliery in main.db")
+        while i !=(int(gen_deliveryCancelled_count)):
+            print(f"{delivery_tempGenID_list[i]}|{delivery_Gentitle_list[i]}|{delivery_Genstatus_list[i]}|")
+            #increment i
+            i +=1
+genuser(3,5,1,1,1)
+genlisting(3,12,1,8)
+gendelivery(2,8,2,2,0)
+
+def maingenfunc():
+    pass
+

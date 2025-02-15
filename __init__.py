@@ -881,6 +881,7 @@ def signup():
             dbmain.close() #sync the count as it updated when creating the object, if you want to hard reset the count, add a line in customer class to hard reset it to 0 so when syncing, db's one becomes 0
             #notifs
             send_welcomenotifcation(customer.get_id())
+
             return redirect(url_for('Customerhome'))
         
 
@@ -2367,6 +2368,8 @@ def messages():
             filterform=filterform,
             listings_dict=listings_dict,
             titles_dict=titles_dict
+
+
         )
     finally:
         db.close()

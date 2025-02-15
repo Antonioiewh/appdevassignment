@@ -17,7 +17,7 @@ class CustomerUpdateForm(Form): #can change profile pic,email,username and passw
 
 class ListingForm(Form):
     category = SelectField('Category',[validators.DataRequired()], choices=[('Category 1','Electronics'),('Category 2','Books'),('Category 3','Fashion'),('Category 4','Entertainment'),('Category 5','Misc')])
-    condition = RadioField('Condition', [validators.DataRequired()], choices=[('Barely used', "Barely used"), ('Frequently used', 'Frequently used'), ('Used daily', 'Used daily')])
+    condition = RadioField('Condition', [validators.DataRequired()], choices=[('Barely used', "Barely used"), ('Frequently used', 'Frequently used'), ('Worn out', 'Worn out')])
     title = StringField('Title',[validators.Length(min=4, max=25),validators.DataRequired()])
     description = StringField('Description',[validators.Length(min=4, max=300),validators.DataRequired()])
 
@@ -125,7 +125,7 @@ class FilterForm(Form):
     category5 = BooleanField('Misc', false_values=None)
     condition_barelyused = BooleanField('Barely used', false_values=None)
     condition_frequentlyused = BooleanField('Frequently used', false_values=None)
-    condition_useddaily = BooleanField('Used daily', false_values=None)
+    condition_wornout = BooleanField('Worn out', false_values=None)
     sortlatest = BooleanField('Sort latest',false_values=None)
     #sortoldest = BooleanField('Sort oldest',false_values=None)
 

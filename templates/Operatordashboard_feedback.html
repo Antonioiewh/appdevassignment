@@ -21,6 +21,7 @@
                     <div class="form-group" style="margin-left:3vh; margin-right:3vh;">
                         {{ render_field(form.searchstatusfield, class="form-control") }}
                     </div>
+
                     <div style="justify-self:center"> <!--div for button only-->
                         <input type="submit" value="Submit" class="btn btn-primary"/>
                     </div>
@@ -33,13 +34,14 @@
 </div>
 <div>
     <table class="table table-striped">
-        <thead><tr><th>Feedback ID</th><th>Rating</th><th>Remarks</th><th>Reply</th><th>Action</th>
+        <thead><tr><th>Feedback ID</th><th>Category</th><th>Rating</th><th>Remarks</th><th>Reply</th><th>Action</th>
         </tr></thead>
         <tbody>
             {% for feedback in feedbacks_list%}
                 {% if feedback.get_reply() is none %}
                     <tr>
                         <td>{{feedback.get_ID()}}</td>
+                        <td>{{feedback.get_category()}}</td>
                         <td>{{feedback.get_rating()}}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);" ></i></td>
                         <td>{{feedback.get_remark()}}</td>
                         <td>{{feedback.get_reply() if feedback.get_reply() is not none else 'No reply yet' }}</td>
@@ -56,6 +58,7 @@
                 {% if feedback.get_reply() is not none %}
                     <tr>
                         <td>{{ feedback.get_ID() }}</td>
+                        <td>{{feedback.get_category()}}</td>
                         <td>{{ feedback.get_rating() }}<i class="bi bi-star-fill" style="color:rgb(1, 1, 248);"></i></td>
                         <td>{{ feedback.get_remark() }}</td>
                         <td>{{ feedback.get_reply() }}</td>

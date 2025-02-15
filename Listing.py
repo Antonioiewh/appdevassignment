@@ -1,7 +1,7 @@
 class Listing:
     count_ID = 0
 
-    def __init__(self,creatorID,creatorusername,title,description,condition,category,creationDate): #dealmethod info as an
+    def __init__(self,creatorID,creatorusername,title,description,condition,category,creationDate,deal_deliveryinfo): #dealmethod info as an
         Listing.count_ID+=1
         self.__ID = Listing.count_ID
         self.__creatorID = creatorID #same as current_sessionID
@@ -16,9 +16,16 @@ class Listing:
         self.__creationDate = creationDate
         self.__soldDate = None
         #for deal method
+        self.__deal_deliveryinfo = deal_deliveryinfo
         self.__deal_method = None
+
+        #self.__deliveryinfo = None
+        #self.__meetupinfo = None
+        #use self.__address from now on instead
+
+
         self.__address = None
-    
+
     def get_creatorID(self):
         return self.__creatorID
     
@@ -54,6 +61,7 @@ class Listing:
     
     #def get_deal_deliveryinfo(self):
         #return self.__deliveryinfo
+
     
     def get_deal_method(self):
         return self.__deal_method

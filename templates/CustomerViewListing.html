@@ -14,12 +14,14 @@
 
                 <!--buttons-->
                 <div  class="d-flex flex-row  justify-content-evenly " style="margin-top:60%;">
+                    <!--buttons-->
+                <div  class="d-flex flex-row  justify-content-evenly " style="margin-top:60%;">
                     <div style=" width:100%; max-width:35%" class="align-items-center">
                         <a href="#" class="btn btn-info align-items-center" role="button" style="background:white; max-height:6vh; border:none; padding:5%; max-width:100%; width:100%;"><p style="color:black; font-weight:bold">Chat with dealer<i class="bi bi-chat" style="font-size:1.3rem"></i></p></a>
                     </div>
                     {% if current_sessionID != listing.get_creatorID()%}
                     <div style=" max-width:30%; width:100%;" class="align-items-center">
-                        <a href="/createLikedListing/{{listing.get_ID()}}" class="btn btn-info" role="button" style="background:red; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Add to cart<i class="bi bi-cart2" style="font-size:1.3rem"></i></p></a>
+                        <a href="/addToCart/{{listing.get_ID()}}" class="btn btn-info" role="button" style="background:red; height:6vh; border:none; padding:5%; width:100%"><p style="color:black; font-weight:bold">Add to cart<i class="bi bi-cart2" style="font-size:1.3rem"></i></p></a>
                     </div>
                     {%else%}
                     {% if listing.get_status() == "available"%}

@@ -3709,6 +3709,299 @@ def cinvaliduser():
     current_username = customer.get_username()
     return render_template('Customerinvaliduser.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
+def addToCart(id):
+    global session_ID
+    dbmain = shelve.open('main.db', 'c')
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
+    listings_dict = {}
+    customers_dict = {}
+    notifications_dict = {}
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+
+    #sync listing dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    #sync listing IDs
+    try:
+        dbmain = shelve.open('main.db','c')
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Listing count or count is at 0")
+
+    try:
+        if "Notifications" in dbmain:
+            notifications_dict = dbmain["Notifications"] #sync local with db1
+        else:
+            dbmain['Notifications'] = notifications_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    try:
+        dbmain = shelve.open('main.db','c')
+        Notifications.Notifications.count_ID = dbmain["NotificationsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Notifications count or count is at 0")
+
+
+    customer = customers_dict.get(session_ID)
+    listing = listings_dict.get(id)
+
+    if request.method == 'POST':
+        deal_method = request.form.get("deal_method")
+        address = request.form.get("address")  # Always take the address
+
+        if not deal_method:
+            dbmain.close()
+            return render_template("CustomerDealMethod.html", listing=listing)
+
+        listing.set_deal_method(deal_method)
+        listing.set_address(address)
+        customer.add_cart_listing(listing.get_ID())
+
+        dbmain["Listings"] = listings_dict
+        dbmain["Customers"] = customers_dict
+        dbmain.close()
+
+        return redirect(url_for('viewCart'))
+
+    dbmain.close()
+    #search func
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    return render_template('CustomerDealMethod.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing)
+
+@app.route('/viewCart/<int:id>/', methods = ['GET', 'POST'])
+def viewCart(id):
+    global session_ID
+    dbmain = shelve.open('main.db', 'c')
+    listings_dict = {}
+    customers_dict = {}
+    deliveries_dict = {}
+    notifications_dict = {}
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+
+    #sync listing dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    #sync listing IDs
+    try:
+        dbmain = shelve.open('main.db','c')
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Listing count or count is at 0")
+
+    try:
+        if "Notifications" in dbmain:
+            notifications_dict = dbmain["Notifications"] #sync local with db1
+        else:
+            dbmain['Notifications'] = notifications_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+    try:
+        dbmain = shelve.open('main.db','c')
+        Notifications.Notifications.count_ID = dbmain["NotificationsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Notifications count or count is at 0")
+
+    try:
+        if "delivery" in dbmain:
+            deliveries_dict = dbmain["delivery"]
+        else:
+            dbmain['delivery'] = deliveries_dict
+    except:
+        print("Error in opening deliery in main.db")
+    # sync IDs
+    try:
+        dbmain = shelve.open('main.db', 'c')
+        Delivery.count_ID = dbmain["DeliveryCount"]  # sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Delivery count or count is at 0")
+
+    # Fetch the cart listings for the customer
+    customer = customers_dict.get(id)
+    selectedcustomer_cart_list = customer.get_cart_listings()
+
+    # Prepare the listings to display
+    listings_to_display = []
+    for listing_id in selectedcustomer_cart_list:
+        currentlisting = listings_dict.get(int(listing_id))
+        if currentlisting:
+            # Filter listings with deal method "delivery"
+            if currentlisting.get_deal_method().lower() == "delivery":
+                expected_date = customer.get_date_joined()
+                month, day, year = map(int, expected_date.split('/'))
+
+                if year < 100:
+                    year += 2000
+                day += 5  # Add 5 days
+
+                # Handle month-end and year-end overflow
+                if month in [1, 3, 5, 7, 8, 10, 12] and day > 31:
+                    day -= 31
+                    month += 1
+                elif month in [4, 6, 9, 11] and day > 30:
+                    day -= 30
+                    month += 1
+                elif month == 2 and day > 28:
+                    day -= 28
+                    month += 1
+                if month > 12:
+                    month = 1
+                    year += 1
+
+                selectedexpecteddate = f"{day:02d}/{month:02d}/{year % 100:02d}"
+                selectedaddress = currentlisting.get_address() or "N/A"
+                selectedtitle = currentlisting.get_title()
+
+                # Create the delivery object
+                deliveryobj = Delivery.Delivery(
+                    selectedID=currentlisting.get_ID(),
+                    item_title=selectedtitle,
+                    status="Pending",
+                    expected_date=selectedexpecteddate,
+                    address=selectedaddress
+                )
+
+                # Add the delivery to the deliveries dictionary
+                deliveries_dict[deliveryobj.get_ID()] = deliveryobj
+                dbmain["delivery"] = deliveries_dict
+
+                # Log for debugging
+                print(f"Delivery Info: ID={deliveryobj.get_ID()}, Title={deliveryobj.get_item_title()}, Status={deliveryobj.get_status()}, Expected Date={deliveryobj.get_expected_date()}, Address={deliveryobj.get_address()}")
+
+                # Add to listings to display for Jinja template
+                listings_to_display.append(currentlisting)
+
+    dbmain.close()
+
+    # Passing data to template
+    return render_template('viewCart.html', listings_to_display=listings_to_display, delivery_cost=5)
+
+@app.route('/removeFromCart/<int:item_id>', methods=['POST'])
+def removeFromCart(item_id):
+    global session_ID
+    dbmain = shelve.open('main.db', 'c')
+
+    customers_dict = {}
+    listings_dict = {}
+
+    #make sure local and db1 are the same state
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Customers" in dbmain:
+            customers_dict = dbmain["Customers"] #sync local with db1
+        else:
+            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+    except:
+        print("Error in opening main.db")
+
+    #sync IDs
+    try:
+        dbmain = shelve.open('main.db','c')
+        Customer.Customer.count_id = dbmain["CustomerCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Customer count or count is at 0")
+
+    #sync listing dbs
+    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+    try:
+        if "Listings" in dbmain:
+            listings_dict = dbmain["Listings"] #sync local with db2
+        else:
+            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+    except:
+            print("Error in opening main.db")
+    #sync listing IDs
+    try:
+        dbmain = shelve.open('main.db','c')
+        Listing.Listing.count_ID = dbmain["ListingsCount"] #sync count between local and db1
+    except:
+        print("Error in retrieving data from DB main Listing count or count is at 0")
+
+    customer = customers_dict.get(session_ID)
+    if not customer:
+        dbmain.close()
+        return redirect(url_for('viewCart'))
+
+    # Remove the item from the customer's cart if it exists.
+    # (Assuming cart_listings is a list of listing IDs.)
+    cart = customer.get_cart_listings()
+    if item_id in cart:
+        cart.remove(item_id)
+        print(f'Item ID:{item_id} removed from the cart.')
+    listing = listings_dict.get(item_id)
+    listing.set_deal_method(None)
+    listing.set_address(None)
+
+    # Save updates back to the database
+    dbmain["Customers"] = customers_dict
+    dbmain["Listings"] = listings_dict
+    dbmain.close()
+
+    return redirect(url_for('viewCart'))
+
 @app.route('/loginoperator', methods=['GET', 'POST'])
 def loginoperator():
     global session_ID

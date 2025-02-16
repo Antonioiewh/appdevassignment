@@ -21,6 +21,7 @@ class Customer:
         self.__notifications = [] #starts at 0 , stores ID of notifcations
         self.__unread_notifications = 0 #starts at 0
         self.__feedbacks = []
+        self.__cart_listings = []
     def get_id(self):
         return self.__id
     
@@ -68,7 +69,8 @@ class Customer:
     
     def get_feedbacks(self):
         return self.__feedbacks
-
+    def get_cart_listings(self):
+        return self.__cart_listings
     def set_id(self,id): #just here but god forbid u actually run this as why would u
         self.__id = id 
     

@@ -3357,11 +3357,11 @@ def reply_feedback(feedback_id):
     
     #get username for navbar
     customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+
     return render_template("Operatordashboard_feedback_reply.html", current_sessionID=session_ID, feedback=feedback,
                            feedbacks_list=feedbacks_list, reply_feedback_form=reply_feedback_form,
                            searchform=search_field, customer_notifications=customer_notifications,
-                           filterform=filterform,current_username = current_username)
+                           filterform=filterform)
 
 #report user
 @app.route('/report/user/<int:id>', methods=['POST', 'GET'])
@@ -4095,6 +4095,8 @@ def operatorviewprofilefeedback(id):
         if key in customer_feedbacks_list: #ensure is own customer
             feedback = feedbacks_dict.get(key)
             feedbacks_list.append(feedback)
+            if not hasattr(feedback, "_Feedback__category"):
+                feedback._Feedback__category = "General"
 
             
     numberfeedbacks = len(feedbacks_list)

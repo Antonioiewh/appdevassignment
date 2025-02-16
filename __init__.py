@@ -22,6 +22,7 @@ from openpyxl.styles import Font
 import uuid
 import re
 import io
+from webscraping_ebay_amazon import get_ebay_estimated_price
 app = Flask(__name__)
 
 
@@ -1147,7 +1148,7 @@ def createlisting():
         current_date = datetime.now()
         formatted_date = current_date.strftime('%d/%m/%y')
         customer = customers_dict.get(session_ID)
-        listing = Listing.Listing(session_ID,customer.get_username(),create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data, formatted_date)
+        listing = Listing.Listing(session_ID,customer.get_username(),create_listing_form.title.data,create_listing_form.description.data,create_listing_form.condition.data,create_listing_form.category.data, formatted_date, None)
         listings_dict[listing.get_ID()] = listing
         dbmain['Listings'] = listings_dict
         dbmain['ListingsCount'] = Listing.Listing.count_ID
@@ -1273,28 +1274,29 @@ def updateListing(id):
         current_username = "nil"
     return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing,current_username=current_username) #to render the form 
 
-@app.route('/viewListing/<int:id>/', methods = ['GET', 'POST'])
+
+@app.route('/viewListing/<int:id>/', methods=['GET', 'POST'])
 def viewListing(id):
     global session_ID
-    dbmain = shelve.open('main.db','c')
+    dbmain = shelve.open('main.db', 'c')
     listings_dict = {}
     customers_dict = {}
     search_field = SearchBar(request.form)
     filterform = FilterForm(request.form)
     try:
         if "Listings" in dbmain:
-            listings_dict = dbmain["Listings"] #sync local with db2
+            listings_dict = dbmain["Listings"]  # sync local with db2
         else:
-            dbmain['Listings'] = listings_dict #sync db2 with local (basically null)
+            dbmain['Listings'] = listings_dict  # sync db2 with local (basically null)
     except:
-            print("Error in opening main.db")
-    
-    #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
+        print("Error in opening main.db")
+
+    # PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
         if "Customers" in dbmain:
-            customers_dict = dbmain["Customers"] #sync local with db1
+            customers_dict = dbmain["Customers"]  # sync local with db1
         else:
-            dbmain['Customers'] = customers_dict #sync db1 with local (basically null)
+            dbmain['Customers'] = customers_dict  # sync db1 with local (basically null)
     except:
         print("Error in opening main.db")
 
@@ -1304,38 +1306,47 @@ def viewListing(id):
             seller = customers_dict.get(key)
             break
 
-    #determine if user already liked this post
-    customer = customers_dict.get(session_ID) #current user
+    # determine if user already liked this post
+    customer = customers_dict.get(session_ID)  # current user
     customer_liked_posts = customer.get_liked_listings()
     user_liked_post = 'False'
     if listing.get_ID() in customer_liked_posts:
         user_liked_post = 'True'
-    #get seller info
-    #search func
+    # get seller info
+    # search func
     try:
         if request.method == 'POST' and search_field.validate():
-            return redirect(url_for('searchresults', keyword = search_field.searchfield.data))
+            return redirect(url_for('searchresults', keyword=search_field.searchfield.data))
     except:
         pass
-    #get notifs
+    # get notifs
     if session_ID != 0:
         owncustomer = customers_dict.get(session_ID)
         customer_notifications = owncustomer.get_unread_notifications()
     elif session_ID == 0:
-        customer_notifications = 0  
-    #filter
+        customer_notifications = 0
+        # filter
     try:
         if filterdict(filterform.data) == True:
             if request.method == "POST" and filterform.validate():
                 searchconditionlist = []
-                get_searchquery(filterform.data,searchconditionlist)
+                get_searchquery(filterform.data, searchconditionlist)
                 session['filters'] = searchconditionlist
                 return redirect(url_for('filterresults'))
         else:
             pass
     except:
         pass
-    
+
+    product_title = listing.get_title()
+    # estimated_amazon_price = get_amazon_estimated_price(product_title)
+    estimated_ebay_price = get_ebay_estimated_price(product_title, listing.get_condition())
+    estimated_amazon_price = 0
+    # get username for navbar
+    customer = customers_dict.get(session_ID)
+    current_username = customer.get_username()
+
+   
     #get username for navbar
     if session_ID != 0:
 
@@ -1344,7 +1355,13 @@ def viewListing(id):
     else:
         current_username = "nil"
 
-    return render_template('CustomerViewListing.html', listing = listing,seller = seller, current_sessionID = session_ID, user_liked_post = user_liked_post,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
+
+    return render_template('CustomerViewListing.html', listing=listing, seller=seller, current_sessionID=session_ID,
+                           user_liked_post=user_liked_post, searchform=search_field,
+                           customer_notifications=customer_notifications, filterform=filterform,
+                           current_username=current_username, estimated_amazon_price=estimated_amazon_price,
+                           estimated_ebay_price=estimated_ebay_price, )
+
 
 #opstats - listing
 @app.route('/reservelisting/<int:id>')
@@ -2292,18 +2309,22 @@ def messages():
             reply_value = request.form.get('reply', type=str)
             reply_message_content = request.form.get('replymessagecontent', type=str)
             image_file = request.files.get('image')
-            match = re.search(r'@(\d+)\s+([^\s]+)', content)
+            match = re.search(r'@(\d+)\s+([^\s]+)\b', content)
             reply_id = request.form.get('sender_ID', type=str)
 
             if match:
                 listing_id = int(match.group(1))  # Extract the numeric ID
                 listing_title = match.group(2)
+                print(listing_title)
                 if listing_id in titles_dict:
                     expected_title = titles_dict[listing_id]
-                    if listing_title == expected_title:
+                    num_words = len(expected_title.split())
+                    adjusted_regex = r'@(\d+)\s+((?:\S+\s+){' + str(num_words - 1) + r'}\S+)\b'
+                    match2 = re.search(adjusted_regex, content)
+                    print(match2.group(2))
+                    if match2.group(2) == expected_title:
                         listingTag = True
-                        content = re.sub(r'@(\d+)\s+([^\s]+)', f'<a href="/viewListing/{listing_id}">@{listing_id} {listing_title}</a>', content)
-
+                        content = re.sub(adjusted_regex,f'<a href="/viewListing/{listing_id}">@{listing_id} {match2.group(2)}</a>', content, count=1)
             if not receiver_id.isdigit() or int(receiver_id) == 0 or int(receiver_id) not in customers_dict:
                 return render_template(
                     'CustomerMessages.html',
@@ -2440,12 +2461,9 @@ def messages():
             filterform=filterform,
             listings_dict=listings_dict,
             titles_dict=titles_dict
-
-
         )
     finally:
         db.close()
-
 @app.route('/delete_chat', methods=['POST'])
 def delete_chat():
     db = shelve.open('recentChat.db', 'c')
@@ -5296,11 +5314,7 @@ def dashboard_dashboard():
     cat_misc_avg_days = []
 
     for listing in listings_list:
-        listing.set_status("sold")  # FOR TESTING REMOVE LATER, also make sure that listing status gets changed to sold when purchased, and also allow user to change listing to disabled/available/sold AND ALSO make sure that when users check out/edit the page, the SOLD TIME in listing.py is also updated
-        listing.set_creation_date("10/12/24")  # REMOVE LATER
-        current_date = datetime.now()  # THIS SHOULD ALREADY BE STORED
-        formatted_date = current_date.strftime('%d/%m/%y')  # REMOVE LATER
-        listing.set_soldDate(formatted_date)  # REMOVE LATER
+
         category = listing.get_category()
         creatorID = listing.get_creatorID()
         username = listing.get_creator_username()

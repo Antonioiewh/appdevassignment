@@ -30,6 +30,7 @@ def generate_random_dates(start_date, end_date, k):
 # 3 - feedback
 # reportcount = no. of reports
 # reviewcount = no. of reviews
+# feedbackcount = no.of feedbacks
 # all var with "gen" is specifically for this and logging purposes
 # opstats doesnt work as it does not exist  (yet)
 def genuser(options,count,reportcount,reviewcount,feedbackcount):
@@ -368,7 +369,7 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
 
         dbmain  = shelve.open('main.db','c')
         #variables
-        i = 0
+        
           
         feedbacks_dict = {}
         customers_dict = {}
@@ -399,7 +400,8 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
             print("Error in retrieving data from DB main Feedback count or count is at 0")
         gen_feedback_count = 0 
         try:
-            while i != (feedbackcount+1):
+            i = 0
+            while i != (feedbackcount):
                 #local var
                 useridlist = customers_GenID_list.copy()
                 #select creatorID
@@ -410,15 +412,19 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 category_list = ['Bug','Suggestion','General']
                 generatedchoice = random.choice(category_list)
                 #get remark
+                print(f'generatedchoice is {generatedchoice}')
                 if generatedchoice == "Bug":
                     generatedremark = "Buggy website"
+                
                 elif generatedchoice == "Suggestion":
                     generatedremark = "make UI look nicer"
+                
                 elif generatedchoice == "General":
-                    generatedremark == "cool website :D"
-
+                    generatedremark = "cool website :D"
+                    
+                print(f'Generated remark {generatedremark}')
                 #create feedback obj
-                generated_feedback = Feedback.Feedback(generated_rating,generatedremark,generated_category)
+                generated_feedback = Feedback.Feedback(generated_rating,generatedremark,generatedchoice)
                 feedbacks_dict[generated_feedback.get_ID()] = generated_feedback #store obj in dict
                 dbmain['Feedback'] = feedbacks_dict
                 dbmain['FeedbackCount'] = Feedback.Feedback.count_ID
@@ -428,7 +434,7 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 generated_creator.add_feedback(generated_feedback.get_ID())
                 dbmain['Customers'] = customers_dict
                     
-                gen_feedback_count +=1
+                
                 try:
                     Operatorstats.operatorstats_feedbacks("total","plus")
                     Operatorstats.operatorstats_feedbacks("unreplied","plus")
@@ -440,12 +446,13 @@ def genuser(options,count,reportcount,reviewcount,feedbackcount):
                 feedbacks_creatorusername_list.append(str(generated_creator))
                 feedbacks_category_list.append(str(generated_feedback))
                 #increment
-                    
+                gen_feedback_count +=1
                 i+=1
         except:
             print("Error occured when generating feedback")
         
         #display feedback
+        print(f"GEN feedback is {gen_feedback_count}")
         print("ID|RATING|FEEDBACK")
         i = 1
         feedbacks_dict = {}
@@ -1354,6 +1361,6 @@ def maingenfunc():
     
 
 maingenfunc()
-genuser(3,18,5,5,5)
-genlisting(3,30,7,10)
-gendelivery(2,10,2,2,0)
+#genuser(3,18,5,5,5)
+#genlisting(3,30,7,10)
+#gendelivery(2,10,2,2,0)

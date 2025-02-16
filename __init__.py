@@ -493,8 +493,12 @@ def Customerprofile(id):
     except:
         pass
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
                             current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,current_username=current_username)
@@ -589,9 +593,12 @@ def updateCustomerprofile(id):
         pass
     
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
 
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template("CustomerUpdateProfile.html",current_sessionID = session_ID,form=customer_update_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,current_username=current_username)
 
@@ -712,8 +719,12 @@ def Customerprofile_reviews(id):
         pass
 
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 
@@ -915,7 +926,12 @@ def signup():
         pass
 
     #get username for navbar
-    current_username = "nil"
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template("CustomerSignup.html",form=create_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,current_username=current_username)
 
@@ -1005,9 +1021,14 @@ def login():
     except:
         pass
 
-    #get username for navbar
     
-    current_username = "nil"
+    #get username for navbar
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username = current_username)
 
@@ -1064,7 +1085,12 @@ def loginoptions():
         pass
     
     #get username for navbar
-    current_username = "nil"
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template('Login.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
@@ -1168,8 +1194,12 @@ def createlisting():
     except:
         pass
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/updateListing/<int:id>/', methods=['GET', 'POST'])
@@ -1236,8 +1266,12 @@ def updateListing(id):
     except:
         pass
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing,current_username=current_username) #to render the form 
 
 
@@ -1303,6 +1337,7 @@ def viewListing(id):
             pass
     except:
         pass
+
     product_title = listing.get_title()
     # estimated_amazon_price = get_amazon_estimated_price(product_title)
     estimated_ebay_price = get_ebay_estimated_price(product_title, listing.get_condition())
@@ -1310,6 +1345,16 @@ def viewListing(id):
     # get username for navbar
     customer = customers_dict.get(session_ID)
     current_username = customer.get_username()
+
+   
+    #get username for navbar
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
+
 
     return render_template('CustomerViewListing.html', listing=listing, seller=seller, current_sessionID=session_ID,
                            user_liked_post=user_liked_post, searchform=search_field,
@@ -1429,8 +1474,12 @@ def confirmreservelisting(id):
     except:
         pass
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('Customerconfirmreservelisting.html',current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,listing = listing,current_username=current_username)
 
 @app.route('/unreservelistingconfirmed/<int:id>')
@@ -1489,8 +1538,12 @@ def confirmunreservelisting(id):
     except:
         pass
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('Customerconfirmunreservelisting.html',current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,listing = listing,current_username=current_username)
 
 #opstatshere - listing
@@ -1653,8 +1706,11 @@ def createReview(id):
         pass
     
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/createLikedListing/<int:id>', methods = ['GET', 'POST'])
@@ -1887,8 +1943,11 @@ def viewLikedListings(id): #retrieve current session_ID
     except:
         pass
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 #creates delivery object , opstats
@@ -2039,8 +2098,11 @@ def delivery_status():
     except:
         pass
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template('CustomerListingDelivery.html',delivery=delivery,form=form,deliveries_list=deliveries_list,customer=customer, listings_to_display=listings_to_display,
                            current_sessionID=session_ID, searchform=search_field,
@@ -2166,8 +2228,11 @@ def delivery_track(delivery_id):
         pass
 
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template('Customerdeliverytrack.html', form=form, delivery=delivery,
                            customer=customer,deliveries_list=[delivery for delivery in deliveries_dict.values() if delivery.get_customer_id() == session_ID],
@@ -2227,6 +2292,14 @@ def messages():
             pass
     except:
         pass
+
+    #get username for navbar
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
+
     try:
         if request.method == 'POST':
             listingTag = False
@@ -2531,8 +2604,11 @@ def searchresults(keyword):
         pass
     
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
     
 @app.route('/category1', methods=['GET', 'POST'])
@@ -2591,9 +2667,13 @@ def category1():
         if listing.get_category() == 'Category 1' and Search.check_listing(listing):
 
             listings_to_display.append(listing)
+    
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template('CustomerCategory1.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
@@ -2655,8 +2735,11 @@ def category2():
             listings_to_display.append(listing)
 
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
 
     return render_template('CustomerCategory2.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
@@ -2717,8 +2800,11 @@ def category3():
             listings_to_display.append(listing)
 
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('CustomerCategory3.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/category4',methods = ['GET','POST'])
@@ -2777,8 +2863,11 @@ def category4():
         if listing.get_category() == 'Category 4' and Search.check_listing(listing) :
             listings_to_display.append(listing)
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('CustomerCategory4.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/category5',methods = ['GET','POST'])
@@ -2838,8 +2927,11 @@ def category5():
         if listing.get_category() == 'Category 5' and Search.check_listing(listing) :
             listings_to_display.append(listing)
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('CustomerCategory5.html', listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/filterresults/',methods = ['GET','POST'])
@@ -2888,9 +2980,13 @@ def filterresults():
     get_matchinglistingID(session['filters'],outputlistID)
     outputlistID = deduper(outputlistID)
     ID_to_obj(outputlistID,listings_to_display)
+    
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     
     return render_template('Customerfilterresults.html',listings_list = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
@@ -2977,8 +3073,11 @@ def feedback():
     except:
         pass
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     
     return render_template('CustomerFeedback.html',searchform =search_field,
             customer_notifications=customer_notifications,current_sessionID=int(session_ID),form=feedback_form,filterform=filterform,current_username=current_username)
@@ -3055,8 +3154,11 @@ def viewnotifications(id): #id is current_sessionID
         pass
 
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template("CustomerViewNotifications.html",current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,notifications_list = notifs_to_display,filterform=filterform,current_username=current_username)
     
 @app.route('/profilefeedback/<int:id>', methods = ['GET', 'POST'])
@@ -3130,9 +3232,13 @@ def Customerprofilefeedback(id):#id not needed for now
         pass
     
     print(feedbacks_list)
+    
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template('Customerprofile_feedback.html',number_of_feedbacks = numberfeedbacks,list_feedback = feedbacks_list, current_sessionID=session_ID,searchform=search_field
                            ,customer_notifications=customer_notifications,reply_feedback_form=reply_feedback_form, filterform=filterform, customer=customer,updatefeedbackform = updatefeedbackform,current_username=current_username)
 
@@ -3218,9 +3324,14 @@ def update_feedback(feedback_id):
             pass
     except:
         pass
+
+    
     #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     return render_template("CustomerUpdatefeedback.html",current_sessionID = session_ID,feedback=feedback,feedbacks_list=feedbacks_list,update_feedback_form=update_feedback_form,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
 #opstats - feedback
@@ -3366,13 +3477,14 @@ def reply_feedback(feedback_id):
     except:
         pass
     
-    #get username for navbar
-    customer = customers_dict.get(session_ID)
-    current_username = customer.get_username()
+
+
+
+
     return render_template("Operatordashboard_feedback_reply.html", current_sessionID=session_ID, feedback=feedback,
                            feedbacks_list=feedbacks_list, reply_feedback_form=reply_feedback_form,
                            searchform=search_field, customer_notifications=customer_notifications,
-                           filterform=filterform,current_username = current_username)
+                           filterform=filterform)
 
 #report user
 @app.route('/report/user/<int:id>', methods=['POST', 'GET'])
@@ -4106,6 +4218,8 @@ def operatorviewprofilefeedback(id):
         if key in customer_feedbacks_list: #ensure is own customer
             feedback = feedbacks_dict.get(key)
             feedbacks_list.append(feedback)
+            if not hasattr(feedback, "_Feedback__category"):
+                feedback._Feedback__category = "General"
 
             
     numberfeedbacks = len(feedbacks_list)

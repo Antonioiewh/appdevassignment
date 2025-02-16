@@ -76,9 +76,19 @@
     .highlight:hover {
             background: #0056b3;
         }
+    .big-black {
+            font-size: 30px;
+            font-weight: bold;
+            color: #000000;
+        }
+
+    .intro {
+            font-size: 14px;
+            color: #888888;
+            text-align:center;
+    }
     </style>
 
-<!-- Main Content -->
 {% if customer %}
     <!-- Personalized Section (after login) -->
     <div class="personalized-section" style="background-color: #eef6ff; padding: 20px; border: 1px solid #cce0ff;">
@@ -87,6 +97,7 @@
             <span style="font-weight: bold; color:red;">{{ customer.get_status() }}</span>
         </p>
     </div>
+<p class="intro">"<span class="big-black">FreeSell</span>  is a platform where users can post items they no longer need and connect with potential buyers."</p><!-- Main Content -->
     <br>
 <style>
 * {box-sizing: border-box}
@@ -260,7 +271,7 @@ img {vertical-align: middle;}
     }
 
     slides[slideIndex - 1].style.display = "block";
-    dots[slideIndex - 1].classList.add("fade");
+
 }
 
 // Ensure the first slide is visible on page load
@@ -296,6 +307,7 @@ document.addEventListener("DOMContentLoaded", function () {
             </a>
         </div>
     </div>
+
 {% else %}
     <!-- Content for Guests (before login) -->
     <div class="guest-section" style="background-color: #fdfdfe; padding: 20px; border: 1px solid #ddd;">

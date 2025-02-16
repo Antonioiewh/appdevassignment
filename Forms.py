@@ -93,7 +93,7 @@ class SearchListingField(Form):
 class SearchListingIDField(Form):
     searchidfield = StringField("Enter ID of listing")
 class SearchListingStatusField(Form):
-    searchstatusfield = SelectField('Choose status', [validators.DataRequired()],choices=[('available','Available'),('disabled','Disabled'),('sold','Sold')])
+    searchstatusfield = SelectField('Choose status', [validators.DataRequired()],choices=[('available','Available'),('disabled','Disabled'),('reserved','Reserved'),('sold','Sold')])
 
 #feedback dashboard
 class FilterFeedback(Form):

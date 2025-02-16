@@ -85,7 +85,14 @@
                     </div>
                 </form>
             </div>
-            
+            <div style="margin-top: 23px;">
+                <form class="d-flex flex-row align-items-end" method="POST" action="{{url_for('operator_dashboard_download_all')}}">
+                    <input type="hidden" name="action" value="generate_report">  <!-- Ensure the hidden input has a name -->
+                    <div class="form-group" style="margin-left:3vh; margin-right:3vh;">
+                        <input type="submit" value="Generate Report" class="btn btn-primary"/>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>

@@ -7,23 +7,27 @@
         margin:50px;
         padding:20px;
         flex-direction: column;
-        border: 5px solid blue;
+        border: 5px solid #000;
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
         gap: 20px;
+
     }
     .listing {
         border: 2px solid red;<style>
+
 
     }
 
     #listing {
         display: flex;
-        border: 1px solid #ddd;
+        border: 1px solid #000;
         border-radius: 10px;
         overflow: hidden;
         box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+
+
     }
 
     #listing img {
@@ -45,6 +49,7 @@
         font-weight: bold;
         font-size: 1.5rem;
         margin-bottom: 10px;
+
     }
 
     .action-buttons {
@@ -77,7 +82,7 @@
     }
 </style>
 
-<h1>View Liked Listings</h1>
+<h1><i class="bi bi-heart-fill" style="color: red;"></i> View Liked Listings</h1>
 
 <div id="listingcontainer">
     {% if listings_to_display %}
@@ -94,7 +99,7 @@
                     <a href="/messages" class="btn btn-outline-dark" me-3>
                         Message Dealer <i class="bi bi-chat"></i>
                     </a>
-                    <a href="/delivery_status" class="btn btn-outline-danger">
+                    <a href="/delivery_status" class="btn btn-outline-warning">
                         Check Delivery Status <i class="bi bi-truck"></i>
                     </a>
                 </div>

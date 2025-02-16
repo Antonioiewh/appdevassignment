@@ -6,6 +6,10 @@
 
 <form method="POST">
     <div class="form-group">
+        <label for="category">Category:</label>
+        {{ render_field(update_feedback_form.category, class="form-control") }}
+    </div>
+    <div class="form-group">
         <label for="rating">Rating:</label>
         {{ render_field(update_feedback_form.rating, class="form-control") }}
     </div>

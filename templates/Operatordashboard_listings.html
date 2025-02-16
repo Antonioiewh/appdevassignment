@@ -62,6 +62,12 @@
                     {% if listing.get_status() == "available" %}
                     <div style="border-radius:5px; border:lightgreen solid 2px; background:white;color:lightgreen; height:50%; width:50%;" class="d-flex justify-content-center align-items-center"><p>{{listing.get_status()}}</p></div>
                     {%endif%}
+                    {% if listing.get_status() == "reserved" %}
+                    <div style="border-radius:5px; border:purple solid 2px; background:white;color:purple; height:50%; width:50%;" class="d-flex justify-content-center align-items-center"><p>{{listing.get_status()}}</p></div>
+                    {%endif%}
+                    {% if listing.get_status() == "sold" %}
+                    <div style="border-radius:5px; border:red solid 2px; background:white;color:red; height:50%; width:50%;" class="d-flex justify-content-center align-items-center"><p>{{listing.get_status()}}</p></div>
+                    {%endif%}
                     {% if listing.get_status() == "disabled" %}
                     <div style="border-radius:5px; border:red solid 2px; background:white;color:red; height:50%; width:50%;" class="d-flex justify-content-center align-items-center"><p>Under review</p></div>
                     {%endif%}

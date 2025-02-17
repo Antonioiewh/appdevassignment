@@ -3800,6 +3800,8 @@ def cinvaliduser():
     current_username = customer.get_username()
     return render_template('Customerinvaliduser.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
+
+@app.route('/addToCart/<int:id>/', methods = ['GET', 'POST'])
 def addToCart(id):
     global session_ID
     dbmain = shelve.open('main.db', 'c')
@@ -3910,6 +3912,8 @@ def viewCart(id):
     customers_dict = {}
     deliveries_dict = {}
     notifications_dict = {}
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -4028,7 +4032,36 @@ def viewCart(id):
     dbmain.close()
 
     # Passing data to template
-    return render_template('viewCart.html', listings_to_display=listings_to_display, delivery_cost=5)
+    #search func
+    try:
+        
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if request.method == "POST" and filterform.validate():
+            searchconditionlist = []
+            get_searchquery(filterform.data,searchconditionlist)
+            session['filters'] = searchconditionlist
+            return redirect(url_for('filterresults'))
+    except:
+        pass
+    #get username for navbar
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
+    return render_template('CustomerviewCart.html', listings_to_display=listings_to_display, delivery_cost=5,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
 @app.route('/removeFromCart/<int:item_id>', methods=['POST'])
 def removeFromCart(item_id):

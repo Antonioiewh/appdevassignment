@@ -351,8 +351,8 @@ def Customerhome():
 
     #get username for navbar
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -456,11 +456,10 @@ def Customerprofile(id):
     idreal = id
     print(idreal)
     #get ID list of current user listings
-    current_customer = customers_dict.get(idreal)
-    #test code
-    print(f"ID is {idreal}. username is {current_customer.get_username()} YOUR ID IS {session_ID}")
-    customer_listings = current_customer.get_listings()
-    print(f"\n*start of message *\nCurrent user has the following listings:{customer_listings}\n*end of message*")
+
+    customer = customers_dict.get(idreal)
+    customer_listings = customer.get_listings()
+
     listing_list = []
     if current_customer.get_status() == "active":
         for key in listings_dict:
@@ -499,10 +498,11 @@ def Customerprofile(id):
             pass
     except:
         pass
-    #get username for navbar
+    ##get username for navbar
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -544,19 +544,16 @@ def updateCustomerprofile(id):
 
             if customer_update_form.email.data != "":
                 customer.set_email(customer_update_form.email.data)
-                print("Email changed!")
             else:
                 print(customer_update_form.email.data)
 
             if customer_update_form.username.data !="":
                 customer.set_username(customer_update_form.username.data)
-                print("Username changed!")
             else:
                 print(customer_update_form.username.data)
 
             if customer_update_form.password.data !="":
                 customer.set_password(customer_update_form.password.data)
-                print("Password changed!")
             else:
                 print(customer_update_form.password.data)
 
@@ -565,7 +562,6 @@ def updateCustomerprofile(id):
             #upload img
             file = request.files['file']
             check_upload_file_type(file,"customer",customer.get_id())
-            print("Profile info chnaged!")
             return redirect(url_for('Customerprofile', id = id))
         else:
             print("Error in changing profile info")
@@ -598,11 +594,10 @@ def updateCustomerprofile(id):
     except:
         pass
     
-    #get username for navbar
+    ##get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -726,13 +721,11 @@ def Customerprofile_reviews(id):
 
     #get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
     return render_template('Customerprofile_reviews.html',current_customer = current_customer, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
-
 
 @app.route('/usernametaken')
 def usernametaken():
@@ -774,7 +767,6 @@ def usernametaken():
     current_username = "nil"
     return render_template('Customersignupinvalidusername.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
-
 @app.route('/emailtaken')
 def emailtaken():
     dbmain = shelve.open('main.db','c')
@@ -814,7 +806,6 @@ def emailtaken():
         pass
     current_username = "nil"
     return render_template('Customersignupinvalidemail.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
-
 
 #opstatshere- user
 @app.route('/signup', methods=['GET', 'POST'])
@@ -890,8 +881,6 @@ def signup():
             #verifies new user is stored
             customers_dict = dbmain['Customers'] #sync local dict with db1
             customer = customers_dict[customer.get_id()]
-
-            print(f"\n*start of message\nRegistered sucess.\nId: {customer.get_id()}Username:{customer.get_username()}, Email:{customer.get_email()},Password:{customer.get_password()}\n Current session is {Customer.Customer.count_id}\n*end of message*")
             session_ID = Customer.Customer.count_id
             #upload img
             file = request.files['file']
@@ -933,9 +922,8 @@ def signup():
 
     #get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -981,15 +969,13 @@ def login():
         for key in customers_dict:
             customer = customers_dict[key] #ID
             if input_username == customer.get_username():
-                print("Username checked.")
                 if input_password == customer.get_password():
-                    print("Passwords match.")
                     session_ID = key #current session = this ID
                     break
                 else:
                     print("password verification failed")
             else:
-                print("invalid username")
+                pass
         
         print(f"\n*start of message*Login success, current session ID is {session_ID}\n*end of message*")
         if customer.get_status() == "active":
@@ -1028,14 +1014,12 @@ def login():
         pass
 
     
-    #get username for navbar
+    ##get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
-
     return render_template("CustomerLogin.html",form=login_customer_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username = current_username)
 
 @app.route('/loginoptions',methods = ['GET', 'POST'])
@@ -1089,12 +1073,10 @@ def loginoptions():
             pass
     except:
         pass
-    
     #get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -1201,9 +1183,8 @@ def createlisting():
         pass
     #get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
     return render_template('CustomerCreateListing.html', form = create_listing_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
@@ -1273,9 +1254,8 @@ def updateListing(id):
         pass
     #get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
     return render_template('CustomerUpdateListing.html', form = update_listing_form,current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing,current_username=current_username) #to render the form 
@@ -1355,9 +1335,8 @@ def viewListing(id):
    
     #get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -1481,9 +1460,8 @@ def confirmreservelisting(id):
         pass
     #get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
     return render_template('Customerconfirmreservelisting.html',current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,listing = listing,current_username=current_username)
@@ -1545,9 +1523,8 @@ def confirmunreservelisting(id):
         pass
     #get username for navbar
     if session_ID != 0:
-
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
     return render_template('Customerconfirmunreservelisting.html',current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,listing = listing,current_username=current_username)
@@ -1713,8 +1690,8 @@ def createReview(id):
     
     #get username for navbar
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
     return render_template('CustomerReview.html',form=review_form, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
@@ -1950,8 +1927,8 @@ def viewLikedListings(id): #retrieve current session_ID
         pass
     #get username for navbar
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
     return render_template('CustomerViewLikedListings.html', listings_to_display = listings_to_display, current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
@@ -2103,10 +2080,11 @@ def delivery_status():
             pass
     except:
         pass
+    
     #get username for navbar
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -2235,8 +2213,8 @@ def delivery_track(delivery_id):
 
     #get username for navbar
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -2301,8 +2279,8 @@ def messages():
 
     #get username for navbar
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
 
@@ -2611,8 +2589,8 @@ def searchresults(keyword):
     
     #get username for navbar
     if session_ID != 0:
-        customer = customers_dict.get(session_ID)
-        current_username = customer.get_username()
+        current_customer = customers_dict.get(session_ID)
+        current_username = current_customer.get_username()
     else:
         current_username = "nil"
     return render_template("Customersearchresults.html",current_sessionID = session_ID,searchform =search_field,listings_list = show_listings,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
@@ -3715,6 +3693,8 @@ def cinvaliduser():
     current_username = customer.get_username()
     return render_template('Customerinvaliduser.html', current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
+
+@app.route('/addToCart/<int:id>/', methods = ['GET', 'POST'])
 def addToCart(id):
     global session_ID
     dbmain = shelve.open('main.db', 'c')
@@ -3817,6 +3797,7 @@ def addToCart(id):
         pass
     return render_template('CustomerDealMethod.html',current_sessionID = session_ID,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,listing = listing)
 
+# - no form validation so POST request goes to other handler meaning kaboom
 @app.route('/viewCart/<int:id>/', methods = ['GET', 'POST'])
 def viewCart(id):
     global session_ID
@@ -3825,6 +3806,8 @@ def viewCart(id):
     customers_dict = {}
     deliveries_dict = {}
     notifications_dict = {}
+    search_field = SearchBar(request.form)
+    filterform = FilterForm(request.form)
     #make sure local and db1 are the same state
     #PS JUST COPY AND PASTE IF YOU'RE ACCESSING IT
     try:
@@ -3888,7 +3871,37 @@ def viewCart(id):
     # Fetch the cart listings for the customer
     customer = customers_dict.get(id)
     selectedcustomer_cart_list = customer.get_cart_listings()
-
+    # Passing data to template
+    #search func
+    try:
+        if request.method == 'POST' and search_field.validate():
+            return redirect(url_for('searchresults', keyword = search_field.searchfield.data)) #get the word from the search field
+    except:
+        pass
+    #get notifs
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        customer_notifications = customer.get_unread_notifications()
+    elif session_ID == 0:
+        customer_notifications = 0  
+    #filter
+    try:
+        if filterdict(filterform.data) == True:
+            if request.method == "POST" and filterform.validate():
+                searchconditionlist = []
+                get_searchquery(filterform.data,searchconditionlist)
+                session['filters'] = searchconditionlist
+                return redirect(url_for('filterresults'))
+        else:
+            pass
+    except:
+        pass
+    #get username for navbar
+    if session_ID != 0:
+        customer = customers_dict.get(session_ID)
+        current_username = customer.get_username()
+    else:
+        current_username = "nil"
     # Prepare the listings to display
     listings_to_display = []
     for listing_id in selectedcustomer_cart_list:
@@ -3942,8 +3955,8 @@ def viewCart(id):
 
     dbmain.close()
 
-    # Passing data to template
-    return render_template('viewCart.html', listings_to_display=listings_to_display, delivery_cost=5)
+    
+    return render_template('CustomerviewCart.html', listings_to_display=listings_to_display, delivery_cost=5,current_sessionID = session_ID,searchform =search_field,customer_notifications = customer_notifications,filterform = filterform,current_username=current_username)
 
 @app.route('/removeFromCart/<int:item_id>', methods=['POST'])
 def removeFromCart(item_id):
@@ -4728,7 +4741,6 @@ def operatorrestorelisting(listingid):
         else:
             print("invalid password")
     return render_template('OperatorRestoreListing.html',form = restore_listing)
-
 
 #invalid user page
 @app.route('/invaliduser')

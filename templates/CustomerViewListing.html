@@ -13,9 +13,9 @@
                 </div>
 
                 <!--buttons-->
-                <div  class="d-flex flex-row  justify-content-evenly " style="margin-top:60%;">
+                <div  class="d-flex flex-row  justify-content-evenly " style="margin-top:25%;">
                     <!--buttons-->
-                <div  class="d-flex flex-row  justify-content-evenly " style="margin-top:60%;">
+                
                     <div style=" width:100%; max-width:35%" class="align-items-center">
                         <a href="#" class="btn btn-info align-items-center" role="button" style="background:white; max-height:6vh; border:none; padding:5%; max-width:100%; width:100%;"><p style="color:black; font-weight:bold">Chat with dealer<i class="bi bi-chat" style="font-size:1.3rem"></i></p></a>
                     </div>
@@ -51,7 +51,7 @@
                 </div>
             </div>
         </div>
-    
+    </div>
     <div style="max-width:40vw; width:100%; margin-left:7%" class="d-flex align-items-center justify-content-center ">
         <div style="background:lightgray; max-width:35vw; width:100%; justify-self:center; padding:2%; border-radius:0px; max-height:80vh; height:100%;">
             <div  class="d-flex flex-column">
@@ -103,10 +103,10 @@
                     {%else%}
                     <a class="btn btn-dark" href="#" role="button" style="border-radius:50px; margin-right:5%">Frequently used</a>
                     {%endif%}
-                    {% if listing.get_condition() == "Used daily"%}
-                    <a class="btn btn-dark" href="#" role="button" style="border-radius:50px; border:green 5px solid;margin-right:5%">Used daily</a>
+                    {% if listing.get_condition() == "Worn out"%}
+                    <a class="btn btn-dark" href="#" role="button" style="border-radius:50px; border:green 5px solid;margin-right:5%">Worn out</a>
                     {%else%}
-                    <a class="btn btn-dark" href="#" role="button" style="border-radius:50px;margin-right:5%">Used daily</a>
+                    <a class="btn btn-dark" href="#" role="button" style="border-radius:50px;margin-right:5%">Worn out</a>
                     {%endif%}
                 </div>
                 

@@ -1361,6 +1361,6 @@ def maingenfunc():
     
 
 maingenfunc()
-#genuser(3,18,5,5,5)
-#genlisting(3,30,7,10)
-#gendelivery(2,10,2,2,0)
+genuser(3,18,5,5,5)
+genlisting(3,30,7,10)
+gendelivery(2,10,2,2,0)

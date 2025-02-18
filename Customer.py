@@ -16,6 +16,7 @@ class Customer:
         self.__ratings = 0 #store total
         self.__date_joined = str((datetime.now().strftime("%x")))
         self.__liked_listings = [] #store id of liked listings
+        self.__cart_listings = [] #store id of cart listings
         self.__reports = []#store reports similar to reviews
         self.__status = "active" #3 states : active,suspended,terminated
         self.__notifications = [] #starts at 0 , stores ID of notifcations
@@ -149,3 +150,8 @@ class Customer:
 
     
     
+    def add_cart_listing(self, listingid):
+        self.__cart_listings.append(listingid)
+
+    def remove_cart_listing(self, listingid):
+        self.__cart_listings.remove(listingid)

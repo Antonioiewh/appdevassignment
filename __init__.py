@@ -23,6 +23,7 @@ import uuid
 import re
 import io
 from webscraping_ebay_amazon import get_ebay_estimated_price
+from chat import get_response
 app = Flask(__name__)
 
 
@@ -382,6 +383,12 @@ def Customersuspended_terminatedhome():
     customer = customers_dict.get(int(session_ID))
     return render_template('Customersuspend_terminate.html', current_sessionID = session_ID, customer = customer)
 
+@app.post("/predict")
+def predict():
+    text = request.get_json().get("message")
+    response = get_response(text)
+    message = {"answer": response}
+    return jsonify(message)
 
 #listingalgo
 @app.route('/profile/<int:id>', methods = ['GET', 'POST'])
@@ -449,13 +456,13 @@ def Customerprofile(id):
     idreal = id
     print(idreal)
     #get ID list of current user listings
-    customer = customers_dict.get(idreal)
+    current_customer = customers_dict.get(idreal)
     #test code
-    print(f"ID is {idreal}. username is {customer.get_username()} YOUR ID IS {session_ID}")
-    customer_listings = customer.get_listings()
+    print(f"ID is {idreal}. username is {current_customer.get_username()} YOUR ID IS {session_ID}")
+    customer_listings = current_customer.get_listings()
     print(f"\n*start of message *\nCurrent user has the following listings:{customer_listings}\n*end of message*")
     listing_list = []
-    if customer.get_status() == "active":
+    if current_customer.get_status() == "active":
         for key in listings_dict:
             print(key)
             if key in customer_listings:
@@ -494,13 +501,12 @@ def Customerprofile(id):
         pass
     #get username for navbar
     if session_ID != 0:
-
         customer = customers_dict.get(session_ID)
         current_username = customer.get_username()
     else:
         current_username = "nil"
 
-    return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer,
+    return render_template('Customerprofile.html',customer_imgid = user_id, customer=customer, current_customer = current_customer,
                             current_sessionID = session_ID,listings_list = listing_list,form=report_form,searchform =search_field,customer_notifications = customer_notifications,filterform=filterform,current_username=current_username)
 
 @app.route('/updateprofile/<int:id>', methods = ['GET', 'POST'])
@@ -664,8 +670,8 @@ def Customerprofile_reviews(id):
 
 
     
-    customer = customers_dict.get(id)
-    customer_reviews = customer.get_reviews()#return list of review IDs
+    current_customer = customers_dict.get(id)
+    customer_reviews = current_customer.get_reviews()#return list of review IDs
     print(customer_reviews)
     customer_reviews_list = [] #THIS is the one sent to the html 
     
@@ -677,18 +683,18 @@ def Customerprofile_reviews(id):
             customer_reviews_list.append(review)
     #report function
     if request.method == 'POST' and report_form.validate():
-        customer = customers_dict.get(id)
+        current_customer = customers_dict.get(id)
 
         #create report obj and store it
         print(report_form.category.data,report_form.report_text.data)
-        report = Report.Report(session_ID,id,customer.get_username(),report_form.category.data,report_form.report_text.data)
+        report = Report.Report(session_ID,id,current_customer.get_username(),report_form.category.data,report_form.report_text.data)
         reports_dict[report.get_ID()] = report #store obj in dict
         dbmain['Reports'] = reports_dict
         dbmain['ReportsCount'] = Report.Report.count_ID
 
         #store report in offender's report_listings
-        customer = customers_dict.get(id)
-        customer.add_reports(report.get_ID())
+        current_customer = customers_dict.get(id)
+        current_customer.add_reports(report.get_ID())
         dbmain['Customers'] = customers_dict
         dbmain.close()
         redirect(url_for('Customerprofile', id=id))
@@ -725,7 +731,7 @@ def Customerprofile_reviews(id):
         current_username = customer.get_username()
     else:
         current_username = "nil"
-    return render_template('Customerprofile_reviews.html',customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
+    return render_template('Customerprofile_reviews.html',current_customer = current_customer, customer = customer ,number_of_reviews = len(customer_reviews_list), list_reviews = customer_reviews_list, current_sessionID = session_ID,form=report_form,searchform =search_field,customer_notifications=customer_notifications,filterform=filterform,current_username=current_username)
 
 
 @app.route('/usernametaken')

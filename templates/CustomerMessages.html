@@ -14,7 +14,6 @@
         messageBox.scrollTop = messageBox.scrollHeight;
     }
 </script>
-
 <!-- error Modal for Invalid Receiver ID -->
 {% if show_error_modal %}
 <script>
@@ -179,7 +178,6 @@
     .messagebox {
         margin-bottom: -1%;
         margin-top: 0.5%;
-
     }
 
     #sendbutton {
@@ -263,7 +261,6 @@
         padding-left: 2%;
         padding-right: 2%;
     }
-
     .thumbnail_box {
         display: flex;
         flex-direction: column;
@@ -304,6 +301,7 @@
         padding-top: 4px;
         padding-bottom: 4px;
         margin-top: 10px;
+        background-color: white;
     }
     #viewlistingbutton:hover{
         background-color: #d3d3d3;
@@ -317,7 +315,6 @@
         padding-left: 10px;
         border-radius: 5px;
     }
-
 </style>
 
 <body>
@@ -326,8 +323,8 @@
             <!-- Left column for recent chats -->
             <div class="left-column">
                 <button class="btn btn-primary new-chat-btn" data-bs-toggle="modal" data-bs-target="#newChatModal">New Chat</button>
-                <h1 class="message_class">Messages</h1>
-                <hr>
+                <h1 class="message_class" style="font-size: 35px; margin-top: -17%; margin-left: 0.5%;">Messages</h1>
+                <hr style="margin-top: -2%;">
                 <h3 class="recent">Recent Chats</h3>
                 <ul class="list-group">
                     {% if recent_chats %}
@@ -338,7 +335,7 @@
                                         background-color: lightgray;  /* Dark Gray */
                                     {% endif %}">
                                     <div class="profile-picture" style="display: flex; align-items: center;"><img src="static/profilepics/customer{{ chat['receiver_id'] }}.jpg" onerror="this.onerror=null; this.src='static/profilepics/placeholder.png';" alt="Profile Picture"></div>
-                                    <div style="margin-left: 15px; margin-top: -4px;" class="user_name111">User {{ chat['receiver_id'] }}</div>
+                                    <div style="margin-left: 15px; margin-top: -4px;" class="user_name111">{{ chat['receiver_name'] }}</div>
                                 </li>
                             </a>
                         {% endfor %}
@@ -351,20 +348,20 @@
             <!-- Right column for chat window -->
             <div class="right-column">
                 {% if selected_chat %}
-                <div class="chat-container11"><h3>Chat with <span class="forjavascript222"><b>{{ selected_chat['receiver_id'] }}</b></span></h3></div>
+                <div class="chat-container11"><h3>Chat with <span class="forjavascript222"><b>{{ selected_chat['receiver_name'] }}</b></span></h3></div>
                     <hr id="hr2">
                     <div class="message-box">
                         {% for message in selected_chat['messages'] %}
                             <div class="message {{ message.type }}" id="{{ message.message_id }}" data-message-content="{{ message.content }}">
-                                <div id="shiftup" ><b>{{ 'To' if message.type == 'sent' else 'From' }}:</b>
-                                {{ message.receiver_id if message.type == 'sent' else message.sender_id }}</div>
+                                <div id="shiftup" ><b>{{ 'To' if message.type == 'sent' else 'From' }}:
+                                {{ message.receiver_name if message.type == 'sent' else message.receiver_name }}</b></div>
                                 {% if message.status == "deleted" %}
                                     <pre><i style="color: lightgray;">This message has been deleted</i></pre>
                                     <div class="time"><small>{{ message.timestamp }}</small></div>
                                 {% elif message.status == "edited" %}
                                 {% if message.reply_content is not none %}
                                     {% if message.sender_reply_id|string == message.sender_id|string and message.sender_reply_id|string == current_sessionID|string %}
-                                        <div style="background-color: #8fbc8f; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ message.reply_content|safe}}</div>
+                                        <div style="background-color: #8fbc8f; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ message.reply_content|safe }}</div>
                                         <script>console.log("{{ message.sender_id }}")</script>
                                     {% else %}
                                         <div style="background-color: #d3d3d3; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px; color:black;">{{ message.reply_content|safe }}</div>
@@ -395,14 +392,13 @@
                                                 <li><a href="#" class="delete-option" data-message-id="{{ message.message_id }}">Delete</a></li>
                                             {% endif %}
                                         {% endif %}
-                                        <li><a href="#" class="reply-option">Reply</a></li>
+                                        <li><a href="#" class="reply-option" data-message-id="{{ message.message_id }}" data-message-content="{{ message.content }}" data-message-sender = "{{ message.sender_id }}">Reply</a></li>
                                     </ul>
                                 </div>
                                 {% else %}
                                 {% if message.reply_content is not none %}
                                     {% if message.sender_reply_id|string == message.sender_id|string and message.sender_reply_id|string == current_sessionID|string %}
                                         <div style="background-color: #8fbc8f; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px;">{{ message.reply_content|safe }}</div>
-                                        <script>console.log("{{ message.sender_id }}")</script>
                                     {% else %}
                                         <div style="background-color: #d3d3d3; padding: 5px; margin-top: 12px; border-radius: 10px; padding-left: 10px; padding-right: 10px; color:black;">{{ message.reply_content|safe }}</div>
                                     {% endif %}
@@ -491,7 +487,6 @@
                             <button type="submit" class="btn btn-primary" id="sendbutton" disabled>Send</button>
                         </form>
                     </div>
-
                 {% endif %}
             </div>
         </div>
@@ -558,7 +553,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="userProfileModalLabel">User {{ selected_chat['receiver_id'] }}</h5>
+                <h5 class="modal-title" id="userProfileModalLabel">{{ selected_chat['receiver_name'] }}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center">
@@ -569,7 +564,7 @@
                 <!-- Buttons below Profile Picture -->
                 <div class="mt-3" style="text-align: center;">
                     <button class="btn btn-primary" id="goToProfileButton">Profile</button>
-                    <button class="btn btn-danger" id="blockUserButton" style="margin-left: 10px; margin-right: 10px;">Block User</button>
+                    <!-- <button class="btn btn-danger" id="blockUserButton" style="margin-left: 10px; margin-right: 10px;">Block User</button> -->
                     <button class="btn btn-danger" id="deletechat111" data-receiver-id="{{ selected_chat['receiver_id'] }}">Delete chat</button>
                 </div>
             </div>
@@ -600,7 +595,7 @@
         // Function to toggle the visibility of the dropdown menu
         document.querySelectorAll('.ellipsis-container').forEach((ellipsisContainer) => {
             ellipsisContainer.addEventListener('click', function(event) {
-                event.stopPropagation(); // Prevent click from bubbling to parent message container
+                event.stopPropagation();
                 const message = this.closest('.message');
                 message.classList.toggle('show-dropdown');
             });
@@ -623,9 +618,9 @@
 
         messageInput.addEventListener('keydown', function(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault(); // Prevent new line from being added
+                event.preventDefault();
                 if (messageInput.value.trim() !== "") {
-                    messageForm.submit(); // Submit the form to send the message
+                    messageForm.submit();
                 }
             }
         });
@@ -742,9 +737,9 @@
             window.location.href = `/profile/{{ selected_chat['receiver_id'] }}`;
         });
 
-        document.getElementById('blockUserButton').addEventListener('click', function() {
+        //document.getElementById('blockUserButton').addEventListener('click', function() {
 
-        });
+        //});
         document.getElementById('deletechat111').addEventListener('click', function () {
             const receiverId = this.getAttribute('data-receiver-id');
             const modalElement = document.getElementById('userProfileModal'); // Replace with your modal's ID
@@ -842,7 +837,9 @@
                                 messageDiv.appendChild(editedTag);
                             }
                         }
-
+                        document.querySelectorAll(`.reply-option[data-message-id="${messageId}"]`).forEach(replyOption => {
+                            replyOption.setAttribute('data-message-content', latestMessageContent);
+                        });
                         modal.hide(); // Close the modal
                     })
                     .catch(error => {
@@ -853,7 +850,6 @@
             });
         });
     document.getElementById('camera-button').addEventListener('click', function() {
-
         const fileInput = document.getElementById('image-upload');
         fileInput.click();  // Trigger the file input when the camera button is clicked
     });
@@ -913,16 +909,6 @@
             container.appendChild(fileName);
             container.appendChild(removeButton);
 
-        //document.getElementById('image-upload').click(); // Trigger file input when the camera button is clicked
-    //});
-
-    //document.getElementById('image-upload').addEventListener('change', function() {
-        //if (this.files.length > 0) {
-            //alert("File selected: " + this.files[0].name); // Show an alert (you can replace this with a preview)
-        //}
-    //});
-
-
             // Append the container to the thumbnail div
             thumbnailDiv.appendChild(container);
 
@@ -938,6 +924,9 @@
             {% endfor %}
         `;
         const listingIds = {{ listings_dict.keys() | list | tojson }};
+    {% else %}
+        const originalListingsHTML = ``;
+        const listingIds = [0];
     {% endif %}
     const listingsDiv = document.getElementById("listings");
     listingsDiv.innerHTML = originalListingsHTML;
@@ -1001,10 +990,17 @@
     document.querySelectorAll('.reply-option').forEach(button => {
         button.addEventListener('click', function() {
             const messageId = this.getAttribute('data-message-id');
-            const messageContent = this.getAttribute('data-message-content');
+            let messageContent = this.getAttribute('data-message-content');
+            if (messageContent == "") {
+                messageContent = "Image";
+            }
             const senderID = this.getAttribute('data-message-sender');
             document.getElementById('replymessage').style.display = 'block';
-            shortenedmessage = truncateName(messageContent, 80)
+            shortenedmessage = truncateName(messageContent, 65)
+            console.log(shortenedmessage)
+            if (messageContent === "Image") {
+                shortenedmessage = `<i class="bi bi-image"></i> ` + shortenedmessage;
+            }
             document.getElementById('reply-message-content').innerHTML = shortenedmessage;
             document.getElementById('replyvalue').value = "True";
             document.getElementById('replymessageid').value = shortenedmessage;
@@ -1022,6 +1018,7 @@
             } else {
                 document.getElementById('replymessage').style.backgroundColor = '#8fbc8f';  // Green for sender's message
             }
+
         });
     });
     function removeReplyPreview() {

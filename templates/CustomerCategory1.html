@@ -19,11 +19,11 @@
     {% for listing in listings_list %} 
     <div id= "listing"style="float:left; border-radius:none; height:42vh; d-flex flex-column"class=""> <!--bg-secondary removed for now-->
         <div class="d-flex flex-row align-self-center" style="margin-left:9%; margin-top:2%;">
-            <img src="../static/profilepics/customer{{listing.get_creatorID()}}.jpg" style="max-width:30px; width:100%; max-height:30px;height:100%; border-radius:50%; border:solid black 3px;" class="align-self-center"> <!--load profile pic-->
+            <img src="../static/profilepics/customer{{listing.get_creatorID()}}.jpg" style="max-width:30px; width:100%; max-height:30px;height:100%; border-radius:50%; border:solid black 3px;" class="align-self-center" onerror="this.onerror=null; this.src='../../../static/profilepics/placeholder.png';"> <!--load profile pic-->
             <p class="align-self-center" style="margin-bottom:0px;">{{listing.get_creator_username()}}</p>
         </div>
         <div class="d-flex justify-content-center align-items-center" style="height:70%; width:100%"> <!--THIS div for img ONLY-->
-            <img src=../static/listingpics/listing{{listing.get_ID()}}.jpg style="max-width:250px;width:100%; max-height:200px;height:100%; border-radius: 5%; justify-self:center">
+            <img src=../static/listingpics/listing{{listing.get_ID()}}.jpg style="max-width:250px;width:100%; max-height:200px;height:100%; border-radius: 5%; justify-self:center" onerror="this.onerror=null; this.src='static/listingpics/notfound.png';">
         </div>
         {% if listing.get_status() == "disabled"%}
         

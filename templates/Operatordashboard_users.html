@@ -147,9 +147,6 @@
                 <div class="mt-3" style="text-align: center;">
                     <a href="#" class="btn btn-primary" id="goToProfileButton">Go to profile</a>
                     <button class="btn btn-success" id="toggleMenu">Download info</button><br>
-                    <button class="btn btn-danger" class="align-items-center" style="margin-top: 10px;" data-bs-toggle="modal" data-bs-target="#myModal1" id="myModal111">Suspend User</button>
-                    <button class="btn btn-danger" class="align-items-center" style="margin-top: 10px;" data-bs-toggle="modal" data-bs-target="#myModal2" id="myModal222">Terminate User</button>
-                    <button class="btn btn-primary" class="align-items-center" style="margin-top: 10px;" data-bs-toggle="modal" data-bs-target="#myModal3" id="myModal333">Restore user</button>
                 </div>
             </div>
         </div>
@@ -203,19 +200,7 @@
         const profileUrl = "/operatorviewprofile/" + userId;
         document.getElementById('goToProfileButton').setAttribute('href', profileUrl);
         document.getElementById('userProfileModalLabel').textContent = 'User ' + userId;
-        if (customerStatus === 'suspended') {
-            document.getElementById('myModal111').style.display = 'none';  // Suspend Button should be hidden
-            document.getElementById('myModal222').style.display = 'inline-block'; // Terminate Button should be shown
-            document.getElementById('myModal333').style.display = 'inline-block'; // Restore Button should be shown
-        } else if (customerStatus === 'terminated') {
-            document.getElementById('myModal111').style.display = 'none'; // Suspend Button should be shown
-            document.getElementById('myModal222').style.display = 'none';  // Terminate Button should be hidden
-            document.getElementById('myModal333').style.display = 'inline-block'; // Restore Button should be shown
-        } else if (customerStatus === 'active') {
-            document.getElementById('myModal111').style.display = 'inline-block'; // Suspend Button should be shown
-            document.getElementById('myModal222').style.display = 'inline-block'; // Terminate Button should be shown
-            document.getElementById('myModal333').style.display = 'none';  // Restore Button should be hidden
-        }
+
         const userProfileModal = new bootstrap.Modal(document.getElementById('userProfileModal'));
             checkCheckboxes()
             userProfileModal.show();
